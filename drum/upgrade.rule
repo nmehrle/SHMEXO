@@ -1,0 +1,58 @@
+@@ defs.hpp.in
+  [+:after @HDF5_OPTION@] {
+    // NETCDF output (NETCDFOUTPUT or NO_NETCDFOUTPUT)
+    #define @NETCDF_OPTION@
+
+    // PNETCDF output (PNETCDFOUTPUT or NO_PNETCDFOUTPUT)
+    #define @PNETCDF_OPTION@
+  }
+  [+:after MAX_NREGISTER] {
+    #define NVAPOR @NUMBER_VAPORS@
+    #define NPHASE @NUMBER_PHASES@
+
+    //----------------------------------------------------------------------------------------
+    // specific molecule ids
+    #define WATER_VAPOR_ID  @WATER_VAPOR_ID@
+    #define AMMONIA_VAPOR_ID  @AMMONIA_VAPOR_ID@
+  }
+  [+:after RADIATION_ENABLED] {
+    // chemistry
+    #define CHEMISTRY "@CHEMISTRY@"
+  }
+
+@@ athena.hpp
+  [+:before enum ConsIndex] {
+    enum {NMASS = 1+NPHASE*NVAPOR};
+  }
+  [r:1 enum ConsIndex] {
+    IM1=1, IM2=2, IM3=3, IEN=4 -> IM1=NMASS, IM2=1+NMASS, IM3=2+NMASS, IEN=3+NMASS
+  }
+  [-:2 enum PrimIndex]
+  [+:after array indices for 1D primitives] {
+  enum PrimIndex {IVX=NMASS, IVY=1+NMASS, IVZ=2+NMASS, IPR=3+NMASS, 
+    IBY=(NHYDRO), IBZ=((NHYDRO)+1), IV1=IVX, IV2=IVY, IV3=IVZ};
+  }
+
+@@ athena_arrays.hpp
+  [+:in header/Athena++] {
+    #include "stride_iterator.hpp"
+  }
+  [+:before private] {
+    // access stride iterator
+    StrideIterator<T*> at(int i) const {
+      return StrideIterator<T*>(pdata_ + i, nx1_);
+    }
+
+    StrideIterator<T*> at(int j, int i) const {
+      return StrideIterator<T*>(pdata_ + i + nx1_*j, nx1_*nx2_);
+    }
+
+    StrideIterator<T*> at(int k, int j, int i) const {
+      return StrideIterator<T*>(pdata_ + i + nx1_*j + nx1_*nx2_*k, nx1_*nx2_*nx3_);
+    }
+  }
+
+@@ srcterms/constant_acc.cpp
+  [r:once if (g1_!=0.0)] {
+    0.0 -> 0.0 && std::strcmp(RIEMANN_SOLVER, "noflux") != 0)
+  }

@@ -1,0 +1,168 @@
+configure.py
+  # Remove fits dependence
+  [+:after --hdf5_path=path path to FFTW libraries] {
+    #   -netcdf           enable NETCDF output (requires the NETCDF library)
+    #   -pnetcdf          enable parallel-NETCDF output (requires the PNETCDF library)
+    #   --netcdf_path=path  path to PNETCDF libraries (requires the PNETCDF library)
+    #   --pnetcdf_path=path path to PNETCDF libraries (requires the PNETCDF library)
+  }
+  [+:in header] {
+    import os
+  }
+  [+:after defsfile_output = 'src/defs.hpp'] {
+    #--- Step 0. Read patch structure if the patch file exists -------------------------------
+    patch = []
+    if os.path.isfile('patch_files'):
+      with open('patch_files', 'r') as file:
+        for line in file.readlines():
+          line = line.split()
+          if len(line) > 0 and line[0][0] != '#':
+            fname = os.path.basename(line[0])
+            pname = line[0][:line[0].find('/')]
+            dname = re.sub(pname, 'src', line[0][:-len(fname)])
+            lname = '%s/%s' % (dname, fname)
+            if os.path.islink(lname):
+              os.remove(lname)
+            elif os.path.isfile(lname):
+              os.rename(lname, lname + '.old')
+            os.system('ln -s %s/%s %s' % (os.getcwd(), line[0], lname))
+  }
+  [+:after help='path to HDF5 libraries'] {
+    # --nvapor=[value] argument
+    parser.add_argument('--nvapor',
+                        default='0',
+                        help='set number of vapors')
+
+    # --nphase==[value] argument
+    parser.add_argument('--nphase',
+                        default='2',
+                        help='set number of phases for a gas')
+
+    # --h2o=[value] argument
+    parser.add_argument('--h2o',
+                        default='-1',
+                        help='water vapor id')
+
+    # --nh3=[value] argument
+    parser.add_argument('--nh3',
+                        default='-1',
+                        help='ammonia vapor id')
+
+    # -netcdf argument
+    parser.add_argument('-netcdf',
+                        action='store_true',
+                        default=False,
+                        help='enable NETCDF Output')
+
+    # --netcdf_path argument
+    parser.add_argument('--netcdf_path',
+                        type=str,
+                        default='',
+                        help='path to NETCDF libraries')
+
+    # -pnetcdf argument
+    parser.add_argument('-pnetcdf',
+                        action='store_true',
+                        default=False,
+                        help='enable parallel NETCDF Output')
+
+    # --pnetcdf_path argument
+    parser.add_argument('--pnetcdf_path',
+                        type=str,
+                        default='',
+                        help='path to parallel NETCDF libraries')
+    # --eigen_path argument
+    parser.add_argument('--eigen_path',
+                        type=str,
+                        default='../eigen335',
+                        help='path to EIGEN header files')
+  }
+  [+:after definitions['PROBLEM']] {
+    makefile_options['PROBLEM'] = args['prob']
+  }
+  [r:once 'hlle', 'hllc', 'hlld', 'roe', 'llf'] {
+    'llf' -> 'llf', 'lmars', 'noflux'
+  }
+  [r:once definitions['NWAVE_VALUE'] = '5'] {
+    '5' -> definitions['NHYDRO_VARIABLES']
+  }
+  [+:after definitions['EOS_TABLE_ENABLED'] = '1'] {
+    if int(args['nvapor']) == 0:
+      args['nphase'] = '1'
+    definitions['NUMBER_VAPORS'] = args['nvapor']
+    definitions['NUMBER_PHASES'] = args['nphase']
+    definitions['NHYDRO_VARIABLES'] = str(int(definitions['NHYDRO_VARIABLES']) 
+                                        + int(args['nphase'])*int(args['nvapor']))
+    definitions['WATER_VAPOR_ID'] = args['h2o']
+    definitions['AMMONIA_VAPOR_ID'] = args['nh3']
+
+    # --chem=[name] argument
+    definitions['CHEMISTRY'] = args['chem']
+  }
+  [r:all makefile_options['LINKER_FLAGS']] {
+    '' -> '-Lsrc/math'
+  }
+  [r:all makefile_options['LIBRARY_FLAGS']] {
+    '' -> '-lclimath'
+  }
+  [+:after definitions['H5_DOUBLE_PRECISION_ENABLED']] {
+    # -netcdf argument
+    if args['netcdf']:
+      definitions['NETCDF_OPTION'] = 'NETCDFOUTPUT'
+      if args['netcdf_path'] != '':
+        makefile_options['PREPROCESSOR_FLAGS'] += ' -I%s/include' % args['netcdf_path']
+        makefile_options['LINKER_FLAGS'] += ' -L%s/lib' % args['netcdf_path']
+      if args['cxx'] == 'g++' or args['cxx'] == 'icc' or args['cxx'] == 'cray':
+        makefile_options['LIBRARY_FLAGS'] += ' -lnetcdf'
+    else:
+      definitions['NETCDF_OPTION'] = 'NO_NETCDFOUTPUT'
+
+    # -pnetcdf argument
+    if args['pnetcdf']:
+      definitions['PNETCDF_OPTION'] = 'PNETCDFOUTPUT'
+      if args['pnetcdf_path'] != '':
+        makefile_options['PREPROCESSOR_FLAGS'] += ' -I%s/include' % args['pnetcdf_path']
+        makefile_options['LINKER_FLAGS'] += ' -L%s/lib' % args['pnetcdf_path']
+      if args['cxx'] == 'g++' or args['cxx'] == 'icc' or args['cxx'] == 'cray':
+        makefile_options['LIBRARY_FLAGS'] += ' -lpnetcdf'
+    else:
+      definitions['PNETCDF_OPTION'] = 'NO_PNETCDFOUTPUT'
+
+    # --eigen_path argument
+    makefile_options['PREPROCESSOR_FLAGS'] += ' -I%s' % args['eigen_path']
+  }
+  [+:before makefile_options['PROBLEM_FILE'] += '.cpp'] {
+    makefile_options['PROBLEM'] += '.ex'
+  }
+  [+:after print('  Equation of state] {
+    print('  Ammonia vapor id:           ' + args['nh3'])
+    print('  Water vapor id:             ' + args['h2o'])
+    print('  Chemistry:                  ' + args['chem'])
+  }
+  [+:before print('  Number of scalars] {
+    print('  Number of vapors:           ' + args['nvapor'])
+    print('  Number of phases:           ' + args['nphase'])
+  }
+  [+:after print('  HDF5 precision] {
+    print('  NETCDF output:              ' + ('ON' if args['netcdf'] else 'OFF'))
+    print('  PNETCDF output:             ' + ('ON' if args['pnetcdf'] else 'OFF'))
+  }
+
+Makefile.in:
+  [+:after MPIFFT_FILE = @MPIFFT_FILE@] {
+    MATH_LIBRARY = src/math/libclimath.a
+  }
+  [r:1 EXECUTABLE] {
+    athena -> @PROBLEM@
+  }
+  [+:after $(wildcard src/utils/*.cpp)] {
+    $(wildcard src/thermodynamics/*.cpp) \
+    $(wildcard src/chemistry/*.cpp) \
+  }
+  [r:1 $(EXECUTABLE)] {
+    $(OBJ_FILES) -> $(OBJ_FILES) $(MATH_LIBRARY)
+  }
+  [+:after $(CXX) $(CPPFLAGS) $(CXXFLAGS) -o $@ $(OBJ_FILES) $(LDFLAGS) $(LDLIBS)] {
+    $(MATH_LIBRARY):
+      make -C src/math CC=$(CXX)
+  }

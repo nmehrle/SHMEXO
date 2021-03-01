@@ -1,0 +1,46 @@
+@@ task_list.hpp:
+  [+:after IntegrateField(MeshBlock *pmb, int stage)] {
+    TaskStatus IntegrateChemistry(MeshBlock *pmb, int stage);
+  }
+  [+:after const TaskID INT_FLD(19)] {
+    const TaskID INT_CHM(21);
+  }
+  [+:after const TaskID SEND_SCLRSH(58)] {
+    const TaskID UPDATE_HYD(70);
+  }
+  [+:after TaskStatus TaskStatus SetBoundariesScalars(MeshBlock *pmb, int stage)] {
+    TaskStatus UpdateHydro(MeshBlock *pmb, int stage);
+  }
+
+@@ time_integrator.cpp:
+  [+:after,4 } else if (id == INT_FLD) {] {
+    \} else if (id == INT_CHM) \{
+      task_list_[ntasks].TaskFunc=
+          static_cast<TaskStatus (TaskList::*)(MeshBlock*,int)>
+          (&TimeIntegratorTaskList::IntegrateChemistry);
+      task_list_[ntasks].lb_time = true;
+    } else if (id == UPDATE_HYD) {
+      task_list_[ntasks].TaskFunc=
+          static_cast<TaskStatus (TaskList::*)(MeshBlock*,int)>
+          (&TimeIntegratorTaskList::UpdateHydro);
+      task_list_[ntasks].lb_time = true;
+  }
+  [+:after AddTask(SRCTERM_HYD,INT_HYD)] {
+    AddTask(UPDATE_HYD,SRCTERM_HYD);
+    AddTASK(INT_CHM,UPDATE_HYD);
+  }
+  [r:once AddTask(SEND_HYD,SRCTERM_HYD)] {
+    SRCTERM_HYD -> INT_CHM
+  }
+  [+:before ph-AddFluxDivergence] {
+    std::fill(ph->du.data(), ph->du.data() + ph->du.GetSize(), 0.);
+  }
+  [r:once ph->AddFluxDivergence] {
+    ph->u -> ph->du
+  }
+  [r:once pmb->pcoord->AddCoordTermsDivergence] {
+    ph->u -> ph->du
+  }
+  [r:once ph->hsrc.AddHydroSourceTerms] {
+    ph->u -> ph->du
+  }

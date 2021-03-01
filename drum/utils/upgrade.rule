@@ -1,0 +1,92 @@
+@@ utils/utisl.hpp:
+  == STAGE 1 ==
+  [+:in header/C] {
+    #include <vector>
+    #include <string>
+    #include <cstring>
+    #include <iostream>
+    #include <fstream>
+    #include <sstream>
+  }
+
+  [+:before EOF/#endif] {
+    //! test file existance
+    bool IsFileExist(std::string fname);
+
+    //! test a blank line
+    bool IsBlankLine(char const* line);
+    bool IsBlankLine(std::string const& line);
+
+    //! decomment a file
+    std::string DecommentFile(std::string fname);
+
+    //! get number of columns in a data table
+    int GetNumCols(std::string fname, char c = ' ');
+
+    //! get number of rows in a data table 
+    int GetNumRows(std::string fname);
+
+    //! split a string to a vector
+    template<typename A>
+    std::vector<A> Vectorize(const char* cstr)
+    {
+      std::vector<A> arr;
+      char str[1028], *p;
+      strcpy(str, cstr);
+      p = std::strtok(str, " ");
+      while (p != NULL) {
+        arr.push_back(static_cast<A>(std::stof(p)));
+        p = std::strtok(NULL, " ");
+      }
+      return arr;
+    }
+
+    template<>
+    std::vector<std::string> Vectorize(const char* cstr);
+
+    //! replace a character in a string
+    void ReplaceChar(char* buf, char c_old, char c_new);
+
+    template<typename T>
+    void NewCArray(T** &a, int n1, int n2)
+    {
+      a = new T* [n1];
+      a[0] = new T [n1*n2];
+
+      for (int i = 0; i < n1; ++i)
+        a[i] = a[0] + i*n2;
+    }
+
+    template<typename T>
+    void FreeCArray(T **a)
+    {
+      delete[] a[0];
+      delete[] a;
+    }
+
+    template<typename T>
+    void NewCArray(T*** &a, int n1, int n2, int n3)
+    {
+      a = new T** [n1];
+      a[0] = new T* [n1*n2];
+      a[0][0] = new T [n1*n2*n3];
+
+      for (int i = 0; i < n1; ++i) {
+        a[i] = a[0] + i*n2;
+        for (int j = 0; j < n2; ++j)
+          a[i][j] = a[0][0] + i*n2*n3 + j*n3;
+      }
+    }
+
+    template<typename T>
+    void FreeCArray(T ***a)
+    {
+      delete[] a[0][0];
+      delete[] a[0];
+      delete[] a;
+    }
+
+    char* StripLine(char *line);
+    char* NextLine(char *line, int num, FILE* stream);
+    void ReadTabular(char const *fname, double** data, int *rows, int *cols);
+  }

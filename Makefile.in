@@ -1,0 +1,133 @@
+# Template for Athena++ Makefile
+# The 'configure.py' python script uses this template to create the actual Makefile
+
+# Files for conditional compilation
+
+PROBLEM_FILE = @PROBLEM_FILE@
+COORDINATES_FILE = @COORDINATES_FILE@
+EOS_FILE = @EOS_FILE@
+GENERAL_EOS_FILE = @GENERAL_EOS_FILE@
+RSOLVER_FILE = @RSOLVER_FILE@
+RSOLVER_DIR = @RSOLVER_DIR@
+MPIFFT_FILE = @MPIFFT_FILE@
+MATH_DIR = src/math/
+MATH_LIBRARY = $(MATH_DIR)libclimath.a
+DISORT_DIR = src/radiation/rtsolver/cdisort213/
+DISORT_LIBRARY = $(DISORT_DIR)libcdisort.a
+
+# General compiler specifications
+
+CXX := @COMPILER_COMMAND@
+CPPFLAGS := @PREPROCESSOR_FLAGS@
+CXXFLAGS := @COMPILER_FLAGS@
+LDFLAGS := @LINKER_FLAGS@
+LDLIBS := @LIBRARY_FLAGS@
+GCOV_CMD := @GCOV_COMMAND@
+
+# Preliminary definitions
+
+EXE_DIR := bin/
+EXECUTABLE := $(EXE_DIR)@PROBLEM@
+SRC_FILES := $(wildcard src/*.cpp) \
+	     $(wildcard src/bvals/*.cpp) \
+	     $(wildcard src/bvals/cc/*.cpp) \
+	     $(wildcard src/bvals/cc/fft_grav/*.cpp) \
+	     $(wildcard src/bvals/cc/hydro/*.cpp) \
+	     $(wildcard src/bvals/cc/mg/*.cpp) \
+	     $(wildcard src/bvals/fc/*.cpp) \
+	     $(wildcard src/bvals/utils/*.cpp) \
+	     $(wildcard src/coordinates/*.cpp) \
+	     src/eos/general/$(GENERAL_EOS_FILE) \
+	     src/eos/$(EOS_FILE) \
+	     src/eos/eos_high_order.cpp \
+	     src/eos/eos_scalars.cpp \
+	     $(wildcard src/fft/*.cpp) \
+	     $(wildcard src/field/*.cpp) \
+	     $(wildcard src/field/field_diffusion/*.cpp) \
+	     $(wildcard src/gravity/*.cpp) \
+	     $(wildcard src/hydro/*.cpp) \
+	     $(wildcard src/hydro/srcterms/*.cpp) \
+	     $(wildcard src/hydro/hydro_diffusion/*.cpp) \
+	     src/hydro/rsolvers/$(RSOLVER_DIR)$(RSOLVER_FILE) \
+	     $(wildcard src/inputs/*.cpp) \
+	     $(wildcard src/mesh/*.cpp) \
+	     $(wildcard src/multigrid/*.cpp) \
+	     $(wildcard src/outputs/*.cpp) \
+	     src/pgen/default_pgen.cpp \
+	     src/pgen/$(PROBLEM_FILE) \
+	     $(wildcard src/reconstruct/*.cpp) \
+	     $(wildcard src/scalars/*.cpp) \
+	     $(wildcard src/task_list/*.cpp) \
+	     $(wildcard src/utils/*.cpp) \
+       $(wildcard src/thermodynamics/*.cpp) \
+       $(wildcard src/chemistry/*.cpp) \
+       $(wildcard src/diagnostics/*.cpp) \
+       $(wildcard src/astronomy/*.cpp) \
+       $(wildcard src/radiation/*.cpp) \
+       $(wildcard src/radiation/rtsolver/*.cpp) \
+       $(wildcard src/radiation/microwave/*.cpp) \
+	     $(MPIFFT_FILE)
+OBJ_DIR := obj/
+OBJ_FILES := $(addprefix $(OBJ_DIR),$(notdir $(SRC_FILES:.cpp=.o)))
+GCOV_FILES := $(notdir $(addsuffix .gcov,$(SRC_FILES)))
+GCDA_FILES := $(wildcard $(OBJ_DIR)/*.gcda)
+SRC_PREFIX := src/
+SRC_DIRS := $(dir $(SRC_FILES))
+VPATH := $(SRC_DIRS)
+
+# Generally useful targets
+
+.PHONY : all dirs clean
+
+all : dirs $(EXECUTABLE)
+
+objs : dirs $(OBJ_FILES)
+
+dirs : $(EXE_DIR) $(OBJ_DIR)
+
+# Placing gcov target in the Makefile in order to easily collect all SRC_FILES w/ correct paths
+
+gcov : dirs $(GCOV_FILES)
+
+# For debugging variables in Makefile, e.g. by "make print-GCOV_FILES"
+
+print-%  : ; @echo $* = $($*)
+
+$(EXE_DIR):
+	mkdir -p $(EXE_DIR)
+
+$(OBJ_DIR):
+	mkdir -p $(OBJ_DIR)
+
+# Link objects into executable
+
+$(EXECUTABLE) : $(OBJ_FILES) $(MATH_LIBRARY) $(DISORT_LIBRARY)
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -o $@ $(OBJ_FILES) $(LDFLAGS) $(LDLIBS)
+
+$(MATH_LIBRARY):
+	make -C src/math CC=$(CXX)
+
+$(DISORT_LIBRARY):
+	make -C src/radiation/rtsolver/cdisort213 -f Makefile_cdisort CC=gcc CFLAGS=-O3
+
+# Create objects from source files
+
+$(OBJ_DIR)%.o : %.cpp
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $< -o $@
+
+# Process .gcno and .gcda files from obj/ into .cpp.gcov files (and .hpp.gcov, .h.gcov) in root directory
+# Rerun Gcov on all files if a single .gcda changes. Other options to consider: --preserve-paths -abcu
+./%.cpp.gcov : %.cpp $(OBJ_DIR)/%.gcno $(GCDA_FILES)
+	$(GCOV_CMD)  --relative-only --source-prefix=$(SRC_PREFIX) --object-directory=$(OBJ_DIR) $<
+
+# Cleanup
+
+clean :
+	rm -f $(MATH_LIBRARY)
+	rm -rf $(MATH_DIR)obj
+	rm -f $(DISORT_LIBRARY)
+	rm -f $(DISORT_DIR)*.o
+	rm -f $(DISORT_DIR)disotest
+	rm -rf $(OBJ_DIR)*
+	rm -rf $(EXECUTABLE)
+	rm -rf *.gcov

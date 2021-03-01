@@ -1,0 +1,99 @@
+<comment>
+problem   = 3D Jupiter RCE model
+configure = --prob=jupiter --flux=lmars --chem=kessler94 --nvapor=2 --nphase=3 --nghost=3 -pnetcdf -mpi --pnetcdf_path=/home/cli/opt
+
+<job>
+problem_id  = jupiter     # problem ID: basename of output filenames
+
+<output0>
+file_type   = rst
+dt          = 10.E5
+
+<output1>
+file_type   = hst
+dt          = 2.E4
+
+<output2>
+file_type   = pnetcdf      # Tabular data dump
+variable    = prim        # variables to be output
+dt          = 2.E4       # time increment between outputs
+
+<output3>
+file_type   = pnetcdf
+variable    = uov
+dt          = 2.E4
+
+#<output4>
+#file_type   = pnetcdf
+#variable    = diag
+#dt          = 2.E4
+
+<time>
+cfl_number  = 0.9        # The Courant, Friedrichs, & Lewy (CFL) Number
+nlim        = -1         # cycle limit
+xorder      = 5
+integrator  = rk3
+tlim        = 400.E5     # time limit
+
+<mesh>
+nx1         = 80          # Number of zones in X1-direction
+x1min       = -320.E3     # minimum value of X1
+x1max       = 40.E3       # maximum value of X1
+ix1_bc      = reflecting  # Inner-X1 boundary condition flag
+ox1_bc      = reflecting  # Outer-X1 boundary condition flag
+
+nx2         = 320         # Number of zones in X2-direction
+x2min       = 0.          # minimum value of X2
+x2max       = 3200.E3     # maximum value of X2
+ix2_bc      = periodic    # Inner-X2 boundary condition flag
+ox2_bc      = periodic    # Outer-X2 boundary condition flag
+
+nx3         = 1           # Number of zones in X3-direction
+x3min       = -0.5        # minimum value of X3
+x3max       = 0.5         # maximum value of X3
+ix3_bc      = periodic    # Inner-X3 boundary condition flag
+ox3_bc      = periodic    # Outer-X3 boundary condition flag
+
+<meshblock>
+nx1         = 80
+nx2         = 20
+nx3         = 1
+
+<hydro>
+gamma           = 1.42   # gamma = C_p/C_v
+grav_acc1       = -24.79
+osponge1_tau    = 1.E5
+implicit_flag   = 2
+
+<thermodynamics>
+Rd          = 3777.
+eps1        = 8.18    8.18    8.18
+eps2        = 7.72    7.72    7.72
+Ttriple1    = 273.16  273.16  273.16
+Ttriple2    = 195.4   195.4   195.4
+Ptriple1    = 611.7   611.7   611.7 
+Ptriple2    = 6060.   6060.   6060.
+beta1       = 0.      22.98   22.98
+beta2       = 0.      20.64   20.64
+rcp1        = 0.15    0.33    0.33
+rcp2        = 0.17    0.33    0.33
+
+<chemistry>
+order       = 1
+max_iter    = 1
+vsed5       = -20
+vsed6       = -20
+num_coeffs  = 3
+k1          = 0.0001
+k2          = 0.
+k3          = 0.01
+
+<problem>
+P0          = 1.E5
+T0          = 166.
+Tmin        = 70.
+prad        = 2.0E5
+hrate       = -0.1    # K/day
+qH2O        = 0.04
+qNH3        = 0.0027
+#diagnostics = curl div mean tempa presa
