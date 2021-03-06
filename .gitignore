@@ -1,3 +1,5 @@
+test/
+
 # Configured outputs
 Makefile
 src/defs.hpp
