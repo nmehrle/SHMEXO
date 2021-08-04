@@ -96,8 +96,9 @@ void FormattedTableOutput::WriteOutputFile(Mesh *pm, ParameterInput *pin, bool f
     OutputData *pdata = pfirst_data_;
     while (pdata != nullptr) {
       if (pdata->type == "VECTORS") {
-        for (int index = 1; index <= 3; ++index) {
-          std::fprintf(pfile, "    %s%d     ", pdata->name.c_str(), index);
+        //for (int index = 1; index <= 3; ++index) {
+        for (int index = 1; index <= pdata->data.GetDim4(); ++index) {
+          std::fprintf(pfile, "%8s%d     ", pdata->name.c_str(), index);
         }
       } else {
         std::fprintf(pfile, "    %s      ", pdata->name.c_str());

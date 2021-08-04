@@ -20,6 +20,7 @@
 #include <utility>  // swap()
 
 // Athena++ headers
+#include "stride_iterator.hpp"
 
 template <typename T>
 class AthenaArray {
@@ -153,6 +154,19 @@ class AthenaArray {
   // (deferred) initialize an array with slice from another array
   void InitWithShallowSlice(AthenaArray<T> &src, const int dim, const int indx,
                             const int nvar);
+
+  // access stride iterator
+  StrideIterator<T*> at(int i) const {
+    return StrideIterator<T*>(pdata_ + i, nx1_);
+  }
+
+  StrideIterator<T*> at(int j, int i) const {
+    return StrideIterator<T*>(pdata_ + i + nx1_*j, nx1_*nx2_);
+  }
+
+  StrideIterator<T*> at(int k, int j, int i) const {
+    return StrideIterator<T*>(pdata_ + i + nx1_*j + nx1_*nx2_*k, nx1_*nx2_*nx3_);
+  }
 
  private:
   T *pdata_;

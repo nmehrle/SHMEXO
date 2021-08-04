@@ -10,6 +10,8 @@
 
 // C++ headers
 #include <cmath>   // sqrt()
+#include <sstream>
+#include <stdexcept>
 
 // Athena++ headers
 #include "../athena.hpp"
@@ -18,6 +20,8 @@
 #include "../hydro/hydro.hpp"
 #include "../mesh/mesh.hpp"
 #include "../parameter_input.hpp"
+#include "../thermodynamics/thermodynamics.hpp"
+#include "../globals.hpp"
 #include "eos.hpp"
 
 // EquationOfState constructor
@@ -41,6 +45,8 @@ void EquationOfState::ConservedToPrimitive(
     AthenaArray<Real> &prim, AthenaArray<Real> &bcc,
     Coordinates *pco, int il, int iu, int jl, int ju, int kl, int ku) {
   Real gm1 = GetGamma() - 1.0;
+  std::stringstream msg;
+  Thermodynamics *pthermo = pmy_block_->pthermo;
 
   for (int k=kl; k<=ku; ++k) {
     for (int j=jl; j<=ju; ++j) {
@@ -58,21 +64,65 @@ void EquationOfState::ConservedToPrimitive(
         Real& w_vz = prim(IVZ,k,j,i);
         Real& w_p  = prim(IPR,k,j,i);
 
-        // apply density floor, without changing momentum or energy
-        u_d = (u_d > density_floor_) ?  u_d : density_floor_;
-        w_d = u_d;
+        Real density = 0.;
+        for (int n = 0; n < NMASS; ++n)
+          density += cons(n,k,j,i);
+        w_d = density;
+        Real di = 1./density;
 
-        Real di = 1.0/u_d;
+        // mass mixing ratio
+        for (int n = 1; n < NMASS; ++n)
+          prim(n,k,j,i) = cons(n,k,j,i)*di;
+
+        #ifdef DEBUG
+        if (std::isnan(w_d) || (w_d < density_floor_)) {  // IDN may be NAN
+          msg << "### FATAL ERROR in function ConservedToPrimitive"
+              << std::endl << "Density reaches lowest value: " << w_d
+              << std::endl << "At position ("
+              << k << "," << j << "," << i << ") in rank " << Globals::my_rank <<
+              std::endl;
+          for (int ii = std::max(i-3, il); ii <= std::min(i+3, iu); ++ii) {
+            msg << "i = " << ii << " ";
+            for (int jj = std::max(j-3, jl); jj <= std::min(j+3, ju); ++jj)
+              msg << cons(IDN,k,jj,ii) << " ";
+            msg << std::endl;
+          }
+          ATHENA_ERROR(msg);
+        }
+        #endif
+
+        //Real di = 1.0/u_d;
         w_vx = u_m1*di;
         w_vy = u_m2*di;
         w_vz = u_m3*di;
 
-        Real e_k = 0.5*di*(SQR(u_m1) + SQR(u_m2) + SQR(u_m3));
-        w_p = gm1*(u_e - e_k);
+        // internal energy
+        Real KE = 0.5*di*(u_m1*u_m1 + u_m2*u_m2 + u_m3*u_m3);
+        Real LE = 0., fsig = 1., feps = 1.;
+        // clouds
+        for (int n = 1 + NVAPOR; n < NMASS; ++n) {
+          LE += -pthermo->GetLatent(n)*cons(n,k,j,i);
+          fsig += prim(n,k,j,i)*(pthermo->GetCvRatio(n) - 1.);
+          feps -= prim(n,k,j,i);
+        }
+        // vapors
+        for (int n = 1; n <= NVAPOR; ++n) {
+          LE += -pthermo->GetLatent(n)*cons(n,k,j,i);
+          fsig += prim(n,k,j,i)*(pthermo->GetCvRatio(n) - 1.);
+          feps += prim(n,k,j,i)*(1./pthermo->GetMassRatio(n) - 1.);
+        }
+        w_p = gm1*(u_e - KE - LE)*feps/fsig;
 
-        // apply pressure floor, correct total energy
-        u_e = (w_p > pressure_floor_) ?  u_e : ((pressure_floor_/gm1) + e_k);
-        w_p = (w_p > pressure_floor_) ?  w_p : pressure_floor_;
+        #ifdef DEBUG
+        if (std::isnan(w_p) || (w_p < pressure_floor_)) {
+          msg << "### FATAL ERROR in function ConservedToPrimitive"
+              << std::endl << "Pressure reaches lowest value: " << w_p
+              << std::endl << "At position ("
+              << k << "," << j << "," << i << ") in rank " << Globals::my_rank <<
+              std::endl;
+          ATHENA_ERROR(msg);
+        }
+        #endif
       }
     }
   }
@@ -91,6 +141,7 @@ void EquationOfState::PrimitiveToConserved(
     AthenaArray<Real> &cons, Coordinates *pco,
     int il, int iu, int jl, int ju, int kl, int ku) {
   Real igm1 = 1.0/(GetGamma() - 1.0);
+  Thermodynamics *pthermo = pmy_block_->pthermo;
 
   // Force outer-loop vectorization
 #pragma omp simd
@@ -111,11 +162,34 @@ void EquationOfState::PrimitiveToConserved(
         const Real& w_vz = prim(IVZ,k,j,i);
         const Real& w_p  = prim(IPR,k,j,i);
 
+        // density
         u_d = w_d;
+        for (int n = 1; n < NMASS; ++n) {
+          cons(n,k,j,i) = prim(n,k,j,i)*w_d;
+          cons(IDN,k,j,i) -= cons(n,k,j,i);
+        }
+
+        // momentum
         u_m1 = w_vx*w_d;
         u_m2 = w_vy*w_d;
         u_m3 = w_vz*w_d;
-        u_e = w_p*igm1 + 0.5*w_d*(SQR(w_vx) + SQR(w_vy) + SQR(w_vz));
+
+        // total energy
+        Real KE = 0.5*w_d*(w_vx*w_vx + w_vy*w_vy + w_vz*w_vz);
+        Real LE = 0., fsig = 1., feps = 1.;
+        // clouds
+        for (int n = 1 + NVAPOR; n < NMASS; ++n) {
+          LE += -pthermo->GetLatent(n)*cons(n,k,j,i);
+          fsig += prim(n,k,j,i)*(pthermo->GetCvRatio(n) - 1.);
+          feps -= prim(n,k,j,i);
+        }
+        // vapors
+        for (int n = 1; n <= NVAPOR; ++n) {
+          LE += -pthermo->GetLatent(n)*cons(n,k,j,i);
+          fsig += prim(n,k,j,i)*(pthermo->GetCvRatio(n) - 1.);
+          feps += prim(n,k,j,i)*(1./pthermo->GetMassRatio(n) - 1.);
+        }
+        u_e = igm1*w_p*fsig/feps + KE + LE;
       }
     }
   }
@@ -127,7 +201,19 @@ void EquationOfState::PrimitiveToConserved(
 // \!fn Real EquationOfState::SoundSpeed(Real prim[NHYDRO])
 // \brief returns adiabatic sound speed given vector of primitive variables
 Real EquationOfState::SoundSpeed(const Real prim[NHYDRO]) {
-  return std::sqrt(gamma_*prim[IPR]/prim[IDN]);
+  Thermodynamics *pthermo = pmy_block_->pthermo;
+
+  Real fsig = 1., feps = 1.;
+  for (int n = 1 + NVAPOR; n < NMASS; ++n) {
+    fsig += prim[n]*(pthermo->GetCvRatio(n) - 1.);
+    feps -= prim[n];
+  }
+  for (int n = 1; n <= NVAPOR; ++n) {
+    fsig += prim[n]*(pthermo->GetCvRatio(n) - 1.);
+    feps += prim[n]*(1./pthermo->GetMassRatio(n) - 1.);
+  }
+
+  return std::sqrt((1. + (gamma_ - 1)*feps/fsig)*prim[IPR]/prim[IDN]);
 }
 
 //----------------------------------------------------------------------------------------

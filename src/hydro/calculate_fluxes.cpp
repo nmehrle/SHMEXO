@@ -23,6 +23,8 @@
 #include "../scalars/scalars.hpp"
 #include "hydro.hpp"
 #include "hydro_diffusion/hydro_diffusion.hpp"
+#include "../chemistry/chemistry.hpp"
+#include "../radiation/radiation.hpp"
 
 // OpenMP header
 #ifdef OPENMP_PARALLEL
@@ -74,6 +76,9 @@ void Hydro::CalculateFluxes(AthenaArray<Real> &w, FaceField &b,
   }
   //  }
 
+  // decompose pressure to pertubation pressure and hydrostatic pressure
+  DecomposePressure(w, kl, ku, jl, ju);
+
   for (int k=kl; k<=ku; ++k) {
     for (int j=jl; j<=ju; ++j) {
       // reconstruct L/R states
@@ -81,9 +86,14 @@ void Hydro::CalculateFluxes(AthenaArray<Real> &w, FaceField &b,
         pmb->precon->DonorCellX1(k, j, is-1, ie+1, w, bcc, wl_, wr_);
       } else if (order == 2) {
         pmb->precon->PiecewiseLinearX1(k, j, is-1, ie+1, w, bcc, wl_, wr_);
+      } else if (order == 5) {
+        pmb->precon->Weno5X1(k, j, is-1, ie+1, w, bcc, wl_, wr_);
       } else {
         pmb->precon->PiecewiseParabolicX1(k, j, is-1, ie+1, w, bcc, wl_, wr_);
       }
+
+      // assemble pressure pertubation
+      AssemblePressure(w, wl_, wr_, k, j, is-1, ie+1);
 
       pmb->pcoord->CenterWidth1(k, j, is, ie+1, dxw_);
 #if !MAGNETIC_FIELDS_ENABLED  // Hydro:
@@ -93,6 +103,8 @@ void Hydro::CalculateFluxes(AthenaArray<Real> &w, FaceField &b,
       // x1flux(IBZ) = (v1*b3 - v3*b1) =  EMFY
       RiemannSolver(k, j, is, ie+1, IVX, b1, wl_, wr_, x1flux, e3x1, e2x1, w_x1f, dxw_);
 #endif
+      pmb->pchem->AddSedimentationFlux(x1flux, wr_, k, j, is, ie+1);
+      pmb->prad->AddRadiativeFluxes(x1flux, k, j, is, ie+1);
 
       if (order == 4) {
         for (int n=0; n<NWAVE; n++) {
@@ -180,6 +192,8 @@ void Hydro::CalculateFluxes(AthenaArray<Real> &w, FaceField &b,
         pmb->precon->DonorCellX2(k, js-1, il, iu, w, bcc, wl_, wr_);
       } else if (order == 2) {
         pmb->precon->PiecewiseLinearX2(k, js-1, il, iu, w, bcc, wl_, wr_);
+      } else if (order == 5) {
+        pmb->precon->Weno5X2(k, js-1, il, iu, w, bcc, wl_, wr_);
       } else {
         pmb->precon->PiecewiseParabolicX2(k, js-1, il, iu, w, bcc, wl_, wr_);
       }
@@ -189,6 +203,8 @@ void Hydro::CalculateFluxes(AthenaArray<Real> &w, FaceField &b,
           pmb->precon->DonorCellX2(k, j, il, iu, w, bcc, wlb_, wr_);
         } else if (order == 2) {
           pmb->precon->PiecewiseLinearX2(k, j, il, iu, w, bcc, wlb_, wr_);
+        } else if (order == 5) {
+          pmb->precon->Weno5X2(k, j, il, iu, w, bcc, wlb_, wr_);
         } else {
           pmb->precon->PiecewiseParabolicX2(k, j, il, iu, w, bcc, wlb_, wr_);
         }
@@ -285,6 +301,8 @@ void Hydro::CalculateFluxes(AthenaArray<Real> &w, FaceField &b,
         pmb->precon->DonorCellX3(ks-1, j, il, iu, w, bcc, wl_, wr_);
       } else if (order == 2) {
         pmb->precon->PiecewiseLinearX3(ks-1, j, il, iu, w, bcc, wl_, wr_);
+      } else if (order == 5) {
+        pmb->precon->Weno5X3(ks-1, j, il, iu, w, bcc, wl_, wr_);
       } else {
         pmb->precon->PiecewiseParabolicX3(ks-1, j, il, iu, w, bcc, wl_, wr_);
       }
@@ -294,6 +312,8 @@ void Hydro::CalculateFluxes(AthenaArray<Real> &w, FaceField &b,
           pmb->precon->DonorCellX3(k, j, il, iu, w, bcc, wlb_, wr_);
         } else if (order == 2) {
           pmb->precon->PiecewiseLinearX3(k, j, il, iu, w, bcc, wlb_, wr_);
+        } else if (order == 5) {
+          pmb->precon->Weno5X3(k, j, il, iu, w, bcc, wlb_, wr_);
         } else {
           pmb->precon->PiecewiseParabolicX3(k, j, il, iu, w, bcc, wlb_, wr_);
         }

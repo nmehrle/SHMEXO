@@ -1,8 +1,0 @@
-@@ bvals_hydro.hpp:
-[+:after,2 void ReflectOuterX3(Real time] {
-  // BoundaryPhysics: implement adiabatic extrapolation
-  void OutflowInnerX1(Real time, Real dt,
-                      int il, int iu, int jl, int ju, int ku, int ngh) override;
-  void OutflowOuterX1(Real time, Real dt,
-                      int il, int iu, int jl, int ju, int ku, int ngh) override;
-}

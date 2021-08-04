@@ -27,7 +27,7 @@ void HydroSourceTerms::ConstantAcceleration(const Real dt,const AthenaArray<Real
   MeshBlock *pmb = pmy_hydro_->pmy_block;
 
   // acceleration in 1-direction
-  if (g1_!=0.0) {
+  if (g1_!=0.0 && std::strcmp(RIEMANN_SOLVER, "noflux") != 0) {
     for (int k=pmb->ks; k<=pmb->ke; ++k) {
       for (int j=pmb->js; j<=pmb->je; ++j) {
 #pragma omp simd

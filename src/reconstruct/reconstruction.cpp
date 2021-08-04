@@ -65,6 +65,11 @@ Reconstruction::Reconstruction(MeshBlock *pmb, ParameterInput *pin) :
     xorder = 4;
     if (input_recon == "4c")
       characteristic_projection = true;
+  } else if (input_recon == "5") {
+    xorder = 5;
+  } else if (input_recon == "5c") {
+    xorder = 5;
+    characteristic_projection = true;
   } else {
     std::stringstream msg;
     msg << "### FATAL ERROR in Reconstruction constructor" << std::endl
@@ -189,6 +194,20 @@ Reconstruction::Reconstruction(MeshBlock *pmb, ParameterInput *pin) :
       msg << "### FATAL ERROR in Reconstruction constructor" << std::endl
           << "time/xorder=" << input_recon
           << " reconstruction selected, but nghost=" << NGHOST << std::endl
+          << "Reconfigure with --nghost=XXX with XXX > " << req_nghost-1 << std::endl;
+      ATHENA_ERROR(msg);
+    }
+  }
+
+  if (xorder == 5) {
+    int req_nghost = 3;
+    if (MAGNETIC_FIELDS_ENABLED)
+      req_nghost += 2;
+    if (NGHOST < req_nghost) {
+      std::stringstream msg;
+      msg << "### FATAL ERROR in Reconstruction constructor" << std::endl
+          << "xorder=" << input_recon <<
+          " (WENO5) reconstruction selected, but nghost=" << NGHOST << std::endl
           << "Reconfigure with --nghost=XXX with XXX > " << req_nghost-1 << std::endl;
       ATHENA_ERROR(msg);
     }

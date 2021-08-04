@@ -129,6 +129,50 @@ class Reconstruction {
                             const AthenaArray<Real> &q,
                             AthenaArray<Real> &ql, AthenaArray<Real> &qr);
 
+  // weno reconstruction functions of various orders in each dimension
+  void Weno3X1(const int k, const int j, const int il, const int iu, 
+               const AthenaArray<Real> &w, const AthenaArray<Real> &bcc, 
+               AthenaArray<Real> &wl, AthenaArray<Real> &wr);
+
+  void Weno3X2(const int k, const int j, const int il, const int iu,
+               const AthenaArray<Real> &w, const AthenaArray<Real> &bcc,
+               AthenaArray<Real> &wl, AthenaArray<Real> &wr);
+
+  void Weno3X3(const int k, const int j, const int il, const int iu,
+               const AthenaArray<Real> &w, const AthenaArray<Real> &bcc,
+               AthenaArray<Real> &wl, AthenaArray<Real> &wr);
+
+  void Weno5X1(const int k, const int j, const int il, const int iu,
+               const AthenaArray<Real> &w, const AthenaArray<Real> &bcc,
+               AthenaArray<Real> &wl, AthenaArray<Real> &wr);
+
+  void Weno5X2(const int k, const int j, const int il, const int iu,
+               const AthenaArray<Real> &w, const AthenaArray<Real> &bcc,
+               AthenaArray<Real> &wl, AthenaArray<Real> &wr);
+
+  void Weno5X3(const int k, const int j, const int il, const int iu,
+               const AthenaArray<Real> &w, const AthenaArray<Real> &bcc,
+               AthenaArray<Real> &wl, AthenaArray<Real> &wr);
+
+  // overloads for non-fluid (cell-centered Hydro prim. and magnetic field) reconstruction
+  void Weno3X1(const int k, const int j, const int il, const int iu, 
+               const AthenaArray<Real> &w, AthenaArray<Real> &wl, AthenaArray<Real> &wr);
+
+  void Weno3X2(const int k, const int j, const int il, const int iu,
+               const AthenaArray<Real> &w, AthenaArray<Real> &wl, AthenaArray<Real> &wr);
+
+  void Weno3X3(const int k, const int j, const int il, const int iu,
+               const AthenaArray<Real> &w, AthenaArray<Real> &wl, AthenaArray<Real> &wr);
+
+  void Weno5X1(const int k, const int j, const int il, const int iu,
+               const AthenaArray<Real> &w, AthenaArray<Real> &wl, AthenaArray<Real> &wr);
+
+  void Weno5X2(const int k, const int j, const int il, const int iu,
+               const AthenaArray<Real> &w, AthenaArray<Real> &wl, AthenaArray<Real> &wr);
+
+  void Weno5X3(const int k, const int j, const int il, const int iu,
+               const AthenaArray<Real> &w, AthenaArray<Real> &wl, AthenaArray<Real> &wr);
+
  private:
   MeshBlock* pmy_block_;  // ptr to MeshBlock containing this Reconstruction
 

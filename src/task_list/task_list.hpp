@@ -134,6 +134,7 @@ class TimeIntegratorTaskList : public TaskList {
 
   TaskStatus CalculateHydroFlux(MeshBlock *pmb, int stage);
   TaskStatus CalculateEMF(MeshBlock *pmb, int stage);
+  TaskStatus CalculateRadiationFlux(MeshBlock *pmb, int stage);
 
   TaskStatus SendHydroFlux(MeshBlock *pmb, int stage);
   TaskStatus SendEMF(MeshBlock *pmb, int stage);
@@ -143,6 +144,7 @@ class TimeIntegratorTaskList : public TaskList {
 
   TaskStatus IntegrateHydro(MeshBlock *pmb, int stage);
   TaskStatus IntegrateField(MeshBlock *pmb, int stage);
+  TaskStatus IntegrateChemistry(MeshBlock *pmb, int stage);
 
   TaskStatus AddSourceTermsHydro(MeshBlock *pmb, int stage);
 
@@ -181,6 +183,8 @@ class TimeIntegratorTaskList : public TaskList {
   TaskStatus SendScalars(MeshBlock *pmb, int stage);
   TaskStatus ReceiveScalars(MeshBlock *pmb, int stage);
   TaskStatus SetBoundariesScalars(MeshBlock *pmb, int stage);
+
+  TaskStatus UpdateHydro(MeshBlock *pmb, int stage);
 
  private:
   IntegratorWeight stage_wghts[MAX_NSTAGE];
@@ -248,7 +252,7 @@ const TaskID SRCTERM_HYD(14);
 const TaskID INT_HYD(18);
 const TaskID INT_FLD(19);
 // const TaskID INT_RAD(20);
-// const TaskID INT_CHM(21);
+const TaskID INT_CHM(21);
 
 const TaskID SEND_HYD(22);
 const TaskID SEND_FLD(23);
@@ -294,6 +298,8 @@ const TaskID DIFFUSE_SCLR(56);
 
 // const TaskID RECV_SCLRSH(57);
 // const TaskID SEND_SCLRSH(58);
+
+const TaskID UPDATE_HYD(59);
 
 }  // namespace HydroIntegratorTaskNames
 #endif  // TASK_LIST_TASK_LIST_HPP_

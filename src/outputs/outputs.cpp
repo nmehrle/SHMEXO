@@ -97,6 +97,8 @@
 #include "../mesh/mesh.hpp"
 #include "../parameter_input.hpp"
 #include "../scalars/scalars.hpp"
+#include "../diagnostics/diagnostics.hpp"
+#include "../radiation/radiation.hpp"
 #include "outputs.hpp"
 
 //----------------------------------------------------------------------------------------
@@ -251,6 +253,24 @@ Outputs::Outputs(Mesh *pm, ParameterInput *pin) {
               << "is requested in output block '" << op.block_name << "'" << std::endl;
           ATHENA_ERROR(msg);
 #endif
+        } else if (op.file_type.compare("netcdf") == 0) {
+#ifdef NETCDFOUTPUT
+          pnew_type = new NetcdfOutput(op);
+#else
+          msg << "### FATAL ERROR in Outputs constructor" << std::endl
+              << "Executable not configured for NETCDF outputs, but NETCDF file format "
+              << "is requested in output block '" << op.block_name << "'" << std::endl;
+          ATHENA_ERROR(msg);
+#endif
+        } else if (op.file_type.compare("pnetcdf") == 0) {
+#ifdef PNETCDFOUTPUT
+          pnew_type = new PnetcdfOutput(op);
+#else
+          msg << "### FATAL ERROR in Outputs constructor" << std::endl
+              << "Executable not configured for PNETCDF outputs, but PNETCDF file format "
+              << "is requested in output block '" << op.block_name << "'" << std::endl;
+          ATHENA_ERROR(msg);
+#endif
         } else {
           msg << "### FATAL ERROR in Outputs constructor" << std::endl
               << "Unrecognized file format = '" << op.file_type
@@ -331,6 +351,8 @@ void OutputType::LoadOutputData(MeshBlock *pmb) {
   Field *pfld = pmb->pfield;
   PassiveScalars *psclr = pmb->pscalars;
   Gravity *pgrav = pmb->pgrav;
+  Diagnostics *pdiag = pmb->pdiag;
+  Radiation *prad = pmb->prad;
   num_vars_ = 0;
   OutputData *pod;
 
@@ -643,6 +665,139 @@ void OutputType::LoadOutputData(MeshBlock *pmb) {
     }
   }
 
+  // vapor
+  if (NVAPOR > 0) {
+    if (output_params.variable.compare("prim") == 0 ||
+        output_params.variable.compare("vapor") == 0) {
+      pod = new OutputData;
+      pod->type = "VECTORS";
+      pod->name = "vapor";
+      pod->data.InitWithShallowSlice(phyd->w,4,1,NVAPOR);
+      AppendOutputDataNode(pod);
+      num_vars_+=NVAPOR;
+    }
+
+    if (output_params.variable.compare("cons") == 0) {
+      pod = new OutputData;
+      pod->type = "VECTORS";
+      pod->name = "vapor";
+      pod->data.InitWithShallowSlice(phyd->u,4,1,NVAPOR);
+      AppendOutputDataNode(pod);
+      num_vars_+=NVAPOR;
+    }
+  }
+
+  // cloud
+  if (NVAPOR > 0) {
+    std::string str = "cloud?";
+    for (int i = 1; i < NPHASE; ++i) {
+      if (output_params.variable.compare("prim") == 0 ||
+          output_params.variable.compare("cloud") == 0) {
+        pod = new OutputData;
+        pod->type = "VECTORS";
+        char c = '1' + i - 1;
+        pod->name = str + c;
+        pod->data.InitWithShallowSlice(phyd->w,4,1+i*NVAPOR,NVAPOR);
+        AppendOutputDataNode(pod);
+        num_vars_+=NVAPOR;
+      }
+
+      if (output_params.variable.compare("cons") == 0) {
+        pod = new OutputData;
+        pod->type = "VECTORS";
+        char c = '1' + i - 1;
+        pod->name = str + c;
+        pod->data.InitWithShallowSlice(phyd->u,4,1+i*NVAPOR,NVAPOR);
+        AppendOutputDataNode(pod);
+        num_vars_+=NVAPOR;
+      }
+    }
+  }
+
+  // diagnostic
+  if (output_params.variable.compare("diag") == 0) {
+    Diagnostics *p = pdiag->next;
+    while (p != NULL) {
+      pod = new OutputData;
+      pod->type = p->type;
+      pod->grid = p->grid;
+      pod->name = p->myname;
+      p->Finalize(phyd->w);
+
+      if (p->myname == "eddyflux")  {
+        pod->data.InitWithShallowSlice(p->data,4,0,NHYDRO);
+        AppendOutputDataNode(pod);
+        num_vars_ += NHYDRO;
+      } else {
+        pod->data.InitWithShallowSlice(p->data,4,0,p->data.GetDim4());
+        AppendOutputDataNode(pod);
+        num_vars_ += pod->data.GetDim4();
+      }
+
+      p = p->next;
+    }
+  }
+
+  // radiation
+  if (output_params.variable.compare("rad") == 0 ||
+      output_params.variable.compare("radtau") == 0) {
+    RadiationBand *p = prad->pband;
+    while (p != NULL) {
+      // tau
+      pod = new OutputData;
+      pod->type = "SCALARS";
+      pod->name = p->myname+"tau";
+      pod->data.InitWithShallowSlice(p->btau,4,0,1);
+      AppendOutputDataNode(pod);
+      num_vars_ += 1;
+
+      p = p->next;
+    }
+  }
+
+  if (output_params.variable.compare("rad") == 0 ||
+      output_params.variable.compare("radflux") == 0) {
+    RadiationBand *p = prad->pband;
+    while (p != NULL) {
+      // flux up and down
+      pod = new OutputData;
+      pod->type = "SCALARS";
+      pod->grid = "CCF";
+      pod->name = p->myname+"flxup";
+      pod->data.InitWithShallowSlice(p->bflxup,4,0,1);
+      AppendOutputDataNode(pod);
+      num_vars_ += 1;
+
+      pod = new OutputData;
+      pod->type = "SCALARS";
+      pod->grid = "CCF";
+      pod->name = p->myname+"flxdn";
+      pod->data.InitWithShallowSlice(p->bflxdn,4,0,1);
+      AppendOutputDataNode(pod);
+      num_vars_ += 1;
+
+      p = p->next;
+    }
+  }
+
+  // radiation
+  if (output_params.variable.compare("rad") == 0 ||
+      output_params.variable.compare("radtoa") == 0) {
+    RadiationBand *p = prad->pband;
+    while (p != NULL) {
+      // toa
+      pod = new OutputData;
+      pod->type = "SCALARS";
+      pod->grid = "-CC";
+      pod->name = p->myname+"toa";
+      pod->data.InitWithShallowSlice(p->btoa,3,0,p->btoa.GetDim3());
+      AppendOutputDataNode(pod);
+      num_vars_ += p->btoa.GetDim3();
+
+      p = p->next;
+    }
+  }
+
   // throw an error if output variable name not recognized
   if (num_vars_ == 0) {
     std::stringstream msg;
@@ -729,6 +884,7 @@ void Outputs::MakeOutputs(Mesh *pm, ParameterInput *pin, bool wtflag) {
         first = false;
       }
       ptype->WriteOutputFile(pm, pin, wtflag);
+      ptype->CombineBlocks();
     }
     ptype = ptype->pnext_type; // move to next OutputType node in signly linked list
   }

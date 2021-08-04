@@ -24,6 +24,7 @@
 #include "hydro.hpp"
 #include "hydro_diffusion/hydro_diffusion.hpp"
 #include "srcterms/hydro_srcterms.hpp"
+#include "vertical_communication.hpp"
 
 // constructor, initializes data structures and parameters
 
@@ -140,6 +141,23 @@ Hydro::Hydro(MeshBlock *pmb, ParameterInput *pin) :
   }
 
   UserTimeStep_ = pmb->pmy_mesh->UserTimeStep_;
+
+  // allocate hydrostatic and nonhydrostatic pressure
+  psf_.NewAthenaArray(nc3, nc2, nc1 + 1);
+  psv_.NewAthenaArray(nc3, nc2, nc1);
+  dsv_.NewAthenaArray(nc3, nc2, nc1);
+  psbuf_ = new Real [3*nc3*nc2];
+
+  // allocate polytropic index and pseudo entropy
+  gamma_.NewAthenaArray(nc3, nc2, nc1);
+  entropy_.NewAthenaArray(nc3, nc2, nc1);
+
+  // du stores the change of the conservative variable in a substep
+  du.NewAthenaArray(NHYDRO, nc3, nc2, nc1);
+
+  // implicit correction
+  implicit_flag = pin->GetOrAddInteger("hydro", "implicit_flag", 0);
+  pvc = new VerticalCommunication(this);
 }
 
 //----------------------------------------------------------------------------------------

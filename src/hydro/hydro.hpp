@@ -19,8 +19,14 @@
 #include "hydro_diffusion/hydro_diffusion.hpp"
 #include "srcterms/hydro_srcterms.hpp"
 
+// MPI headers
+#ifdef MPI_PARALLEL
+  #include <mpi.h>
+#endif
+
 class MeshBlock;
 class ParameterInput;
+class VerticalCommunication;
 
 // TODO(felker): consider adding a struct FaceFlux w/ overloaded ctor in athena.hpp, or:
 // using FaceFlux = AthenaArray<Real>[3];
@@ -45,6 +51,9 @@ class Hydro {
   // (no more than MAX_NREGISTER allowed)
 
   AthenaArray<Real> flux[3];  // face-averaged flux vector
+  AthenaArray<Real> du;       // du stores the change of the conservative variable in a substep
+  // implicit correction
+  int implicit_flag;
 
   // storage for SMR/AMR
   // TODO(KGF): remove trailing underscore or revert to private:
@@ -57,6 +66,7 @@ class Hydro {
   HydroBoundaryVariable hbvar;
   HydroSourceTerms hsrc;
   HydroDiffusion hdif;
+  VerticalCommunication *pvc;
 
   // functions
   void NewBlockTimeStep();    // computes new timestep on a MeshBlock
@@ -82,6 +92,31 @@ class Hydro {
   void AddGravityFlux();
   void AddGravityFluxWithGflx();
   void CalculateGravityFlux(AthenaArray<Real> &phi_in);
+
+  ~Hydro();
+  void DecomposePressure(AthenaArray<Real> &w, int kl, int ku, int jl, int ju);
+  void AssemblePressure(AthenaArray<Real> &w, AthenaArray<Real> &wl, AthenaArray<Real> &wr,
+    int k, int j, int il, int iu);
+  void CheckHydro();
+  void ImplicitCorrectionFull(AthenaArray<Real> &du, AthenaArray<Real> const& w, Real dt);
+  void ImplicitCorrectionReduced(AthenaArray<Real> &du, AthenaArray<Real> const& w, Real dt);
+
+protected:
+  void SendTopPressure(AthenaArray<Real> &psf, AthenaArray<Real> &entropy,
+    AthenaArray<Real> &gamma, NeighborBlock nbot,
+    int kl, int ku, int jl, int ju);
+  void RecvTopPressure(AthenaArray<Real> &psf, AthenaArray<Real> &entropy,
+    AthenaArray<Real> &gamma, NeighborBlock ntop,
+    int kl, int ku, int jl, int ju);
+  void WaitTopPressure();
+
+  void SendBotPressure(AthenaArray<Real> &psf, AthenaArray<Real> &entropy,
+    AthenaArray<Real> &gamma, NeighborBlock ntop,
+    int kl, int ku, int jl, int ju);
+  void RecvBotPressure(AthenaArray<Real> &psf, AthenaArray<Real> &entropy,
+    AthenaArray<Real> &gamma, NeighborBlock nbot,
+    int kl, int ku, int jl, int ju);
+  void WaitBotPressure();
 
  private:
   AthenaArray<Real> dt1_, dt2_, dt3_;  // scratch arrays used in NewTimeStep
@@ -116,5 +151,18 @@ class Hydro {
 
   void AddDiffusionFluxes();
   Real GetWeightForCT(Real dflx, Real rhol, Real rhor, Real dx, Real dt);
+
+  // pressure decomposition
+  AthenaArray<Real> psf_;         // hydrostatic pressure at cell face
+  AthenaArray<Real> psv_;         // hydrostatic pressure at cell center
+  AthenaArray<Real> dsv_;         // reference density at cell center
+  AthenaArray<Real> gamma_;       // polytropic index
+  AthenaArray<Real> entropy_;     // pseudo entropy
+  Real *psbuf_;                   // hydrostatic pressure buffer
+
+#ifdef MPI_PARALLEL
+  MPI_Request req_send_bot_pressure_;
+  MPI_Request req_send_top_pressure_;
+#endif
 };
 #endif // HYDRO_HYDRO_HPP_

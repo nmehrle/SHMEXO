@@ -60,12 +60,13 @@ struct OutputParameters {
 
 struct OutputData {
   std::string type;        // one of (SCALARS,VECTORS) used for vtk outputs
+  std::string grid;        // (CCC,CCF,CFC,...)
   std::string name;
   AthenaArray<Real> data;  // array containing data (usually shallow copy/slice)
   // ptrs to previous and next nodes in doubly linked list:
   OutputData *pnext, *pprev;
 
-  OutputData() : pnext(nullptr),  pprev(nullptr) {}
+  OutputData() : grid("CCC"), pnext(nullptr),  pprev(nullptr) {}
 };
 
 //----------------------------------------------------------------------------------------
@@ -105,6 +106,7 @@ class OutputType {
                                 Coordinates *pco);
   // following pure virtual function must be implemented in all derived classes
   virtual void WriteOutputFile(Mesh *pm, ParameterInput *pin, bool flag) = 0;
+  virtual void CombineBlocks() {};
 
  protected:
   int num_vars_;             // number of variables in output
@@ -199,3 +201,29 @@ class Outputs {
   // (not storing a reference to the tail node)
 };
 #endif // OUTPUTS_OUTPUTS_HPP_
+
+
+//----------------------------------------------------------------------------------------
+//! \class NetcdfOutput
+//  \brief derived OutputType class for Netcdf dumps
+
+class NetcdfOutput : public OutputType {
+public:
+  NetcdfOutput(OutputParameters oparams);
+  ~NetcdfOutput() {};
+  void WriteOutputFile(Mesh *pm, ParameterInput *pin, bool flag);
+  void CombineBlocks();
+};
+
+//----------------------------------------------------------------------------------------
+//! \class PnetcdfOutput
+//  \brief derived OutputType class for parallel Netcdf dumps
+
+class PnetcdfOutput : public OutputType {
+public:
+  PnetcdfOutput(OutputParameters oparams);
+  ~PnetcdfOutput() {};
+  void WriteOutputFile(Mesh *pm, ParameterInput *pin, bool flag);
+};
+
+//----------------------------------------------------------------------------------------

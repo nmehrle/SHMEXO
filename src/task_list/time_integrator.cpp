@@ -115,7 +115,8 @@ TimeIntegratorTaskList::TimeIntegratorTaskList(ParameterInput *pin, Mesh *pm) {
     // SSPRK (3,3): Gottlieb (2009) equation 3.2
     // Optimal (in error bounds) explicit three-stage, third-order SSPRK
     nstages = 3;
-    cfl_limit = 1.0;  // c_eff = c/nstages = 1/3 (Gottlieb (2009), pg 271)
+    cfl_limit = 1.5;  // c_eff = c/nstages = 1/3 (Gottlieb (2009), pg 271)
+    if (pm->ndim == 1) cfl_limit = 10.;
     stage_wghts[0].delta = 1.0;
     stage_wghts[0].gamma_1 = 0.0;
     stage_wghts[0].gamma_2 = 1.0;
@@ -245,6 +246,7 @@ TimeIntegratorTaskList::TimeIntegratorTaskList(ParameterInput *pin, Mesh *pm) {
       } else { // Hydro
         AddTask(CALC_HYDFLX,DIFFUSE_HYD);
       }
+      AddTask(CALC_RADFLX,DIFFUSE_HYD);
       if (NSCALARS > 0) {
         AddTask(DIFFUSE_SCLR,NONE);
         AddTask(CALC_SCLRFLX,(CALC_HYDFLX|DIFFUSE_SCLR));
@@ -259,12 +261,14 @@ TimeIntegratorTaskList::TimeIntegratorTaskList(ParameterInput *pin, Mesh *pm) {
       AddTask(RECV_HYDFLX,CALC_HYDFLX);
       AddTask(INT_HYD,RECV_HYDFLX);
     } else {
-      AddTask(INT_HYD, CALC_HYDFLX);
+      AddTask(INT_HYD, (CALC_HYDFLX|CALC_RADFLX));
     }
     AddTask(SRCTERM_HYD,INT_HYD);
-    AddTask(SEND_HYD,SRCTERM_HYD);
+    AddTask(UPDATE_HYD,SRCTERM_HYD);
+    AddTask(INT_CHM,UPDATE_HYD);
+    AddTask(SEND_HYD,INT_CHM);
     AddTask(RECV_HYD,NONE);
-    AddTask(SETB_HYD,(RECV_HYD|SRCTERM_HYD));
+    AddTask(SETB_HYD,(RECV_HYD|INT_CHM));
     if (SHEARING_BOX) { // Shearingbox BC for Hydro
       AddTask(SEND_HYDSH,SETB_HYD);
       AddTask(RECV_HYDSH,SETB_HYD);
@@ -410,6 +414,11 @@ void TimeIntegratorTaskList::AddTask(const TaskID& id, const TaskID& dep) {
         static_cast<TaskStatus (TaskList::*)(MeshBlock*,int)>
         (&TimeIntegratorTaskList::CalculateEMF);
     task_list_[ntasks].lb_time = true;
+  } else if (id == CALC_RADFLX) {
+    task_list_[ntasks].TaskFunc=
+        static_cast<TaskStatus (TaskList::*)(MeshBlock*,int)>
+        (&TimeIntegratorTaskList::CalculateRadiationFlux);
+    task_list_[ntasks].lb_time = true;
   } else if (id == SEND_HYDFLX) {
     task_list_[ntasks].TaskFunc=
         static_cast<TaskStatus (TaskList::*)(MeshBlock*,int)>
@@ -439,6 +448,16 @@ void TimeIntegratorTaskList::AddTask(const TaskID& id, const TaskID& dep) {
     task_list_[ntasks].TaskFunc=
         static_cast<TaskStatus (TaskList::*)(MeshBlock*,int)>
         (&TimeIntegratorTaskList::IntegrateField);
+    task_list_[ntasks].lb_time = true;
+  } else if (id == INT_CHM) {
+    task_list_[ntasks].TaskFunc=
+        static_cast<TaskStatus (TaskList::*)(MeshBlock*,int)>
+        (&TimeIntegratorTaskList::IntegrateChemistry);
+    task_list_[ntasks].lb_time = true;
+  } else if (id == UPDATE_HYD) {
+    task_list_[ntasks].TaskFunc=
+        static_cast<TaskStatus (TaskList::*)(MeshBlock*,int)>
+        (&TimeIntegratorTaskList::UpdateHydro);
     task_list_[ntasks].lb_time = true;
   } else if (id == SRCTERM_HYD) {
     task_list_[ntasks].TaskFunc=
@@ -758,9 +777,10 @@ TaskStatus TimeIntegratorTaskList::IntegrateHydro(MeshBlock *pmb, int stage) {
       pmb->WeightedAve(ph->u, ph->u1, ph->u2, ave_wghts);
 
     const Real wght = stage_wghts[stage-1].beta*pmb->pmy_mesh->dt;
-    ph->AddFluxDivergence(wght, ph->u);
+    ph->du.ZeroClear();
+    ph->AddFluxDivergence(wght, ph->du);
     // add coordinate (geometric) source terms
-    pmb->pcoord->AddCoordTermsDivergence(wght, ph->flux, ph->w, pf->bcc, ph->u);
+    pmb->pcoord->AddCoordTermsDivergence(wght, ph->flux, ph->w, pf->bcc, ph->du);
 
     // Hardcode an additional flux divergence weighted average for the penultimate
     // stage of SSPRK(5,4) since it cannot be expressed in a 3S* framework
@@ -832,7 +852,7 @@ TaskStatus TimeIntegratorTaskList::AddSourceTermsHydro(MeshBlock *pmb, int stage
     // Scaled coefficient for RHS update
     Real dt = (stage_wghts[(stage-1)].beta)*(pmb->pmy_mesh->dt);
     // Evaluate the time-dependent source terms at the time at the beginning of the stage
-    ph->hsrc.AddHydroSourceTerms(t_start_stage, dt, ph->flux, ph->w, pf->bcc, ph->u);
+    ph->hsrc.AddHydroSourceTerms(t_start_stage, dt, ph->flux, ph->w, pf->bcc, ph->du);
   } else {
     return TaskStatus::fail;
   }

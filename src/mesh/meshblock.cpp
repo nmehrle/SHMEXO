@@ -38,6 +38,10 @@
 #include "mesh.hpp"
 #include "mesh_refinement.hpp"
 #include "meshblock_tree.hpp"
+#include "../thermodynamics/thermodynamics.hpp"
+#include "../chemistry/chemistry.hpp"
+#include "../radiation/radiation.hpp"
+#include "../diagnostics/diagnostics.hpp"
 
 //----------------------------------------------------------------------------------------
 // MeshBlock constructor: constructs coordinate, boundary condition, hydro, field
@@ -171,6 +175,10 @@ MeshBlock::MeshBlock(int igid, int ilid, LogicalLocation iloc, RegionSize input_
   // values). Compare both private member variables via BoundaryValues::CheckCounterPhysID
 
   peos = new EquationOfState(this, pin);
+  pthermo = new Thermodynamics(this, pin);
+  pchem = new CHEMISTRY(this, pin);
+  prad = new Radiation(this, pin);
+  pdiag = new Diagnostics(this, pin);
 
   // Create user mesh data
   InitUserMeshBlockData(pin);
@@ -286,6 +294,10 @@ MeshBlock::MeshBlock(int igid, int ilid, Mesh *pm, ParameterInput *pin,
   }
 
   peos = new EquationOfState(this, pin);
+  pthermo = new Thermodynamics(this, pin);
+  pchem = new CHEMISTRY(this, pin);
+  prad = new Radiation(this, pin);
+  pdiag = new Diagnostics(this, pin);
 
   InitUserMeshBlockData(pin);
 
@@ -294,6 +306,17 @@ MeshBlock::MeshBlock(int igid, int ilid, Mesh *pm, ParameterInput *pin,
 
   // load hydro and field data
   std::memcpy(phydro->u.data(), &(mbdata[os]), phydro->u.GetSizeInBytes());
+  // outflow boundary condition
+  if (pbval->block_bcs[inner_x1] == BoundaryFlag::outflow) {
+    int kl = block_size.nx3 == 1 ? ks : ks-NGHOST;
+    int ku = block_size.nx3 == 1 ? ke : ke+NGHOST;
+    int jl = block_size.nx2 == 1 ? js : js-NGHOST;
+    int ju = block_size.nx2 == 1 ? je : je+NGHOST;
+    peos->ConservedToPrimitive(phydro->u, phydro->w1, pfield->b,
+                                          phydro->w, pfield->bcc, pcoord,
+                                          is-NGHOST, is-1, jl, ju, kl, ku);
+    phydro->w1 = phydro->w;
+  }
   // load it into the other memory register(s) too
   std::memcpy(phydro->u1.data(), &(mbdata[os]), phydro->u1.GetSizeInBytes());
   os += phydro->u.GetSizeInBytes();
@@ -364,6 +387,11 @@ MeshBlock::~MeshBlock() {
   // delete user MeshBlock data
   if (nreal_user_meshblock_data_ > 0) delete [] ruser_meshblock_data;
   if (nint_user_meshblock_data_ > 0) delete [] iuser_meshblock_data;
+
+  delete pthermo;
+  delete pchem;
+  delete prad;
+  delete pdiag;
 }
 
 //----------------------------------------------------------------------------------------

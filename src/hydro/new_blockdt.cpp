@@ -68,11 +68,8 @@ void Hydro::NewBlockTimeStep() {
       if (!RELATIVISTIC_DYNAMICS) {
 #pragma ivdep
         for (int i=is; i<=ie; ++i) {
-          wi[IDN] = w(IDN,k,j,i);
-          wi[IVX] = w(IVX,k,j,i);
-          wi[IVY] = w(IVY,k,j,i);
-          wi[IVZ] = w(IVZ,k,j,i);
-          if (NON_BAROTROPIC_EOS) wi[IPR] = w(IPR,k,j,i);
+          for (int n = 0; n < NHYDRO; ++n)
+            wi[n]=w(n,k,j,i);
           if (fluid_status == FluidFormulation::evolve) {
             if (MAGNETIC_FIELDS_ENABLED) {
               AthenaArray<Real> &bcc = pmb->pfield->bcc, &b_x1f = pmb->pfield->b.x1f,
@@ -109,10 +106,11 @@ void Hydro::NewBlockTimeStep() {
       }
 
       // compute minimum of (v1 +/- C)
-      for (int i=is; i<=ie; ++i) {
-        Real& dt_1 = dt1(i);
-        min_dt_hyperbolic = std::min(min_dt_hyperbolic, dt_1);
-      }
+      if ((!implicit_flag) || (pmb->block_size.nx2 == 1))
+        for (int i=is; i<=ie; ++i) {
+          Real& dt_1 = dt1(i);
+          min_dt_hyperbolic = std::min(min_dt_hyperbolic, dt_1);
+        }
 
       // if grid is 2D/3D, compute minimum of (v2 +/- C)
       if (pmb->block_size.nx2 > 1) {
