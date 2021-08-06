@@ -87,7 +87,7 @@ void Mesh::InitUserMeshData(ParameterInput *pin)
 
 void MeshBlock::ProblemGenerator(ParameterInput *pin)
 {
-  Real grav = -phydro->hsrc.GetG1();
+  Real grav = - pin->GetReal("hydro", "grav_acc1");
   Real Ts = pin->GetReal("problem", "Ts");
   Real xc = pin->GetReal("problem", "xc");
   Real xr = pin->GetReal("problem", "xr");

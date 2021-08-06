@@ -13,22 +13,23 @@
 #include "../utils/utils.hpp"
 
 inline void IntegrateUpwards(AthenaArray<Real>& psf, AthenaArray<Real> const& w, Coordinates *pco,
-  Real grav, int kl, int ku, int jl, int ju, int il, int iu)
+  AthenaArray<Real> const& grav, int kl, int ku, int jl, int ju, int il, int iu)
 {
   for (int k = kl; k <= ku; ++k)
     for (int j = jl; j <= ju; ++j)
       for (int i = il; i <= iu; ++i)
-        psf(k,j,i+1) = psf(k,j,i) - grav*w(IDN,k,j,i)*pco->dx1f(i);
-
+        // grav is a negative value --> pressure decreases upwards as it should
+        psf(k,j,i+1) = psf(k,j,i) + grav(k,j,i)*w(IDN,k,j,i)*pco->dx1f(i);
 }
 
 inline void IntegrateDownwards(AthenaArray<Real>& psf, AthenaArray<Real> const& w, Coordinates *pco,
-  Real grav, int kl, int ku, int jl, int ju, int il, int iu)
+  AthenaArray<Real> const& grav, int kl, int ku, int jl, int ju, int il, int iu)
 {
   for (int k = kl; k <= ku; ++k)
     for (int j = jl; j <= ju; ++j)
       for (int i = iu; i >= il; --i)
-        psf(k,j,i) = psf(k,j,i+1) + grav*w(IDN,k,j,i)*pco->dx1f(i);
+        // grav is a negative value --> pressure increases downwards as it should
+        psf(k,j,i) = psf(k,j,i+1) - grav(k,j,i)*w(IDN,k,j,i)*pco->dx1f(i);
 }
 
 void Hydro::DecomposePressure(AthenaArray<Real> &w, int kl, int ku, int jl, int ju)
@@ -38,12 +39,9 @@ void Hydro::DecomposePressure(AthenaArray<Real> &w, int kl, int ku, int jl, int 
   Coordinates *pco = pmb->pcoord;
   Thermodynamics *pthermo = pmb->pthermo;
 
-  Real grav = -hsrc.GetG1();  // positive downward pointing
-  Real Rd = pthermo->GetRd();
-
   int is = pmb->is, ie = pmb->ie;
   
-  if (grav == 0.) return;
+  if (!hsrc.GravityDefined(1, kl, ku, jl, ju, is, ie)) return;
 
   std::stringstream msg;
   if (NGHOST < 3) {
@@ -89,7 +87,7 @@ void Hydro::DecomposePressure(AthenaArray<Real> &w, int kl, int ku, int jl, int 
           w1[0][n] = w(n,k,j,ie);
 
         // adiabatic extrapolation for half a grid
-        pthermo->ConstructAdiabat(w1, T1, P1, grav, dz/2., 2, Adiabat::reversible);
+        pthermo->ConstructAdiabat(w1, T1, P1, -hsrc.GetG1(k, j, ie), dz/2., 2, Adiabat::reversible);
         psf_(k,j,ie+1) = w1[1][IPR];
 
         // outflow boundary condition
@@ -100,25 +98,14 @@ void Hydro::DecomposePressure(AthenaArray<Real> &w, int kl, int ku, int jl, int 
               w(n,k,j,ie+i) = w1[1][n];
       }
   }
-  IntegrateDownwards(psf_, w, pco, grav, kl, ku, jl, ju, is, ie);
+  AthenaArray<Real> grav = hsrc.g1;
+
+  IntegrateDownwards(psf_, w, pco, grav, kl, ku, jl, ju, is-NGHOST, ie);
   
   if (has_bot_neighbor)
     SendTopPressure(psf_, entropy_, gamma_, nbot, kl, ku, jl, ju);
 
-  // integrate ghost cells
-  if (pmb->pbval->block_bcs[inner_x1] == BoundaryFlag::reflect)
-    IntegrateDownwards(psf_, w, pco, -grav, kl, ku, jl, ju, is - NGHOST, is - 1);
-  else if (pmb->pbval->block_bcs[inner_x1] == BoundaryFlag::outflow)
-    IntegrateDownwards(psf_, w, pco,  0., kl, ku, jl, ju, is - NGHOST, is - 1);
-  else  // block boundary
-    IntegrateDownwards(psf_, w, pco,  grav, kl, ku, jl, ju, is - NGHOST, is - 1);
-
-  if (pmb->pbval->block_bcs[outer_x1] == BoundaryFlag::reflect) {
-    IntegrateUpwards(psf_, w, pco, -grav, kl, ku, jl, ju, ie + 1, ie + NGHOST);
-  } else if (pmb->pbval->block_bcs[outer_x1] == BoundaryFlag::outflow)
-    IntegrateUpwards(psf_, w, pco,  0., kl, ku, jl, ju, ie + 1, ie + NGHOST);
-  else  // block boundary
-    IntegrateUpwards(psf_, w, pco,  grav, kl, ku, jl, ju, ie + 1, ie + NGHOST);
+  IntegrateUpwards(psf_, w, pco, grav, kl, ku, jl, ju, ie+1, ie+NGHOST);
 
   // decompose pressure
   for (int k = kl; k <= ku; ++k)
@@ -179,7 +166,7 @@ void Hydro::AssemblePressure(AthenaArray<Real> &w,
 {
   MeshBlock *pmb = pmy_block;
   int is = pmb->is, ie = pmb->ie;
-  if (hsrc.GetG1() == 0.) return;
+  if (!hsrc.GravityDefined(1, k, k, j, j, il, iu)) return;
   
   for (int i = is - NGHOST; i <= ie + NGHOST; ++i) {
     w(IPR,k,j,i) += psv_(k,j,i);

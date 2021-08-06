@@ -10,7 +10,6 @@ Buoyancy::Buoyancy(MeshBlock *pmb) : Diagnostics(pmb, "b")
   data.NewAthenaArray(ncells3_,ncells2_,ncells1_);
   wl_.NewAthenaArray(NHYDRO,ncells3_,ncells2_,ncells1_+1);
   wr_.NewAthenaArray(NHYDRO,ncells3_,ncells2_,ncells1_+1);
-  grav_ = pmb->phydro->hsrc.GetG1();
 }
 
 Buoyancy::~Buoyancy()
@@ -39,7 +38,8 @@ void Buoyancy::Finalize(AthenaArray<Real> const& w)
   for (int k = ks; k <= ke; ++k)
     for (int j = js; j <= je; ++j)
       for (int i = is; i <= ie; ++i) {
+        Real grav = pmb->phydro->hsrc.GetG1(k, j, i);
         Real dx = pmb->pcoord->dx1v(i);
-        data(k,j,i) = -(wl_(IPR,k,j,i+1) - wr_(IPR,k,j,i))/(dx*w(IDN,k,j,i)) + grav_;
+        data(k,j,i) = -(wl_(IPR,k,j,i+1) - wr_(IPR,k,j,i))/(dx*w(IDN,k,j,i)) + grav;
       }
 }

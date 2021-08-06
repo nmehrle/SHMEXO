@@ -137,7 +137,6 @@ public:
 
 protected:
   AthenaArray<Real> wl_, wr_;
-  Real grav_;
 };
 
 #endif

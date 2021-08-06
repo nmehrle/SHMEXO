@@ -87,12 +87,12 @@ void Chemistry::AddFrictionalHeating(AthenaArray<Real> &u,
   AthenaArray<Real> const& w, Real dt)
 {
   MeshBlock *pmb = pmy_block_;
-  Real grav = pmb->phydro->hsrc.GetG1();
 
   Real vsed[NMASS], w1[NHYDRO];
   for (int k = pmb->ks; k <= pmb->ke; ++k)
     for (int j = pmb->js; j <= pmb->je; ++j)
       for (int i = pmb->is; i <= pmb->ie; ++i) {
+        Real grav = pmb->phydro->hsrc.GetG1(k, j, i);
         for (int n = 0; n < NHYDRO; ++n)
           w1[n] = w(n,k,j,i);
         SedimentationVelocity(vsed, w1);

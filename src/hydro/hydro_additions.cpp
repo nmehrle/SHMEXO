@@ -39,7 +39,7 @@ void Hydro::CheckHydro() {
           ATHENA_ERROR(msg);
         }
         Real temp = pmb->pthermo->Temp(w.at(k,j,i));
-        Real grav = -hsrc.GetG1();
+        Real grav = -hsrc.GetG1(k, j, i);
         if (grav != 0) {
           Real Tmin = 2.*grav*pmb->pcoord->dx1f(i)/pmb->pthermo->GetRd();
           if (temp < Tmin) {

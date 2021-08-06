@@ -50,7 +50,7 @@ void Mesh::InitUserMeshData(ParameterInput *pin)
 void MeshBlock::ProblemGenerator(ParameterInput *pin)
 {
   Real gamma = pin->GetReal("hydro", "gamma");
-  Real grav = - phydro->hsrc.GetG1();
+  Real grav = - pin->GetReal("hydro", "grav_acc1");
   Real Ts = pin->GetReal("problem", "Ts");
   Real Rd = pin->GetReal("thermodynamics", "Rd");
   Real cp = gamma/(gamma - 1.)*Rd;

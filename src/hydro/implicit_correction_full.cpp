@@ -229,13 +229,7 @@ void Hydro::ImplicitCorrectionFull(AthenaArray<Real> &du, AthenaArray<Real> cons
 
   // 0. forcing and volume matrix
   Real gamma = pmb->peos->GetGamma();
-  Real grav = hsrc.GetG1();
   Eigen::Matrix<Real,5,5> Phi, Dt, Bnd;
-  Phi  << 0.,    0.,    0.,    0.,    0.,
-          grav,  0.,    0.,    0.,    0., 
-          0.,    0.,    0.,    0.,    0.,
-          0.,    0.,    0.,    0.,    0., 
-          0.,    grav,  0.,    0.,    0.;
 
   Dt   << 1./dt, 0.,    0.,    0.,    0.,
           0., 1./dt,    0.,    0.,    0.,
@@ -283,6 +277,14 @@ void Hydro::ImplicitCorrectionFull(AthenaArray<Real> &du, AthenaArray<Real> cons
       Am = Rmat*Lambda*Rimat;
 
       for (int i = is; i <= ie; ++i) {
+        // Assembe Phi
+        Real grav = hsrc.GetG1(k, j, i);
+        Phi  << 0.,    0.,    0.,    0.,    0.,
+                grav,  0.,    0.,    0.,    0.,
+                0.,    0.,    0.,    0.,    0.,
+                0.,    0.,    0.,    0.,    0.,
+                0.,    grav,  0.,    0.,    0.;
+
         // right edge
         gm1 = 0.5*(gamma_m1[i] + gamma_m1[i+1]);
         RoeAverage(prim, gm1, w, k, j, i+1);

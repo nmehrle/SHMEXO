@@ -21,7 +21,7 @@ void HydroBoundaryVariable::OutflowInnerX1(
       }
 
   // conforms to the case without gravity
-  if (pmy_block_->phydro->hsrc.GetG1() == 0.) {
+  if (!pmy_block_->phydro->hsrc.GravityDefined(1)) {
     for (int n = 0; n < NMASS; ++n) {
       for (int k=kl; k<=ku; ++k)
         for (int j=jl; j<=ju; ++j)
@@ -51,7 +51,7 @@ void HydroBoundaryVariable::OutflowOuterX1(
       }
 
   // conforms to the case without gravity
-  if (pmy_block_->phydro->hsrc.GetG1() == 0.) {
+  if (!pmy_block_->phydro->hsrc.GravityDefined(1)) {
     for (int n = 0; n < NMASS; ++n) {
       for (int k=kl; k<=ku; ++k)
         for (int j=jl; j<=ju; ++j)
