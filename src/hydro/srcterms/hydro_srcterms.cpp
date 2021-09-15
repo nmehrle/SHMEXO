@@ -160,19 +160,19 @@ void HydroSourceTerms::SetGravityStores() {
       for (int i=1; i<=NGHOST; ++i) {
         // inner x_1
         if (pmb->pbval->block_bcs[inner_x1] == BoundaryFlag::reflect)
-          g1(k, j, is-i) = -1.0*g1(k, j, is+i);
+          g1(k, j, is-i) = -1.0*g1(k, j, is+i-1);
         else if (pmb->pbval->block_bcs[inner_x1] == BoundaryFlag::outflow)
           g1(k, j, is-i) = 0.0;
         else // block boundary
-          g1(k, j, is-i) = g1(k, j, is);
+          g1(k, j, is-i) = g1(k, j, is); //TODO
 
         // outer_x1
         if (pmb->pbval->block_bcs[outer_x1] == BoundaryFlag::reflect)
-          g1(k, j, ie+i) = -1.0*g1(k, j, ie-i);
+          g1(k, j, ie+i) = -1.0*g1(k, j, ie-i+1);
         else if (pmb->pbval->block_bcs[outer_x1] == BoundaryFlag::outflow)
           g1(k, j, ie+i) = 0.0;
         else // block boundary
-          g1(k, j, ie+i) = g1(k, j, ie);
+          g1(k, j, ie+i) = g1(k, j, ie); //TODO
       }
     }
   } // k loop
