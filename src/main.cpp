@@ -404,8 +404,6 @@ int main(int argc, char *argv[]) {
     command += input_filename;
     command += " " + pinput->GetString("job","problem_id") + ".input";
 
-    std::cout << command << std::endl << std::endl;
-
     ChangeRunDir(prundir);
     pouts = new Outputs(pmesh, pinput);
     if (res_flag == 0){
