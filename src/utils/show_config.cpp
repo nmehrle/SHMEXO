@@ -26,6 +26,21 @@ void ShowConfig() {
   std::cout<<"  Coordinate system:          " << COORDINATE_SYSTEM << std::endl;
   std::cout<<"  Equation of state:          " << EQUATION_OF_STATE << std::endl;
   std::cout<<"  Riemann solver:             " << RIEMANN_SOLVER << std::endl;
+
+#ifdef RT_OFF
+  std::cout<<"  Radiation solver:           OFF" << std::endl;
+#elif defined RT_DISORT
+  std::cout<<"  Radiation solver:           DISORT" << std::endl;
+#elif defined RT_2SESS
+  std::cout<<"  Radiation solver:           2sess" << std::endl;
+#elif defined RT_LAMBERT
+  std::cout<<"  Radiation solver:           LAMBERT" << std::endl;
+#elif defined RT_UNKOW
+  std::cout<<"  Radiation solver:           UNKOWN" << std::endl;
+#else
+  std::cout<<"  Radiation solver:           OTHER" << std::endl;
+#endif
+
   if (MAGNETIC_FIELDS_ENABLED) {
     std::cout<<"  Magnetic fields:            ON" << std::endl;
   } else {
