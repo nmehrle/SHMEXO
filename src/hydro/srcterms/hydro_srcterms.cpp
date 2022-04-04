@@ -91,7 +91,7 @@ HydroSourceTerms::HydroSourceTerms(Hydro *phyd, ParameterInput *pin) :
     else {
       std::stringstream msg;
       msg << "### FATAL ERROR in HydroSourceTerms constructor" << std::endl
-          << "User defined gravity only works in cylindrical coordinates at the moment"
+          << "User defined gravity only works in cartesian coordinates at the moment"
           << std::endl
           << "Verify it will work in your geometry before proceeding." << std::endl;
       ATHENA_ERROR(msg);
