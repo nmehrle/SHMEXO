@@ -128,8 +128,43 @@ void HydroSourceTerms::SetGravityStores() {
     g1_defined_ = GravityDefined(1, pmb->ks, pmb->ke, pmb->js, pmb->je, pmb->is, pmb->ie);
     g2_defined_ = GravityDefined(2, pmb->ks, pmb->ke, pmb->js, pmb->je, pmb->is, pmb->ie);
     g3_defined_ = GravityDefined(3, pmb->ks, pmb->ke, pmb->js, pmb->je, pmb->is, pmb->ie);
+
+    // Boundary Conditions -- from USER grav
+    // only important in i direction at the moment
+    // relevant in Hydro::DecomposePressurse()
+    for (int k=pmb->ks; k<=pmb->ke; ++k) {
+      for (int j=pmb->js; j<=pmb->je; ++j) {
+        for (int i=1; i<=NGHOST; ++i) {
+          // inner x_1
+          if (pmb->pbval->block_bcs[inner_x1] == BoundaryFlag::reflect)
+            g1(k, j, is-i) = -1.0*g1(k, j, is+i-1);
+          else if (pmb->pbval->block_bcs[inner_x1] == BoundaryFlag::periodic)
+            g1(k, j, is-i) = g1(k, j, ie-i+1);
+          else if (pmb->pbval->block_bcs[inner_x1] == BoundaryFlag::outflow) {
+            // g1(k, j, is-i) = 0.0; //copied from CHENG drum/hydro/decompose_assemble.cpp line 119
+            // do nothing
+            // rely on user gravity function to set ghost cells
+          }
+          else // block boundary
+            g1(k, j, is-i) = g1(k, j, is); //copied from CHENG drum/hydro/decompose_assemble.cpp line 121
+
+          // outer_x1
+          if (pmb->pbval->block_bcs[outer_x1] == BoundaryFlag::reflect)
+            g1(k, j, ie+i) = -1.0*g1(k, j, ie-i+1);
+          else if (pmb->pbval->block_bcs[outer_x1] == BoundaryFlag::periodic)
+            g1(k, j, ie+i) = g1(k, j, is+i-1);
+          else if (pmb->pbval->block_bcs[outer_x1] == BoundaryFlag::outflow) {
+            // g1(k, j, ie+i) = 0.0; //copied from CHENG drum/hydro/decompose_assemble.cpp line 119
+            // do nothing
+            // rely on user gravity function to set ghost cells
+          }
+          else // block boundary
+            g1(k, j, ie+i) = g1(k, j, ie); //copied from CHENG drum/hydro/decompose_assemble.cpp line 121
+        }
+      }
+    } // k loop
   } // if
-  else {
+  else { // non user-gravity
     // loop through meshblock, set gravity stores appropriately
     for (int k=pmb->ks; k<=pmb->ke; ++k) {
       for (int j=pmb->js; j<=pmb->je; ++j) {
@@ -148,34 +183,51 @@ void HydroSourceTerms::SetGravityStores() {
             g3(k, j, i) += g3_;
           }
         } // i loop
+        // Boundary Conditions -- from USER grav
+        // only important in i direction at the moment
+        // relevant in Hydro::DecomposePressurse()
+        for (int i=1; i<=NGHOST; ++i) {
+          // inner x_1
+          if (pmb->pbval->block_bcs[inner_x1] == BoundaryFlag::reflect)
+            g1(k, j, is-i) = -1.0*g1(k, j, is+i-1);
+          else if (pmb->pbval->block_bcs[inner_x1] == BoundaryFlag::periodic)
+            g1(k, j, is-i) = g1(k, j, ie-i+1);
+          else if (pmb->pbval->block_bcs[inner_x1] == BoundaryFlag::outflow) {
+            // g1(k, j, is-i) = 0.0; //copied from CHENG drum/hydro/decompose_assemble.cpp line 119
+            // copy grav into ghost cells
+            if (gm_ != 0.0) {
+              Real g = pmb->pcoord->coord_src1_i_(i)*gm_/pmb->pcoord->x1v(i);
+              g1(k, j, is-i) += g;
+            }
+            if (g1_ != 0.0) {
+              g1(k, j, is-i) += g1_;
+            }
+          }
+          else // block boundary
+            g1(k, j, is-i) = g1(k, j, is); //copied from CHENG drum/hydro/decompose_assemble.cpp line 121
+
+          // outer_x1
+          if (pmb->pbval->block_bcs[outer_x1] == BoundaryFlag::reflect)
+            g1(k, j, ie+i) = -1.0*g1(k, j, ie-i+1);
+          else if (pmb->pbval->block_bcs[outer_x1] == BoundaryFlag::periodic)
+            g1(k, j, ie+i) = g1(k, j, is+i-1);
+          else if (pmb->pbval->block_bcs[outer_x1] == BoundaryFlag::outflow) {
+            // g1(k, j, ie+i) = 0.0; //copied from CHENG drum/hydro/decompose_assemble.cpp line 119
+            // copy grav into ghost cells
+            if (gm_ != 0.0) {
+              Real g = pmb->pcoord->coord_src1_i_(i)*gm_/pmb->pcoord->x1v(i);
+              g1(k, j, ie+i) += g;
+            }
+            if (g1_ != 0.0) {
+              g1(k, j, ie+i) += g1_;
+            }
+          }
+          else // block boundary
+            g1(k, j, ie+i) = g1(k, j, ie); //copied from CHENG drum/hydro/decompose_assemble.cpp line 121
+        }
       }
     }
   } // else
-
-  // Boundary Conditions
-  // only important in i direction at the moment
-  // relevant in Hydro::DecomposePressurse()
-  for (int k=pmb->ks; k<=pmb->ke; ++k) {
-    for (int j=pmb->js; j<=pmb->je; ++j) {
-      for (int i=1; i<=NGHOST; ++i) {
-        // inner x_1
-        if (pmb->pbval->block_bcs[inner_x1] == BoundaryFlag::reflect)
-          g1(k, j, is-i) = -1.0*g1(k, j, is+i-1);
-        else if (pmb->pbval->block_bcs[inner_x1] == BoundaryFlag::outflow)
-          g1(k, j, is-i) = 0.0;
-        else // block boundary
-          g1(k, j, is-i) = g1(k, j, is); //TODO
-
-        // outer_x1
-        if (pmb->pbval->block_bcs[outer_x1] == BoundaryFlag::reflect)
-          g1(k, j, ie+i) = -1.0*g1(k, j, ie-i+1);
-        else if (pmb->pbval->block_bcs[outer_x1] == BoundaryFlag::outflow)
-          g1(k, j, ie+i) = 0.0;
-        else // block boundary
-          g1(k, j, ie+i) = g1(k, j, ie); //TODO
-      }
-    }
-  } // k loop
 }
 
 //----------------------------------------------------------------------------------------
