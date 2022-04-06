@@ -177,7 +177,9 @@ MeshBlock::MeshBlock(int igid, int ilid, LogicalLocation iloc, RegionSize input_
   peos = new EquationOfState(this, pin);
   pthermo = new Thermodynamics(this, pin);
   pchem = new CHEMISTRY(this, pin);
+#ifdef RADIATION_ENABLED
   prad = new Radiation(this, pin);
+#endif
   pdiag = new Diagnostics(this, pin);
 
   // Create user mesh data
@@ -296,7 +298,9 @@ MeshBlock::MeshBlock(int igid, int ilid, Mesh *pm, ParameterInput *pin,
   peos = new EquationOfState(this, pin);
   pthermo = new Thermodynamics(this, pin);
   pchem = new CHEMISTRY(this, pin);
+#ifdef RADIATION_ENABLED
   prad = new Radiation(this, pin);
+#endif
   pdiag = new Diagnostics(this, pin);
 
   InitUserMeshBlockData(pin);
@@ -390,7 +394,9 @@ MeshBlock::~MeshBlock() {
 
   delete pthermo;
   delete pchem;
+#ifdef RADIATION_ENABLED
   delete prad;
+#endif
   delete pdiag;
 }
 

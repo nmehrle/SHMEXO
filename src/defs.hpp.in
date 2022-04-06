@@ -49,7 +49,7 @@
 #define SELF_GRAVITY_ENABLED @SELF_GRAVITY_ENABLED@
 
 // include radiative transfer? default=0 (false)
-#define RADIATION_ENABLED 0
+#define RADIATION_ENABLED @RADIATION_ENABLED@
 
 // chemistry
 #define CHEMISTRY @CHEMISTRY@

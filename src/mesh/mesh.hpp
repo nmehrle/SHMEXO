@@ -127,7 +127,10 @@ class MeshBlock {
 
   Thermodynamics *pthermo;
   Chemistry *pchem;
+
+#ifdef RADIATION_ENABLED
   Radiation *prad;
+#endif
   Diagnostics *pdiag;
 
   MeshBlock *prev, *next;

@@ -246,7 +246,9 @@ TimeIntegratorTaskList::TimeIntegratorTaskList(ParameterInput *pin, Mesh *pm) {
       } else { // Hydro
         AddTask(CALC_HYDFLX,DIFFUSE_HYD);
       }
-      AddTask(CALC_RADFLX,DIFFUSE_HYD);
+      if (RADIATION_ENABLED) {
+        AddTask(CALC_RADFLX,DIFFUSE_HYD);
+      }
       if (NSCALARS > 0) {
         AddTask(DIFFUSE_SCLR,NONE);
         AddTask(CALC_SCLRFLX,(CALC_HYDFLX|DIFFUSE_SCLR));
@@ -261,7 +263,13 @@ TimeIntegratorTaskList::TimeIntegratorTaskList(ParameterInput *pin, Mesh *pm) {
       AddTask(RECV_HYDFLX,CALC_HYDFLX);
       AddTask(INT_HYD,RECV_HYDFLX);
     } else {
-      AddTask(INT_HYD, (CALC_HYDFLX|CALC_RADFLX));
+      if (RADIATION_ENABLED) {
+        AddTask(INT_HYD, (CALC_HYDFLX|CALC_RADFLX));
+      }
+      else {
+        AddTask(INT_HYD, CALC_HYDFLX);
+      }
+      // AddTask(INT_HYD, (CALC_HYDFLX|CALC_RADFLX));
     }
     AddTask(SRCTERM_HYD,INT_HYD);
     AddTask(UPDATE_HYD,SRCTERM_HYD);

@@ -668,7 +668,9 @@ if args['cxx'] == 'clang++-apple':
 # --rt=[name] argument
 if args['rt'] == 'OFF':
   definitions['RT_SOLVER'] = 'RT_OFF'
+  definitions['RADIATION_ENABLED'] = '0'
 else:
+  definitions['RADIATION_ENABLED'] = '1'
   if args['rt'] == '2sess':
     definitions['RT_SOLVER'] = 'RT_2SESS'
   elif args['rt'] == 'disort':
