@@ -155,9 +155,6 @@ Hydro::Hydro(MeshBlock *pmb, ParameterInput *pin) :
   // du stores the change of the conservative variable in a substep
   du.NewAthenaArray(NHYDRO, nc3, nc2, nc1);
 
-  // decompose pressure flag
-  decompose_pressure_flag = pin->GetOrAddBoolean("hydro", "decompose_pressure_flag", true);
-
   // implicit correction
   implicit_flag = pin->GetOrAddInteger("hydro", "implicit_flag", 0);
   pvc = new VerticalCommunication(this);

@@ -77,9 +77,7 @@ void Hydro::CalculateFluxes(AthenaArray<Real> &w, FaceField &b,
   //  }
 
   // decompose pressure to pertubation pressure and hydrostatic pressure
-  if (decompose_pressure_flag) {
-    DecomposePressure(w, kl, ku, jl, ju);
-  }
+  DecomposePressure(w, kl, ku, jl, ju);
 
   for (int k=kl; k<=ku; ++k) {
     for (int j=jl; j<=ju; ++j) {
@@ -95,9 +93,7 @@ void Hydro::CalculateFluxes(AthenaArray<Real> &w, FaceField &b,
       }
 
       // assemble pressure pertubation
-      if (decompose_pressure_flag) {
-        AssemblePressure(w, wl_, wr_, k, j, is-1, ie+1);
-      }
+      AssemblePressure(w, wl_, wr_, k, j, is-1, ie+1);
 
       pmb->pcoord->CenterWidth1(k, j, is, ie+1, dxw_);
 #if !MAGNETIC_FIELDS_ENABLED  // Hydro:

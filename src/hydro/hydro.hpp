@@ -152,8 +152,6 @@ protected:
   void AddDiffusionFluxes();
   Real GetWeightForCT(Real dflx, Real rhol, Real rhor, Real dx, Real dt);
 
-  bool decompose_pressure_flag;
-
   // pressure decomposition
   AthenaArray<Real> psf_;         // hydrostatic pressure at cell face
   AthenaArray<Real> psv_;         // hydrostatic pressure at cell center
