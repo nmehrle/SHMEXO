@@ -46,7 +46,7 @@ void MeshBlock::UserWorkBeforeOutput(ParameterInput *pin)
         user_out_var(0,k,j,i) = pthermo->Temp(phydro->w.at(k,j,i));
         user_out_var(1,k,j,i) = phydro->hsrc.g1(k,j,i);
 
-        user_out_var(2,k,j,i) = prad->radflux(k,j,i);
+        user_out_var(2,k,j,i) = prad->rad_flux[X1DIR](k,j,i);
         user_out_var(3,k,j,i) = phydro->flux[X1DIR](k,j,i);
       }
 }
