@@ -157,6 +157,8 @@ void Radiation::CalculateFluxes(AthenaArray<Real> const& w, Real time,
     p->RadtranFlux(*rin_, dist_, k, j, il, iu);
     p = p->next;
   }
+
+  CalculateNetFlux(k,j,il,iu);
 }
 
 void Radiation::CalculateRadiances(AthenaArray<Real> const& w, Real time,
@@ -179,31 +181,8 @@ void Radiation::CalculateRadiances(AthenaArray<Real> const& w, Real time,
   }
 }
 
-void Radiation::AddRadiativeFluxes(AthenaArray<Real>& x1flux, 
-  int k, int j, int il, int iu)
-{
-  RadiationBand *p = pband;
-  if (pband == NULL) return;
-
-  MeshBlock *pmb = pmy_block;
-
-  // x1-flux divergence
-  p = pband;
-  while (p != NULL) {
-#pragma omp simd
-    for (int i = il; i <= iu; ++i)
-      x1flux(IEN,k,j,i) += p->bflxup(k,j,i) - p->bflxdn(k,j,i);
-    p = p->next;
-  }
-}
-
 void Radiation::CalculateNetFlux(int k, int j, int il, int iu) {
   RadiationBand *p = pband;
-  // unneccessary to be here. could be part of calculatefluxs to save comp time
-  rad_flux[X1DIR].ZeroClear();
-  rad_flux[X2DIR].ZeroClear();
-  rad_flux[X3DIR].ZeroClear();
-
   if (pband == NULL) return;
 
   MeshBlock *pmb = pmy_block;
@@ -218,37 +197,26 @@ void Radiation::CalculateNetFlux(int k, int j, int il, int iu) {
   }
 }
 
-void Radiation::AddRadiationSource(const Real dt, AthenaArray<Real> &du)
+void Radiation::ClearRadFlux() {
+  rad_flux[X1DIR].ZeroClear();
+  rad_flux[X2DIR].ZeroClear();
+  rad_flux[X3DIR].ZeroClear();
+}
+
+void Radiation::AddRadiationSourceTerm(const Real dt, AthenaArray<Real> &du)
 {
   RadiationBand *p = pband;
   MeshBlock *pmb = pmy_block;
 
   int is = pmb->is; int js = pmb->js; int ks = pmb->ks;
   int ie = pmb->ie; int je = pmb->je; int ke = pmb->ke;
-  int il, iu, jl, ju, kl, ku;
-
-  jl = js, ju = je, kl = ks, ku = ke;
-
-  if (pmb->block_size.nx2 > 1) {
-    if (pmb->block_size.nx3 == 1) // 2D
-      jl = js-1, ju = je+1, kl = ks, ku = ke;
-    else // 3D
-      jl = js-1, ju = je+1, kl = ks-1, ku = ke+1;
-  }
 
   AthenaArray<Real> &x1area = x1face_area_, &x2area = x2face_area_, &x3area = x3face_area_,
                  &x2area_p1 = x2face_area_p1_, &x3area_p1 = x3face_area_p1_,
                  &vol = cell_volume_, &dflx = dflx_;
 
-  for (int k=kl; k<=ku; ++k) {
-    for (int j=jl; j<=ju; ++j) {
-      // calculate net fluxes
-      CalculateNetFlux(k, j, is, ie+1);
-
-      // if in ghost cell, dont calculate du
-      if (jl < js || ju > je || kl < ks || ku > ke)
-        continue;
-
+  for (int k=ks; k<=ke; ++k) {
+    for (int j=js; j<=je; ++j) {
       // x1 flux
       pmb->pcoord->Face1Area(k, j, is, ie+1, x1area);
 #pragma omp simd

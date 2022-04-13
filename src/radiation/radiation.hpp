@@ -88,14 +88,13 @@ public:
   ~Radiation();
   RadiationBand* GetBand(int n);
   int GetNumBands();
+  void ClearRadFlux();
   void CalculateFluxes(AthenaArray<Real> const& w, Real time,
     int k, int j, int il, int iu);
   void CalculateRadiances(AthenaArray<Real> const& w, Real time,
     int k, int j, int il, int iu);
-  void AddRadiativeFluxes(AthenaArray<Real>& x1flux,
-    int k, int j, int il, int iu);
   void CalculateNetFlux(int k, int j, int il, int iu);
-  void AddRadiationSource(const Real dt, AthenaArray<Real> &du);
+  void AddRadiationSourceTerm(const Real dt, AthenaArray<Real> &du);
   bool IsDynamic() { return dynamic_; }
   Real GetBeam() { return beam_; }
 

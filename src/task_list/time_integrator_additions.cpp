@@ -62,9 +62,25 @@ TaskStatus TimeIntegratorTaskList::CalculateRadiationFlux(MeshBlock *pmb, int st
     prad->current -= pmb->pmy_mesh->dt;  // radiation is in cool-down
   } else {
     prad->current = prad->cooldown;
-    for (int k = pmb->ks; k <= pmb->ke; ++k)
-      for (int j = pmb->js; j <= pmb->je; ++j)
-        prad->CalculateFluxes(phydro->w, pmb->pmy_mesh->time, k, j, pmb->is, pmb->ie+1);
+
+    prad->ClearRadFlux();
+
+    int is = pmb->is; int js = pmb->js; int ks = pmb->ks;
+    int ie = pmb->ie; int je = pmb->je; int ke = pmb->ke;
+    int jl, ju, kl, ku;
+
+    jl = js, ju = je, kl = ks, ku = ke;
+
+    if (pmb->block_size.nx2 > 1) {
+      if (pmb->block_size.nx3 == 1) // 2D
+        jl = js-1, ju = je+1, kl = ks, ku = ke;
+      else // 3D
+        jl = js-1, ju = je+1, kl = ks-1, ku = ke+1;
+    }
+
+    for (int k = kl; k <= ku; ++k)
+      for (int j = jl; j <= ju; ++j)
+        prad->CalculateFluxes(phydro->w, pmb->pmy_mesh->time, k, j, is, ie+1);
   }
   return TaskStatus::next;
 }
@@ -77,7 +93,7 @@ TaskStatus TimeIntegratorTaskList::AddSourceTermsRadiation(MeshBlock *pmb, int s
 
   if (stage <= nstages) {
     Real dt = (stage_wghts[(stage-1)].beta)*(pmb->pmy_mesh->dt);
-    prad->AddRadiationSource(dt, ph->du);
+    prad->AddRadiationSourceTerm(dt, ph->du);
   } else {
     return TaskStatus::fail;
   }
