@@ -147,6 +147,7 @@ class TimeIntegratorTaskList : public TaskList {
   TaskStatus IntegrateChemistry(MeshBlock *pmb, int stage);
 
   TaskStatus AddSourceTermsHydro(MeshBlock *pmb, int stage);
+  TaskStatus AddSourceTermsRadiation(MeshBlock *pmb, int stage);
 
   TaskStatus DiffuseHydro(MeshBlock *pmb, int stage);
   TaskStatus DiffuseField(MeshBlock *pmb, int stage);
@@ -246,7 +247,7 @@ const TaskID RECV_FLDFLX(11);
 
 const TaskID SRCTERM_HYD(14);
 // const TaskID SRCTERM_FLD(15);
-// const TaskID SRCTERM_RAD(16);
+const TaskID SRCTERM_RAD(16);
 // const TaskID SRCTERM_CHM(17);
 
 const TaskID INT_HYD(18);

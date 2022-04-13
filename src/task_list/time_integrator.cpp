@@ -265,14 +265,21 @@ TimeIntegratorTaskList::TimeIntegratorTaskList(ParameterInput *pin, Mesh *pm) {
     } else {
       if (RADIATION_ENABLED) {
         AddTask(INT_HYD, (CALC_HYDFLX|CALC_RADFLX));
-      }
-      else {
+      } else {
         AddTask(INT_HYD, CALC_HYDFLX);
       }
       // AddTask(INT_HYD, (CALC_HYDFLX|CALC_RADFLX));
     }
     AddTask(SRCTERM_HYD,INT_HYD);
-    AddTask(UPDATE_HYD,SRCTERM_HYD);
+    // ADD RADIATION HERE?
+    if (RADIATION_ENABLED) {
+      AddTask(SRCTERM_RAD, SRCTERM_HYD);
+      AddTask(UPDATE_HYD, SRCTERM_RAD|SRCTERM_HYD); //bitwise or means both are deps
+    } else {
+      AddTask(UPDATE_HYD,SRCTERM_HYD);
+    }
+    // AddTask(UPDATE_HYD,SRCTERM_HYD);
+    // END ADD RADIATION
     AddTask(INT_CHM,UPDATE_HYD);
     AddTask(SEND_HYD,INT_CHM);
     AddTask(RECV_HYD,NONE);
@@ -471,6 +478,11 @@ void TimeIntegratorTaskList::AddTask(const TaskID& id, const TaskID& dep) {
     task_list_[ntasks].TaskFunc=
         static_cast<TaskStatus (TaskList::*)(MeshBlock*,int)>
         (&TimeIntegratorTaskList::AddSourceTermsHydro);
+    task_list_[ntasks].lb_time = true;
+  } else if (id == SRCTERM_RAD) {
+    task_list_[ntasks].TaskFunc=
+        static_cast<TaskStatus (TaskList::*)(MeshBlock*,int)>
+        (&TimeIntegratorTaskList::AddSourceTermsRadiation);
     task_list_[ntasks].lb_time = true;
   } else if (id == SEND_HYD) {
     task_list_[ntasks].TaskFunc=

@@ -80,6 +80,8 @@ public:
   Real cooldown, current;
   CelestrialBody *planet;
 
+  AthenaArray<Real> rad_flux[3];  // face-averaged flux vector
+
   // functions
   Radiation(MeshBlock *pmb); // delayed initialization
   Radiation(MeshBlock *pmb, ParameterInput *pin);
@@ -92,6 +94,8 @@ public:
     int k, int j, int il, int iu);
   void AddRadiativeFluxes(AthenaArray<Real>& x1flux,
     int k, int j, int il, int iu);
+  void CalculateNetFlux(int k, int j, int il, int iu);
+  void AddRadiationSource(const Real dt, AthenaArray<Real> &du);
   bool IsDynamic() { return dynamic_; }
   Real GetBeam() { return beam_; }
 
@@ -102,6 +106,12 @@ protected:
   int nrin_, nrout_;
   Real dist_;
   Real beam_;
+
+  // scratch space to compute change in radflux
+  AthenaArray<Real> x1face_area_, x2face_area_, x3face_area_;
+  AthenaArray<Real> x2face_area_p1_, x3face_area_p1_;
+  AthenaArray<Real> cell_volume_;
+  AthenaArray<Real> dflx_;
 };
 
 #endif

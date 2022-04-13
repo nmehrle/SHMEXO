@@ -20,10 +20,28 @@ Radiation::Radiation(MeshBlock *pmb):
   rout_ = new Direction [1];
 }
 
-Radiation::Radiation(MeshBlock *pmb, ParameterInput *pin)
+Radiation::Radiation(MeshBlock *pmb, ParameterInput *pin):
+  pmy_block(pmb), pband(NULL),
+  rad_flux{ {NHYDRO, pmb->ncells3, pmb->ncells2, pmb->ncells1+1},
+            {NHYDRO, pmb->ncells3, pmb->ncells2+1, pmb->ncells1,
+              (pmb->pmy_mesh->f2 ? AthenaArray<Real>::DataStatus::allocated :
+               AthenaArray<Real>::DataStatus::empty)},
+            {NHYDRO, pmb->ncells3+1, pmb->ncells2, pmb->ncells1,
+              (pmb->pmy_mesh->f3 ? AthenaArray<Real>::DataStatus::allocated :
+               AthenaArray<Real>::DataStatus::empty)}
+  },
+  x1face_area_(pmb->ncells1+1),
+  x2face_area_(pmb->ncells1, (pmb->pmy_mesh->f2 ? AthenaArray<Real>::DataStatus::allocated :
+               AthenaArray<Real>::DataStatus::empty)),
+  x2face_area_p1_(pmb->ncells1, (pmb->pmy_mesh->f2 ? AthenaArray<Real>::DataStatus::allocated :
+               AthenaArray<Real>::DataStatus::empty)),
+  x3face_area_(pmb->ncells1, (pmb->pmy_mesh->f3 ? AthenaArray<Real>::DataStatus::allocated :
+               AthenaArray<Real>::DataStatus::empty)),
+  x3face_area_p1_(pmb->ncells1, (pmb->pmy_mesh->f3 ? AthenaArray<Real>::DataStatus::allocated :
+               AthenaArray<Real>::DataStatus::empty)),
+  cell_volume_(pmb->ncells1),
+  dflx_(pmb->ncells1)
 {
-  pmy_block = pmb;
-  pband = NULL;
   RadiationBand *plast = pband;
 
   // incoming radiation direction (mu,phi) in degree
@@ -177,4 +195,95 @@ void Radiation::AddRadiativeFluxes(AthenaArray<Real>& x1flux,
       x1flux(IEN,k,j,i) += p->bflxup(k,j,i) - p->bflxdn(k,j,i);
     p = p->next;
   }
+}
+
+void Radiation::CalculateNetFlux(int k, int j, int il, int iu) {
+  RadiationBand *p = pband;
+  // unneccessary to be here. could be part of calculatefluxs to save comp time
+  rad_flux[X1DIR].ZeroClear();
+  rad_flux[X2DIR].ZeroClear();
+  rad_flux[X3DIR].ZeroClear();
+
+  if (pband == NULL) return;
+
+  MeshBlock *pmb = pmy_block;
+
+  // x1-flux divergence
+  p = pband;
+  while (p != NULL) {
+#pragma omp simd
+    for (int i = il; i <= iu; ++i)
+      rad_flux[X1DIR](k,j,i) += p->bflxup(k,j,i) - p->bflxdn(k,j,i);
+    p = p->next;
+  }
+}
+
+void Radiation::AddRadiationSource(const Real dt, AthenaArray<Real> &du)
+{
+  RadiationBand *p = pband;
+  MeshBlock *pmb = pmy_block;
+
+  int is = pmb->is; int js = pmb->js; int ks = pmb->ks;
+  int ie = pmb->ie; int je = pmb->je; int ke = pmb->ke;
+  int il, iu, jl, ju, kl, ku;
+
+  jl = js, ju = je, kl = ks, ku = ke;
+
+  if (pmb->block_size.nx2 > 1) {
+    if (pmb->block_size.nx3 == 1) // 2D
+      jl = js-1, ju = je+1, kl = ks, ku = ke;
+    else // 3D
+      jl = js-1, ju = je+1, kl = ks-1, ku = ke+1;
+  }
+
+  AthenaArray<Real> &x1area = x1face_area_, &x2area = x2face_area_, &x3area = x3face_area_,
+                 &x2area_p1 = x2face_area_p1_, &x3area_p1 = x3face_area_p1_,
+                 &vol = cell_volume_, &dflx = dflx_;
+
+  for (int k=kl; k<=ku; ++k) {
+    for (int j=jl; j<=ju; ++j) {
+      // calculate net fluxes
+      CalculateNetFlux(k, j, is, ie+1);
+
+      // if in ghost cell, dont calculate du
+      if (jl < js || ju > je || kl < ks || ku > ke)
+        continue;
+
+      // x1 flux
+      pmb->pcoord->Face1Area(k, j, is, ie+1, x1area);
+#pragma omp simd
+      for (int i=is; i<=ie; ++i) {
+        // dflx(n,i) = (x1area(i+1) *x1flux(n,k,j,i+1) - x1area(i)*x1flux(n,k,j,i));
+        dflx(i) = (x1area(i+1)*rad_flux[X1DIR](k,j,i+1) - x1area(i)*rad_flux[X1DIR](k,j,i));
+      }
+
+      // x2 flux -- not currently implemented
+      if (pmb->block_size.nx2 > 1) {
+        pmb->pcoord->Face2Area(k, j  , is, ie, x2area   );
+        pmb->pcoord->Face2Area(k, j+1, is, ie, x2area_p1);
+#pragma omp simd
+        for (int i=is; i<=ie; ++i) {
+          dflx(i) += x2area_p1(i)*rad_flux[X2DIR](k,j+1,i) - x2area(i)*rad_flux[X2DIR](k,j,i);
+        }
+      } // if 2d
+
+      // x3 flux -- not currently implemented
+      if (pmb->block_size.nx3 > 1) {
+        pmb->pcoord->Face3Area(k  , j, is, ie, x3area   );
+        pmb->pcoord->Face3Area(k+1, j, is, ie, x3area_p1);
+#pragma omp simd
+        for (int i=is; i<=ie; ++i) {
+          dflx(i) += x3area_p1(i)*rad_flux[X3DIR](k,j+1,i) - x3area(i)*rad_flux[X3DIR](k,j,i);
+        }
+      } // if 3d
+
+      // apply change in energy to conserved variables
+      pmb->pcoord->CellVolume(k,j,is,ie,vol);
+#pragma omp simd
+      for (int i=is; i<=ie; ++i) {
+        du(IEN, k, j, i) -= dt*dflx(i)/vol(i);
+      }
+
+    } // j loop
+  } // k loop
 }

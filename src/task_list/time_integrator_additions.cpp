@@ -68,3 +68,18 @@ TaskStatus TimeIntegratorTaskList::CalculateRadiationFlux(MeshBlock *pmb, int st
   }
   return TaskStatus::next;
 }
+
+// after integrate hydro
+// before update hydro
+TaskStatus TimeIntegratorTaskList::AddSourceTermsRadiation(MeshBlock *pmb, int stage) {
+  Radiation *prad = pmb->prad;
+  Hydro *ph       = pmb->phydro;
+
+  if (stage <= nstages) {
+    Real dt = (stage_wghts[(stage-1)].beta)*(pmb->pmy_mesh->dt);
+    prad->AddRadiationSource(dt, ph->du);
+  } else {
+    return TaskStatus::fail;
+  }
+  return TaskStatus::next;
+}
