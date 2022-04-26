@@ -52,8 +52,8 @@ TaskStatus TimeIntegratorTaskList::IntegrateChemistry(MeshBlock *pmb, int stage)
 //----------------------------------------------------------------------------------------
 // Functions to calculate radiation flux
 TaskStatus TimeIntegratorTaskList::CalculateRadiationFlux(MeshBlock *pmb, int stage) {
-  // only do radiation at last rk step
-  if (stage != nstages) return TaskStatus::next;
+  // only do radiation at first rk step  -- quickening assumption for now
+  if (stage != 1) return TaskStatus::next;
 
   Radiation *prad = pmb->prad;
   Hydro *phydro=pmb->phydro;
