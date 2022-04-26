@@ -22,11 +22,11 @@ Radiation::Radiation(MeshBlock *pmb):
 
 Radiation::Radiation(MeshBlock *pmb, ParameterInput *pin):
   pmy_block(pmb), pband(NULL),
-  rad_flux{ {NHYDRO, pmb->ncells3, pmb->ncells2, pmb->ncells1+1},
-            {NHYDRO, pmb->ncells3, pmb->ncells2+1, pmb->ncells1,
+  rad_flux{ {pmb->ncells3, pmb->ncells2, pmb->ncells1+1},
+            {pmb->ncells3, pmb->ncells2+1, pmb->ncells1,
               (pmb->pmy_mesh->f2 ? AthenaArray<Real>::DataStatus::allocated :
                AthenaArray<Real>::DataStatus::empty)},
-            {NHYDRO, pmb->ncells3+1, pmb->ncells2, pmb->ncells1,
+            {pmb->ncells3+1, pmb->ncells2, pmb->ncells1,
               (pmb->pmy_mesh->f3 ? AthenaArray<Real>::DataStatus::allocated :
                AthenaArray<Real>::DataStatus::empty)}
   },
@@ -241,7 +241,7 @@ void Radiation::AddRadiationSourceTerm(const Real dt, AthenaArray<Real> &du)
         pmb->pcoord->Face3Area(k+1, j, is, ie, x3area_p1);
 #pragma omp simd
         for (int i=is; i<=ie; ++i) {
-          dflx(i) += x3area_p1(i)*rad_flux[X3DIR](k,j+1,i) - x3area(i)*rad_flux[X3DIR](k,j,i);
+          dflx(i) += x3area_p1(i)*rad_flux[X3DIR](k+1,j,i) - x3area(i)*rad_flux[X3DIR](k,j,i);
         }
       } // if 3d
 
