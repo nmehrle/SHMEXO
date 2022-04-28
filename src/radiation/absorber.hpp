@@ -64,6 +64,10 @@ public:
   virtual Real SingleScatteringAlbedo(Real wave, Real const prim[]) const { return 0.; }
   virtual void PhaseMomentum(Real wave, Real const prim[], Real *pp, int np) const {}
 
+  Real EnergyDeposition(Real wave, Real Fin, Real Fout) {
+    return Fin-Fout;
+  }
+
 protected:
   int  imol_;       /**< id of dependent molecule */
   Real mixr_;       /**< mixing ratio for dependent molecule */

@@ -208,50 +208,27 @@ void Radiation::AddRadiationSourceTerm(const Real dt, AthenaArray<Real> &du)
   RadiationBand *p = pband;
   MeshBlock *pmb = pmy_block;
 
+  if (pband == NULL) return;
+
   int is = pmb->is; int js = pmb->js; int ks = pmb->ks;
   int ie = pmb->ie; int je = pmb->je; int ke = pmb->ke;
 
-  AthenaArray<Real> &x1area = x1face_area_, &x2area = x2face_area_, &x3area = x3face_area_,
-                 &x2area_p1 = x2face_area_p1_, &x3area_p1 = x3face_area_p1_,
-                 &vol = cell_volume_, &dflx = dflx_;
+  AthenaArray<Real> &vol = cell_volume_, &dflx = dflx_;
 
-  for (int k=ks; k<=ke; ++k) {
-    for (int j=js; j<=je; ++j) {
-      // x1 flux
-      pmb->pcoord->Face1Area(k, j, is, ie+1, x1area);
-#pragma omp simd
-      for (int i=is; i<=ie; ++i) {
-        // dflx(n,i) = (x1area(i+1) *x1flux(n,k,j,i+1) - x1area(i)*x1flux(n,k,j,i));
-        dflx(i) = (x1area(i+1)*rad_flux[X1DIR](k,j,i+1) - x1area(i)*rad_flux[X1DIR](k,j,i));
-      }
+  p = pband;
+  while (p != NULL) {
+    for (int k=ks; k<=ke; ++k) {
+      for (int j=js; j<=je; ++j) {
+        p->CalculateEnergyDeposition(dflx, k, j, is, ie);
 
-      // x2 flux -- not currently implemented
-      if (pmb->block_size.nx2 > 1) {
-        pmb->pcoord->Face2Area(k, j  , is, ie, x2area   );
-        pmb->pcoord->Face2Area(k, j+1, is, ie, x2area_p1);
+        // apply change in energy to conserved variables
+        pmb->pcoord->CellVolume(k,j,is,ie,vol);
 #pragma omp simd
         for (int i=is; i<=ie; ++i) {
-          dflx(i) += x2area_p1(i)*rad_flux[X2DIR](k,j+1,i) - x2area(i)*rad_flux[X2DIR](k,j,i);
+          du(IEN, k, j, i) -= dt*dflx(i)/vol(i);
         }
-      } // if 2d
-
-      // x3 flux -- not currently implemented
-      if (pmb->block_size.nx3 > 1) {
-        pmb->pcoord->Face3Area(k  , j, is, ie, x3area   );
-        pmb->pcoord->Face3Area(k+1, j, is, ie, x3area_p1);
-#pragma omp simd
-        for (int i=is; i<=ie; ++i) {
-          dflx(i) += x3area_p1(i)*rad_flux[X3DIR](k+1,j,i) - x3area(i)*rad_flux[X3DIR](k,j,i);
-        }
-      } // if 3d
-
-      // apply change in energy to conserved variables
-      pmb->pcoord->CellVolume(k,j,is,ie,vol);
-#pragma omp simd
-      for (int i=is; i<=ie; ++i) {
-        du(IEN, k, j, i) -= dt*dflx(i)/vol(i);
-      }
-
-    } // j loop
-  } // k loop
+      } // j loop
+    } // k loop
+    p = p->next;
+  } // p loop
 }

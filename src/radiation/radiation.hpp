@@ -40,6 +40,7 @@ public:
 
   // band radiation results
   AthenaArray<Real> btau, bssa, bpmom;
+  AthenaArray<Real> netflux_boundary[3]; // net flux on boundaries
   AthenaArray<Real> bflxup, bflxdn;
   AthenaArray<Real> btoa;
 
@@ -54,6 +55,7 @@ public:
     int k, int j, int il, int iu);
   void RadtranRadiance(Direction const rin, Direction const *rout, int nrout, Real dist,
     int k, int j, int il, int iu);
+  void CalculateEnergyDeposition(AthenaArray<Real> &dflx, int k, int j, int il, int iu);
 
 #ifdef RT_DISORT
   void init_disort(ParameterInput *pin);
@@ -73,6 +75,7 @@ protected:
 };
 
 class Radiation {
+  friend class RadiationBand;
 public:
   // data
   MeshBlock *pmy_block;

@@ -63,6 +63,7 @@ RadiationBand::RadiationBand(Radiation *prad, std::string name, ParameterInput *
 
   // allocate memory
   MeshBlock *pmb = prad->pmy_block;
+  Mesh *pm = pmb->pmy_mesh;
   int ncells1 = pmb->ncells1;
   int ncells2 = pmb->ncells2;
   int ncells3 = pmb->ncells3;
@@ -82,6 +83,13 @@ RadiationBand::RadiationBand(Radiation *prad, std::string name, ParameterInput *
   bpmom.NewAthenaArray(npmom+1, ncells3, ncells2, ncells1);
   bflxup.NewAthenaArray(ncells3, ncells2, ncells1+1);
   bflxdn.NewAthenaArray(ncells3, ncells2, ncells1+1);
+  netflux_boundary[X1DIR].NewAthenaArray(nspec, ncells3, ncells2, ncells1+1);
+  if (pm->f2) {
+    netflux_boundary[X2DIR].NewAthenaArray(nspec, ncells3, ncells2+1, ncells1);
+  }
+  if (pm->f3) {
+    netflux_boundary[X3DIR].NewAthenaArray(nspec, ncells3+3, ncells2, ncells1);
+  }
   btoa.NewAthenaArray(nrout, ncells3, ncells2);
 
   // absorbers
@@ -248,5 +256,70 @@ void RadiationBand::SetSpectralProperties(AthenaArray<Real> const& w,
       bpmom(p,k,j,i) /= bssa(k,j,i);
     bssa(k,j,i) /= btau(k,j,i);
     btau(k,j,i) /= nspec;
+  }
+}
+
+void RadiationBand::CalculateEnergyDeposition(AthenaArray<Real> &dflx, int k, int j, int il, int iu) {
+
+  Radiation *prad = pmy_rad;
+  MeshBlock *pmb = pmy_rad->pmy_block;
+
+  AthenaArray<Real> &x1area = prad->x1face_area_,
+                    &x2area = prad->x2face_area_,
+                    &x3area = prad->x3face_area_,
+                    &x2area_p1 = prad->x2face_area_p1_,
+                    &x3area_p1 = prad->x3face_area_p1_;
+
+  pmb->pcoord->Face1Area(k, j, il, iu+1, x1area);
+  if (pmb->block_size.nx2 > 1) {
+    pmb->pcoord->Face2Area(k, j  , il, iu, x2area   );
+    pmb->pcoord->Face2Area(k, j+1, il, iu, x2area_p1);
+  }
+  if (pmb->block_size.nx3 > 1) {
+    pmb->pcoord->Face3Area(k  , j, il, iu, x3area   );
+    pmb->pcoord->Face3Area(k+1, j, il, iu, x3area_p1);
+  }
+
+  Real flux_in[3]; // Incoming flux (Energy/time)
+  Real flux_out[3]; // Outgoing flux (Energy/time)
+
+  Absorber *a = pabs;
+  bool second_absorber=false; // tracks if second absorber in this band
+  while (a != NULL) {
+    // raise error if two or more absorbers in this band
+    if (second_absorber) {
+      std::stringstream msg;
+      msg << "### FATAL ERROR in RadiationBand::CalculateEnergyDeposition: ";
+      msg << "    Currently only one absorber is supported per band. Re-make the problem with exactly one absorber per band, or edit this funciton." << std::endl;
+      ATHENA_ERROR(msg);
+    }
+
+    for (int i=il; i<=iu; ++i) {
+      dflx(i) = 0;
+#pragma omp simd
+      for (int n = 0; n<nspec; ++n) {
+        // X1DIR
+        flux_in[X1DIR]  = x1area(i+1) * netflux_boundary[X1DIR](n,k,j,i+1);
+        flux_out[X1DIR] = x1area(i) * netflux_boundary[X1DIR](n,k,j,i);
+        dflx(i) += a->EnergyDeposition(spec[n].wav, flux_in[X1DIR], flux_out[X1DIR]);
+        
+        // X2DIR
+        if (pmb->block_size.nx2 > 1) {
+          flux_in[X2DIR]  = x2area_p1(i) * netflux_boundary[X2DIR](n,k,j+1,i);
+          flux_out[X2DIR] = x2area(i) * netflux_boundary[X2DIR](n,k,j,i);
+          dflx(i) += a->EnergyDeposition(spec[n].wav, flux_in[X2DIR], flux_out[X2DIR]);
+        }
+
+        // X3DIR
+        if (pmb->block_size.nx3 > 1) {
+          flux_in[X3DIR]  = x3area_p1(i) * netflux_boundary[X3DIR](n,k+1,j,i);
+          flux_out[X3DIR] = x3area(i) * netflux_boundary[X3DIR](n,k,j,i);
+          dflx(i) += a->EnergyDeposition(spec[n].wav, flux_in[X3DIR], flux_out[X3DIR]);
+        }
+      }
+    }
+
+    a = a->next;
+    second_absorber=true;
   }
 }

@@ -177,6 +177,7 @@ void RadiationBand::RadtranFlux(Direction const rin, Real dist, int k, int j, in
                      *farea(il)/farea(i);  // flux down
       bflxup(k,j,i) += spec[n].wgt*flxup_[i][n];
       bflxdn(k,j,i) += spec[n].wgt*flxdn_[i][n];
+      netflux_boundary[X1DIR](n,k,j,i) = spec[n].wgt*(flxup_[i][n] - flxdn_[i][n]); //flux density at the cell boundaries
     }
   }
 }
