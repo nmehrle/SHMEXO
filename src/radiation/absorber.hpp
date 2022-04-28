@@ -64,8 +64,8 @@ public:
   virtual Real SingleScatteringAlbedo(Real wave, Real const prim[]) const { return 0.; }
   virtual void PhaseMomentum(Real wave, Real const prim[], Real *pp, int np) const {}
 
-  Real EnergyDeposition(Real wave, Real Fin, Real Fout) {
-    return Fin-Fout;
+  virtual Real EnergyDeposition(Real wave, Real flux_in, Real flux_out) {
+    return flux_in-flux_out;
   }
 
 protected:
