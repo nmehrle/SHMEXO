@@ -24,6 +24,7 @@ Real A0=6.30431812E-22; // (m^2)
 Real nu_0=3.2898419603E15; // (1/s) Rydberg frequency
 Real c=2.998E8; // m/s
 Real mh=1.674E-27; // kg 
+Real nm_0=91.126705058; // Hydrogen ionization wavelength in nm
 
 HydrogenAbsorber::HydrogenAbsorber(RadiationBand *pband, ParameterInput *pin):
   Absorber(pband)
@@ -62,4 +63,20 @@ Real HydrogenAbsorber::AbsorptionCoefficient(Real wave, Real const prim[]) const
   Real n = dens/mh; // number density
 
   return sigma * n; // 1/m
+}
+
+Real HydrogenAbsorber::EnergyDeposition(Real wave, Real flux_in, Real flux_out)
+{
+  Real wave_nm = (wave * wave_to_meters_conversion) * 1e9;
+  if (wave_nm > nm_0) {
+    // energy not absorbed
+    // should also be reflected in tau_lambda = 0
+    return 0;
+  }
+  else {
+    // fraction of energy turned into heat
+    // removes ionizatoin energy cost
+    Real energy_fraction = 1 - (wave_nm/nm_0);
+    return (flux_in-flux_out)*energy_fraction;
+  }
 }
