@@ -129,14 +129,15 @@ void CelestrialBody::ParentZenithAngle(Real *mu, Real *phi, Real time, Real cola
   *phi = 0.;
 }
 
-Real CelestrialBody::ParentInsolationFlux(Real wav, Real dist)
+Real CelestrialBody::ParentInsolationFlux(Real wav, Real dist, Real ref_dist)
 {
   Real dx;
   // assuming ascending in wav
   if ((il_ >= 0) && (wav < parent->spec_[il_].x)) il_ = -1;
   il_ = find_place_in_table(parent->nspec_, parent->spec_, wav, &dx, il_);
   Real flux = splint(wav, parent->spec_ + il_, dx);
-  return flux/(dist*dist);
+  Real dist_factor = (ref_dist*ref_dist)/(dist*dist);
+  return flux*dist_factor;
 }
 
 Real CelestrialBody::ParentDistanceInAu(Real time)

@@ -14,7 +14,7 @@
 
 Radiation::Radiation(MeshBlock *pmb):
   pmy_block(pmb), pband(NULL), dynamic_(false), beam_(-1.),
-  cooldown(0.), current(0.), nrin_(1), nrout_(1), dist_(1.), planet(NULL)
+  cooldown(0.), current(0.), nrin_(1), nrout_(1), dist_(1.), ref_dist_(1.), planet(NULL)
 {
   rin_ = new Direction [1];
   rout_ = new Direction [1];
@@ -72,6 +72,7 @@ Radiation::Radiation(MeshBlock *pmb, ParameterInput *pin):
 
   // distance to parent star
   dist_ = pin->GetOrAddReal("radiation", "distance", 1.);
+  ref_dist_ = pin->GetOrAddReal("radiation", "reference_distance", 1.);
 
   int b = 1;
   char name[80];
@@ -154,7 +155,7 @@ void Radiation::CalculateFluxes(AthenaArray<Real> const& w, Real time,
 
   while (p != NULL) {
     p->SetSpectralProperties(w, k, j, il - NGHOST, iu + NGHOST - 1);
-    p->RadtranFlux(*rin_, dist_, k, j, il, iu);
+    p->RadtranFlux(*rin_, dist_, ref_dist_, k, j, il, iu);
     p = p->next;
   }
 
@@ -176,7 +177,7 @@ void Radiation::CalculateRadiances(AthenaArray<Real> const& w, Real time,
 
   while (p != NULL) {
     p->SetSpectralProperties(w, k, j, il - NGHOST, iu + NGHOST - 1);
-    p->RadtranRadiance(*rin_, rout_, nrout_, dist_, k, j, il, iu);
+    p->RadtranRadiance(*rin_, rout_, nrout_, dist_, ref_dist_, k, j, il, iu);
     p = p->next;
   }
 }

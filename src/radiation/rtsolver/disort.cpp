@@ -97,7 +97,7 @@ void RadiationBand::free_disort()
 
 
 void RadiationBand::RadtranRadiance(Direction const rin, Direction const *rout, int nrout,
-  Real dist, int k, int j, int il, int iu)
+  Real dist, Real ref_dist, int k, int j, int il, int iu)
 {
   /* place holder for calculating radiance
   if (!ds->flag.onlyfl) {
@@ -109,7 +109,7 @@ void RadiationBand::RadtranRadiance(Direction const rin, Direction const *rout, 
   }*/
 }
 
-void RadiationBand::RadtranFlux(Direction const rin, Real dist, int k, int j, int il, int iu)
+void RadiationBand::RadtranFlux(Direction const rin, Real dist, Real ref_dist, int k, int j, int il, int iu)
 {
   std::stringstream msg;
   if (ds->flag.ibcnd != 0) {
@@ -143,7 +143,7 @@ void RadiationBand::RadtranFlux(Direction const rin, Real dist, int k, int j, in
   for (int n = 0; n < nspec; ++n) {
     // stellar source function
     if (pmy_rad->GetBeam() < 0.)
-      ds->bc.fbeam = pmy_rad->planet->ParentInsolationFlux(spec[n].wav, dist);
+      ds->bc.fbeam = pmy_rad->planet->ParentInsolationFlux(spec[n].wav, dist, ref_dist);
     else
       ds->bc.fbeam = pmy_rad->GetBeam();
 

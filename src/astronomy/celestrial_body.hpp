@@ -33,7 +33,7 @@ public:
 
   void ReadSpectraFile(std::string sfile);
   void ParentZenithAngle(Real *mu, Real *phi, Real time, Real colat, Real lon);
-  Real ParentInsolationFlux(Real wav, Real dist = 1.);
+  Real ParentInsolationFlux(Real wav, Real dist = 1., Real ref_dist = 1.);
   Real ParentDistanceInAu(Real time);
 
 protected:
