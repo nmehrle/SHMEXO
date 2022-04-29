@@ -61,6 +61,9 @@ public:
   virtual void SaveCoefficient(std::string fname) const {}
   virtual void LoadCoefficient(std::string fname) {}
   virtual Real AbsorptionCoefficient(Real wave, Real const prim[]) const { return 0.; }
+  virtual Real AbsorptionCoefficient(Real wave, Real const prim[], int k, int j, int i) const {
+    return AbsorptionCoefficient(wave, prim);
+  }
   virtual Real SingleScatteringAlbedo(Real wave, Real const prim[]) const { return 0.; }
   virtual void PhaseMomentum(Real wave, Real const prim[], Real *pp, int np) const {}
 

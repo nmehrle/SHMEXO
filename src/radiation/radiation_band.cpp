@@ -208,7 +208,7 @@ void RadiationBand::SetSpectralProperties(AthenaArray<Real> const& w,
       tem_[i] = q[IDN];
       //std::cout << i << " " << tem_[i] << std::endl;
       for (int m = 0; m < nspec; ++m) {
-        Real kcoeff = a->AbsorptionCoefficient(spec[m].wav, q);  // 1/m
+        Real kcoeff = a->AbsorptionCoefficient(spec[m].wav, q, k, j, i);  // 1/m
         Real dssalb = a->SingleScatteringAlbedo(spec[m].wav, q)*kcoeff;
         // tau 
         tau_[i][m] += kcoeff;
