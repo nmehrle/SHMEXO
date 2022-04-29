@@ -255,16 +255,9 @@ void MeshBlock::ProblemGenerator(ParameterInput *pin)
     }
   }
 
-  // // set spectral properties
-  // RadiationBand *p = prad->pband;
-  // while (p != NULL) {
-  //   for (int k = kl; k <= ku; ++k)
-  //     for (int j = jl; j <= ju; ++j)
-  //       p->SetSpectralProperties(phydro->w, k, j, il, iu);
-  //   p = p->next;
-  // }
-  for (int k = ks; k <= ke; ++k)
-    for (int j = js; j <= je; ++j)
+  // set spectral properties
+  for (int k = kl; k <= ku; ++k)
+    for (int j = jl; j <= ju; ++j)
       prad->CalculateFluxes(phydro->w, pmy_mesh->time, k, j, is, ie+1);
 
   peos->PrimitiveToConserved(phydro->w, pfield->bcc, phydro->u, pcoord, is, ie, js, je, ks, ke);
