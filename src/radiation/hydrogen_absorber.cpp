@@ -20,12 +20,6 @@
 // Astrophysics 0f Gaseous Nebulae and Active Galactic Nuclei
 // eq 2.4 page 20, pdfpage 34
 
-Real A0=6.30431812E-22; // (m^2)
-Real nu_0=3.2898419603E15; // (1/s) Rydberg frequency
-Real c=2.998E8; // m/s
-Real mh=1.674E-27; // kg 
-Real nm_0=91.126705058; // Hydrogen ionization wavelength in nm
-
 HydrogenAbsorber::HydrogenAbsorber(RadiationBand *pband, ParameterInput *pin):
   Absorber(pband)
 {
@@ -33,7 +27,7 @@ HydrogenAbsorber::HydrogenAbsorber(RadiationBand *pband, ParameterInput *pin):
   wave_to_meters_conversion = pin->GetOrAddReal("radiation","wave_to_meters",1e-9);
 }
 
-Real HydrogenAbsorber::AbsorptionCoefficient(Real wave, Real const prim[]) const
+Real HydrogenAbsorber::AbsorptionCoefficient(Real wave, Real const prim[], int k, int j, int i) const
 {
   // convert microns to meters
   Real freq = c / (wave * wave_to_meters_conversion);
