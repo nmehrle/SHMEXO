@@ -59,7 +59,7 @@ Real HydrogenAbsorber::AbsorptionCoefficient(Real wave, Real const prim[], int k
   return sigma * n; // 1/m
 }
 
-Real HydrogenAbsorber::EnergyDeposition(Real wave, Real flux_in, Real flux_out)
+Real HydrogenAbsorber::EnergyDeposition(Real wave, Real flux)
 {
   Real wave_nm = (wave * wave_to_meters_conversion) * 1e9;
   if (wave_nm > nm_0) {
@@ -71,6 +71,6 @@ Real HydrogenAbsorber::EnergyDeposition(Real wave, Real flux_in, Real flux_out)
     // fraction of energy turned into heat
     // removes ionizatoin energy cost
     Real energy_fraction = 1 - (wave_nm/nm_0);
-    return (flux_in-flux_out)*energy_fraction;
+    return flux*energy_fraction;
   }
 }
