@@ -38,9 +38,13 @@ public:
   Spectrum *spec;
   int nspec, npmom;   // number of spectra and Legendre moments
 
+  // radiation results
+  AthenaArray<Real> net_spectral_flux; // energy/time/wavelength
+  AthenaArray<Real> boundary_flux[3]; // net flux on boundaries
+
+
   // band radiation results
   AthenaArray<Real> btau, bssa, bpmom;
-  AthenaArray<Real> netflux_boundary[3]; // net flux on boundaries
   AthenaArray<Real> bflxup, bflxdn;
   AthenaArray<Real> btoa;
 
@@ -55,6 +59,7 @@ public:
     int k, int j, int il, int iu);
   void RadtranRadiance(Direction const rin, Direction const *rout, int nrout, Real dist, Real ref_dist,
     int k, int j, int il, int iu);
+  void CalculateNetFlux(int k, int j, int il, int iu);
   void CalculateEnergyDeposition(AthenaArray<Real> &dflx, int k, int j, int il, int iu);
 
 #ifdef RT_DISORT
@@ -96,7 +101,7 @@ public:
     int k, int j, int il, int iu);
   void CalculateRadiances(AthenaArray<Real> const& w, Real time,
     int k, int j, int il, int iu);
-  void CalculateNetFlux(int k, int j, int il, int iu);
+  void CalculateRadFlux(int k, int j, int il, int iu);
   void AddRadiationSourceTerm(const Real dt, AthenaArray<Real> &du);
   bool IsDynamic() { return dynamic_; }
   Real GetBeam() { return beam_; }

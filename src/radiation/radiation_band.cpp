@@ -77,19 +77,22 @@ RadiationBand::RadiationBand(Radiation *prad, std::string name, ParameterInput *
   NewCArray(flxdn_, ncells1+1, nspec);
   NewCArray(toa_, nrout, nspec);
 
+  //
+  net_spectral_flux.NewAthenaArray(nspec, ncells3, ncells2, ncells1);
+  boundary_flux[X1DIR].NewAthenaArray(nspec, ncells3, ncells2, ncells1+1);
+  if (pm->f2) {
+    boundary_flux[X2DIR].NewAthenaArray(nspec, ncells3, ncells2+1, ncells1);
+  }
+  if (pm->f3) {
+    boundary_flux[X3DIR].NewAthenaArray(nspec, ncells3+3, ncells2, ncells1);
+  }
+
   // band properties
   btau.NewAthenaArray(ncells3, ncells2, ncells1);
   bssa.NewAthenaArray(ncells3, ncells2, ncells1);
   bpmom.NewAthenaArray(npmom+1, ncells3, ncells2, ncells1);
   bflxup.NewAthenaArray(ncells3, ncells2, ncells1+1);
   bflxdn.NewAthenaArray(ncells3, ncells2, ncells1+1);
-  netflux_boundary[X1DIR].NewAthenaArray(nspec, ncells3, ncells2, ncells1+1);
-  if (pm->f2) {
-    netflux_boundary[X2DIR].NewAthenaArray(nspec, ncells3, ncells2+1, ncells1);
-  }
-  if (pm->f3) {
-    netflux_boundary[X3DIR].NewAthenaArray(nspec, ncells3+3, ncells2, ncells1);
-  }
   btoa.NewAthenaArray(nrout, ncells3, ncells2);
 
   // absorbers
@@ -259,8 +262,7 @@ void RadiationBand::SetSpectralProperties(AthenaArray<Real> const& w,
   }
 }
 
-void RadiationBand::CalculateEnergyDeposition(AthenaArray<Real> &dflx, int k, int j, int il, int iu) {
-
+void RadiationBand::CalculateNetFlux(int k, int j, int il, int iu) {
   Radiation *prad = pmy_rad;
   MeshBlock *pmb = pmy_rad->pmy_block;
 
@@ -271,17 +273,30 @@ void RadiationBand::CalculateEnergyDeposition(AthenaArray<Real> &dflx, int k, in
                     &x3area_p1 = prad->x3face_area_p1_;
 
   pmb->pcoord->Face1Area(k, j, il, iu+1, x1area);
-  if (pmb->block_size.nx2 > 1) {
-    pmb->pcoord->Face2Area(k, j  , il, iu, x2area   );
-    pmb->pcoord->Face2Area(k, j+1, il, iu, x2area_p1);
-  }
-  if (pmb->block_size.nx3 > 1) {
-    pmb->pcoord->Face3Area(k  , j, il, iu, x3area   );
-    pmb->pcoord->Face3Area(k+1, j, il, iu, x3area_p1);
-  }
 
   Real flux_in[3]; // Incoming flux (Energy/time)
   Real flux_out[3]; // Outgoing flux (Energy/time)
+
+  Absorber *a = pabs;
+  while (a != NULL) {
+    // this loop could be more efficient, calculating x1area * boundary_flux twice for each i
+    for (int i=il; i<=iu; ++i) {
+#pragma omp simd
+      for (int n = 0; n<nspec; ++n) {
+        // X1DIR
+        flux_in[X1DIR]  = x1area(i+1) * boundary_flux[X1DIR](n,k,j,i+1);
+        flux_out[X1DIR] = x1area(i) * boundary_flux[X1DIR](n,k,j,i);
+        net_spectral_flux(n,k,j,i) = flux_in[X1DIR]-flux_out[X1DIR];
+      }
+    }
+
+    a = a->next;
+  }
+}
+
+void RadiationBand::CalculateEnergyDeposition(AthenaArray<Real> &dflx, int k, int j, int il, int iu) {
+  Radiation *prad = pmy_rad;
+  MeshBlock *pmb = pmy_rad->pmy_block;
 
   Absorber *a = pabs;
   bool second_absorber=false; // tracks if second absorber in this band
@@ -298,24 +313,7 @@ void RadiationBand::CalculateEnergyDeposition(AthenaArray<Real> &dflx, int k, in
       dflx(i) = 0;
 #pragma omp simd
       for (int n = 0; n<nspec; ++n) {
-        // X1DIR
-        flux_in[X1DIR]  = x1area(i+1) * netflux_boundary[X1DIR](n,k,j,i+1);
-        flux_out[X1DIR] = x1area(i) * netflux_boundary[X1DIR](n,k,j,i);
-        dflx(i) += a->EnergyDeposition(spec[n].wav, flux_in[X1DIR], flux_out[X1DIR]);
-        
-        // X2DIR
-        if (pmb->block_size.nx2 > 1) {
-          flux_in[X2DIR]  = x2area_p1(i) * netflux_boundary[X2DIR](n,k,j+1,i);
-          flux_out[X2DIR] = x2area(i) * netflux_boundary[X2DIR](n,k,j,i);
-          dflx(i) += a->EnergyDeposition(spec[n].wav, flux_in[X2DIR], flux_out[X2DIR]);
-        }
-
-        // X3DIR
-        if (pmb->block_size.nx3 > 1) {
-          flux_in[X3DIR]  = x3area_p1(i) * netflux_boundary[X3DIR](n,k+1,j,i);
-          flux_out[X3DIR] = x3area(i) * netflux_boundary[X3DIR](n,k,j,i);
-          dflx(i) += a->EnergyDeposition(spec[n].wav, flux_in[X3DIR], flux_out[X3DIR]);
-        }
+        dflx(i) += a->EnergyDeposition(spec[n].wav, net_spectral_flux(n,k,j,i));
       }
     }
 
