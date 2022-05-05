@@ -86,6 +86,7 @@ void ShowConfig() {
     std::cout<<"  Floating-point precision:   double" << std::endl;
   }
   std::cout<<"  Number of ghost cells:      " << NGHOST << std::endl;
+  std::cout<<"  Number of passive scalars:  " << NSCALARS << std::endl;
 #ifdef MPI_PARALLEL
   std::cout<<"  MPI parallelism:            ON" << std::endl;
 #else
