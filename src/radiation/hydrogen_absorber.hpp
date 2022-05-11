@@ -22,7 +22,7 @@ public:
   HydrogenAbsorber(RadiationBand *pband, ParameterInput *pin);
   virtual ~HydrogenAbsorber() {}
   Real AbsorptionCoefficient(Real wave, Real const prim[], int k, int j, int i) const;
-  Real EnergyDeposition(Real wave, Real flux);
+  Real EnergyDeposition(Real wave, Real flux, int k, int j, int i);
 
 
 protected:

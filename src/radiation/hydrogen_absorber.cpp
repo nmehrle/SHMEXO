@@ -27,7 +27,7 @@ HydrogenAbsorber::HydrogenAbsorber(RadiationBand *pband, ParameterInput *pin):
   wave_to_meters_conversion = pin->GetOrAddReal("radiation","wave_to_meters",1e-9);
 }
 
-Real HydrogenAbsorber::AbsorptionCoefficient(Real wave, Real const prim[], int k, int j, int i) const
+Real __attribute__((weak)) HydrogenAbsorber::AbsorptionCoefficient(Real wave, Real const prim[], int k, int j, int i) const
 {
   // convert microns to meters
   Real freq = c / (wave * wave_to_meters_conversion);
@@ -59,13 +59,13 @@ Real HydrogenAbsorber::AbsorptionCoefficient(Real wave, Real const prim[], int k
   return sigma * n; // 1/m
 }
 
-Real HydrogenAbsorber::EnergyDeposition(Real wave, Real flux)
+Real __attribute__((weak)) HydrogenAbsorber::EnergyDeposition(Real wave, Real flux, int k, int j, int i)
 {
   Real wave_nm = (wave * wave_to_meters_conversion) * 1e9;
   if (wave_nm > nm_0) {
     // energy not absorbed
     // should also be reflected in tau_lambda = 0
-    return 0;
+    return flux;
   }
   else {
     // fraction of energy turned into heat
