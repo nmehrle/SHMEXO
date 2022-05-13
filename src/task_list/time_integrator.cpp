@@ -298,9 +298,10 @@ TimeIntegratorTaskList::TimeIntegratorTaskList(ParameterInput *pin, Mesh *pm) {
         AddTask(INT_SCLR,CALC_SCLRFLX);
       }
       // there is no SRCTERM_SCLR task
-      AddTask(SEND_SCLR,INT_SCLR);
+      AddTask(UPDATE_SCLR,INT_SCLR);
+      AddTask(SEND_SCLR,UPDATE_SCLR);
       AddTask(RECV_SCLR,NONE);
-      AddTask(SETB_SCLR,(RECV_SCLR|INT_SCLR));
+      AddTask(SETB_SCLR,(RECV_SCLR|UPDATE_SCLR));
       // if (SHEARING_BOX) {
       //   AddTask(SEND_SCLRSH,SETB_SCLR);
       //   AddTask(RECV_SCLRSH,SETB_SCLR);
@@ -628,6 +629,11 @@ void TimeIntegratorTaskList::AddTask(const TaskID& id, const TaskID& dep) {
     task_list_[ntasks].TaskFunc=
         static_cast<TaskStatus (TaskList::*)(MeshBlock*,int)>
         (&TimeIntegratorTaskList::DiffuseScalars);
+    task_list_[ntasks].lb_time = true;
+  } else if (id == UPDATE_SCLR) {
+    task_list_[ntasks].TaskFunc=
+        static_cast<TaskStatus (TaskList::*)(MeshBlock*,int)>
+        (&TimeIntegratorTaskList::UpdateScalars);
     task_list_[ntasks].lb_time = true;
   } else {
     std::stringstream msg;
@@ -1247,7 +1253,8 @@ TaskStatus TimeIntegratorTaskList::IntegrateScalars(MeshBlock *pmb, int stage) {
       pmb->WeightedAve(ps->s, ps->s1, ps->s2, ave_wghts);
 
     const Real wght = stage_wghts[stage-1].beta*pmb->pmy_mesh->dt;
-    ps->AddFluxDivergence(wght, ps->s);
+    ps->ds.ZeroClear();
+    ps->AddFluxDivergence(wght, ps->ds);
 
     // Hardcode an additional flux divergence weighted average for the penultimate
     // stage of SSPRK(5,4) since it cannot be expressed in a 3S* framework

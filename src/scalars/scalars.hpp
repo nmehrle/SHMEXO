@@ -33,6 +33,7 @@ class PassiveScalars {
   // public data:
   // "conserved vars" = passive scalar mass
   AthenaArray<Real> s, s1, s2;  // (no more than MAX_NREGISTER allowed)
+  AthenaArray<Real> ds;
   // "primitive vars" = (density-normalized) mass fraction/concentration of each species
   AthenaArray<Real> r;  // , r1;
   AthenaArray<Real> s_flux[3];  // face-averaged flux vector
@@ -55,6 +56,9 @@ class PassiveScalars {
   void AddFluxDivergence(const Real wght, AthenaArray<Real> &s_out);
   void CalculateFluxes(AthenaArray<Real> &s, const int order);
   void CalculateFluxes_STS();
+
+  void ImplicitCorrectionFull(AthenaArray<Real> &ds, AthenaArray<Real> const& implicit_correction);
+  void ImplicitCorrectionReduced(AthenaArray<Real> &ds, AthenaArray<Real> const& implicit_correction);
 
   // NOTE: for now, not creating subfolder "scalars_diffusion/", nor class ScalarDiffusion
   // that is would have an instance contained within PassiveScalars like HydroDiffusion

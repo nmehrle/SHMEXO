@@ -7,6 +7,7 @@
 #include "../thermodynamics/thermodynamics.hpp"
 #include "../chemistry/chemistry.hpp"
 #include "../radiation/radiation.hpp"
+#include "../scalars/scalars.hpp"
 #include "task_list.hpp"
 
 //----------------------------------------------------------------------------------------
@@ -25,6 +26,25 @@ enum TaskStatus TimeIntegratorTaskList::UpdateHydro(MeshBlock *pmb, int stage) {
     wghts[1] = 1.;
     wghts[2] = 0.;
     pmb->WeightedAve(ph->u, ph->du, ph->u2, wghts);
+  }
+
+  return TaskStatus::next;
+}
+
+enum TaskStatus TimeIntegratorTaskList::UpdateScalars(MeshBlock *pmb, int stage) {
+  PassiveScalars *ps = pmb->pscalars;
+  Hydro *ph = pmb->phydro;
+
+  if (stage <= nstages) {
+    if (ph->implicit_flag == 1)
+      ps->ImplicitCorrectionFull(ps->ds, ph->implicit_correction);
+    else if (ph->implicit_flag == 2)
+      ps->ImplicitCorrectionReduced(ps->ds, ph->implicit_correction);
+    Real wghts[3];
+    wghts[0] = 1.;
+    wghts[1] = 1.;
+    wghts[2] = 0.;
+    pmb->WeightedAve(ps->s, ps->ds, ps->s1, wghts);
   }
 
   return TaskStatus::next;
