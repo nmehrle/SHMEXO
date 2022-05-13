@@ -54,6 +54,7 @@ class Hydro {
   AthenaArray<Real> du;       // du stores the change of the conservative variable in a substep
   // implicit correction
   int implicit_flag;
+  AthenaArray<Real> implicit_correction; // stores the implicit correction in a substep
 
   // storage for SMR/AMR
   // TODO(KGF): remove trailing underscore or revert to private:

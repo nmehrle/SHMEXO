@@ -158,6 +158,7 @@ Hydro::Hydro(MeshBlock *pmb, ParameterInput *pin) :
   // implicit correction
   implicit_flag = pin->GetOrAddInteger("hydro", "implicit_flag", 0);
   pvc = new VerticalCommunication(this);
+  implicit_correction.NewAthenaArray(NHYDRO, nc3, nc2, nc1);
 }
 
 //----------------------------------------------------------------------------------------

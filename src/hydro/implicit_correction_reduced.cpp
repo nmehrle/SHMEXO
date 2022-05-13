@@ -128,6 +128,13 @@ void Hydro::ImplicitCorrectionReduced(AthenaArray<Real> &du, AthenaArray<Real> c
   Coordinates *pcoord = pmb->pcoord;
   Thermodynamics *pthermo = pmb->pthermo;
 
+  // store (du_final - du_initial) as implicit_correction
+  Real wghts[3];
+  wghts[0] = 0.;
+  wghts[1] = -1.;
+  wghts[2] = 0.;
+  pmb->WeightedAve(implicit_correction, du, u2, wghts);
+
   int ks = pmb->ks; int js = pmb->js; int is = pmb->is;
   int ke = pmb->ke; int je = pmb->je; int ie = pmb->ie;
 
@@ -318,6 +325,12 @@ void Hydro::ImplicitCorrectionReduced(AthenaArray<Real> &du, AthenaArray<Real> c
 
   if (pvc->has_bot_neighbor)
     pvc->WaitSendBotImplicit(ks, ke, js, je);
+
+  // store (du_final - du_initial) as implicit_correction
+  wghts[0] = 1.;
+  wghts[1] = 1.;
+  wghts[2] = 0.;
+  pmb->WeightedAve(implicit_correction, du, u2, wghts);
 
   delete [] gamma_m1;
 }
