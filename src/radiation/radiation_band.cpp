@@ -266,12 +266,7 @@ void RadiationBand::CalculateNetFlux(int k, int j, int il, int iu) {
   Radiation *prad = pmy_rad;
   MeshBlock *pmb = pmy_rad->pmy_block;
 
-  AthenaArray<Real> &x1area = prad->x1face_area_,
-                    &x2area = prad->x2face_area_,
-                    &x3area = prad->x3face_area_,
-                    &x2area_p1 = prad->x2face_area_p1_,
-                    &x3area_p1 = prad->x3face_area_p1_;
-
+  AthenaArray<Real> &x1area = prad->x1face_area_;
   pmb->pcoord->Face1Area(k, j, il, iu+1, x1area);
 
   Real flux_in[3]; // Incoming flux (Energy/time)
@@ -313,6 +308,7 @@ void RadiationBand::CalculateEnergyDeposition(AthenaArray<Real> &dflx, int k, in
       dflx(i) = 0;
 #pragma omp simd
       for (int n = 0; n<nspec; ++n) {
+        // energydeposition -- reflects how much energy goes to thermal
         dflx(i) += a->EnergyDeposition(spec[n].wav, net_spectral_flux(n,k,j,i), k, j, i);
       }
     }

@@ -31,14 +31,6 @@ Radiation::Radiation(MeshBlock *pmb, ParameterInput *pin):
                AthenaArray<Real>::DataStatus::empty)}
   },
   x1face_area_(pmb->ncells1+1),
-  x2face_area_(pmb->ncells1, (pmb->pmy_mesh->f2 ? AthenaArray<Real>::DataStatus::allocated :
-               AthenaArray<Real>::DataStatus::empty)),
-  x2face_area_p1_(pmb->ncells1, (pmb->pmy_mesh->f2 ? AthenaArray<Real>::DataStatus::allocated :
-               AthenaArray<Real>::DataStatus::empty)),
-  x3face_area_(pmb->ncells1, (pmb->pmy_mesh->f3 ? AthenaArray<Real>::DataStatus::allocated :
-               AthenaArray<Real>::DataStatus::empty)),
-  x3face_area_p1_(pmb->ncells1, (pmb->pmy_mesh->f3 ? AthenaArray<Real>::DataStatus::allocated :
-               AthenaArray<Real>::DataStatus::empty)),
   cell_volume_(pmb->ncells1),
   dflx_(pmb->ncells1)
 {
