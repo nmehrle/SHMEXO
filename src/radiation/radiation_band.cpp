@@ -309,7 +309,7 @@ void RadiationBand::CalculateEnergyDeposition(AthenaArray<Real> &dflx, int k, in
 #pragma omp simd
       for (int n = 0; n<nspec; ++n) {
         // energydeposition -- reflects how much energy goes to thermal
-        dflx(i) += a->EnergyDeposition(spec[n].wav, net_spectral_flux(n,k,j,i), k, j, i);
+        dflx(i) += a->EnergyAbsorption(spec[n].wav, net_spectral_flux(n,k,j,i), k, j, i);
       }
     }
 

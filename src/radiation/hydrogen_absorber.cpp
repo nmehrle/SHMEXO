@@ -24,7 +24,7 @@ HydrogenAbsorber::HydrogenAbsorber(RadiationBand *pband, ParameterInput *pin):
   Absorber(pband)
 {
   // defaults to nanometers
-  wave_to_meters_conversion = pin->GetOrAddReal("radiation","wave_to_meters",1e-9);
+  wave_to_meters_conversion = pin->GetOrAddReal("radiation","wave_to_meters",1.e-9);
 }
 
 Real __attribute__((weak)) HydrogenAbsorber::AbsorptionCoefficient(Real wave, Real const prim[], int k, int j, int i) const
@@ -59,7 +59,7 @@ Real __attribute__((weak)) HydrogenAbsorber::AbsorptionCoefficient(Real wave, Re
   return sigma * n; // 1/m
 }
 
-Real __attribute__((weak)) HydrogenAbsorber::EnergyDeposition(Real wave, Real flux, int k, int j, int i)
+Real __attribute__((weak)) HydrogenAbsorber::EnergyAbsorption(Real wave, Real flux, int k, int j, int i)
 {
   Real wave_nm = (wave * wave_to_meters_conversion) * 1e9;
   if (wave_nm > nm_0) {
