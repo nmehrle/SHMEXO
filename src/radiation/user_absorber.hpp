@@ -7,10 +7,10 @@
 // Athena++ header
 #include "absorber.hpp"
 
-using AbsorptionCoefficientFunc = void (*)(
-  Real wave, Real const prim[], int k, int j, int i) const;
+using AbsorptionCoefficientFunc = Real (*)(
+  Absorber const *me, Real wave, Real const prim[], int k, int j, int i);
 
-using EnergyAbsorptionFunc = void (*)(Real wave, Real const flux, int k, int j, int i);
+using EnergyAbsorptionFunc = Real (*)(Absorber *me, Real wave, Real const flux, int k, int j, int i);
 
 class UserDefinedAbsorber: public Absorber {
 public:
