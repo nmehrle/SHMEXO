@@ -308,11 +308,13 @@ bool HydroSourceTerms::GravityDefined() const {
 //! \fn void HydroSourceTerms::AddHydroSourceTerms
 //  \brief Adds source terms to conserved variables
 
-void HydroSourceTerms::AddHydroSourceTerms(const Real time, const Real dt,
+void HydroSourceTerms::AddSourceTerms(const Real time, const Real dt,
                                            const AthenaArray<Real> *flux,
                                            const AthenaArray<Real> &prim,
+                                           const AthenaArray<Real> &prim_scalar,
                                            const AthenaArray<Real> &bcc,
-                                           AthenaArray<Real> &cons) {
+                                           AthenaArray<Real> &cons,
+                                           AthenaArray<Real> &cons_scalar) {
   MeshBlock *pmb = pmy_hydro_->pmy_block;
 
   // accleration due to point mass (MUST BE AT ORIGIN)
@@ -335,7 +337,7 @@ void HydroSourceTerms::AddHydroSourceTerms(const Real time, const Real dt,
 
   //  user-defined source terms
   if (UserSourceTerm != nullptr)
-    UserSourceTerm(pmb, time, dt, prim, bcc, cons);
+    UserSourceTerm(pmb, time, dt, prim, prim_scalar, bcc, cons, cons_scalar);
 
   return;
 }

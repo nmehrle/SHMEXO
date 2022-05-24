@@ -51,9 +51,11 @@ class HydroSourceTerms {
   bool hydro_sourceterms_defined;
 
   // functions
-  void AddHydroSourceTerms(const Real time, const Real dt, const AthenaArray<Real> *flx,
-                           const AthenaArray<Real> &p,
-                           const AthenaArray<Real> &b, AthenaArray<Real> &c);
+  void AddSourceTerms(const Real time, const Real dt, const AthenaArray<Real> *flx,
+                           const AthenaArray<Real> &prim,
+                           const AthenaArray<Real> &prim_scalar,
+                           const AthenaArray<Real> &b, AthenaArray<Real> &cons,
+                           AthenaArray<Real> &cons_scalar);
   void SetGravityStores();
   void PointMass(const Real dt, const AthenaArray<Real> *flx,const AthenaArray<Real> &p,
                  AthenaArray<Real> &c);
