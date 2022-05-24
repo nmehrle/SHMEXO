@@ -302,7 +302,7 @@ TimeIntegratorTaskList::TimeIntegratorTaskList(ParameterInput *pin, Mesh *pm) {
         AddTask(INT_SCLR,CALC_SCLRFLX);
       }
       // there is no SRCTERM_SCLR task
-      AddTask(UPDATE_SCLR,INT_SCLR);
+      AddTask(UPDATE_SCLR,INT_SCLR|SRC_TERM);
       AddTask(SEND_SCLR,UPDATE_SCLR);
       AddTask(RECV_SCLR,NONE);
       AddTask(SETB_SCLR,(RECV_SCLR|UPDATE_SCLR));
