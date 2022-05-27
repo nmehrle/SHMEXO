@@ -47,9 +47,9 @@ void MeshBlock::InitUserMeshBlockData(ParameterInput *pin)
   AllocateUserOutputVariables(5);
   SetUserOutputVariableName(0, "temp");
   SetUserOutputVariableName(1, "g1");
-  SetUserOutputVariableName(2, "radflux");
-  SetUserOutputVariableName(3, "x1flux");
-  SetUserOutputVariableName(4, "ion_fraction");
+  SetUserOutputVariableName(2, "netSpectralFlux");
+  SetUserOutputVariableName(3, "radflux_ion");
+  SetUserOutputVariableName(4, "rad_u");
 }
 
 void MeshBlock::UserWorkBeforeOutput(ParameterInput *pin)
@@ -62,10 +62,13 @@ void MeshBlock::UserWorkBeforeOutput(ParameterInput *pin)
         user_out_var(0,k,j,i) = pthermo->Temp(phydro->w.at(k,j,i));
         user_out_var(1,k,j,i) = phydro->hsrc.g1(k,j,i);
 
-        user_out_var(2,k,j,i) = prad->rad_flux[X1DIR](k,j,i);
-        user_out_var(3,k,j,i) = phydro->flux[X1DIR](k,j,i);
+        user_out_var(2,k,j,i) = prad->pband->net_spectral_flux(5,k,j,i);
 
-        user_out_var(4,k,j,i) = ion_fraction(k,j,i);
+        // user_out_var(2,k,j,i) = prad->rad_flux[X1DIR](k,j,i);
+        // user_out_var(3,k,j,i) = phydro->flux[X1DIR](k,j,i);
+
+        user_out_var(3,k,j,i) = rad_eng_ion(k,j,i);
+        user_out_var(4,k,j,i) = prad->du(k,j,i);
       }
 }
 //----------------------------------------------------------------------------------------
@@ -364,7 +367,7 @@ void MeshBlock::ProblemGenerator(ParameterInput *pin)
   // set spectral properties
   for (int k = kl; k <= ku; ++k)
     for (int j = jl; j <= ju; ++j)
-      prad->CalculateFluxes(phydro->w, pmy_mesh->time, k, j, is, ie+1);
+      prad->CalculateRadiativeTransfer(phydro->w, pmy_mesh->time, k, j, is, ie+1);
 
   peos->PrimitiveToConserved(phydro->w, pfield->bcc, phydro->u, pcoord, is, ie, js, je, ks, ke);
 
