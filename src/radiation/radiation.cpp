@@ -22,15 +22,7 @@ Radiation::Radiation(MeshBlock *pmb):
 
 Radiation::Radiation(MeshBlock *pmb, ParameterInput *pin):
   pmy_block(pmb), pband(NULL),
-  rad_flux{ {pmb->ncells3, pmb->ncells2, pmb->ncells1+1},
-            {pmb->ncells3, pmb->ncells2+1, pmb->ncells1,
-              (pmb->pmy_mesh->f2 ? AthenaArray<Real>::DataStatus::allocated :
-               AthenaArray<Real>::DataStatus::empty)},
-            {pmb->ncells3+1, pmb->ncells2, pmb->ncells1,
-              (pmb->pmy_mesh->f3 ? AthenaArray<Real>::DataStatus::allocated :
-               AthenaArray<Real>::DataStatus::empty)}
-  },
-  x1face_area_(pmb->ncells1+1),
+  du{pmb->ncells3, pmb->ncells2, pmb->ncells1},
   cell_volume_(pmb->ncells1),
   dflx_(pmb->ncells1)
 {
@@ -132,7 +124,7 @@ int Radiation::GetNumBands() {
   return n;
 }
 
-void Radiation::CalculateFluxes(AthenaArray<Real> const& w, Real time,
+void Radiation::CalculateRadiativeTransfer(AthenaArray<Real> const& w, Real time,
   int k, int j, int il, int iu)
 {
   Coordinates *pcoord = pmy_block->pcoord;
@@ -147,18 +139,14 @@ void Radiation::CalculateFluxes(AthenaArray<Real> const& w, Real time,
 
   while (p != NULL) {
     p->SetSpectralProperties(w, k, j, il - NGHOST, iu + NGHOST - 1);
-    p->RadtranFlux(*rin_, dist_, ref_dist_, k, j, il, iu);
 
     //problem --- calling this here will incorrectly calculate ∆k and ∆j flux
     // bc this boundary_flux is not calculated for the k+1, j+1 cells yet
-    // reverse order of k,j loop????
-
-    // disabled  2d/3d for clarity until it is correct
-    p->CalculateNetFlux(k, j, il, iu-1);
+    // possible fix is reverse order of k,j loop
+    // at the moment, radtranflux only does radiative transfer in -i direction
+    p->RadtranFlux(*rin_, dist_, ref_dist_, k, j, il, iu);
     p = p->next;
   }
-
-  CalculateRadFlux(k,j,il,iu);
 }
 
 void Radiation::CalculateRadiances(AthenaArray<Real> const& w, Real time,
@@ -181,32 +169,7 @@ void Radiation::CalculateRadiances(AthenaArray<Real> const& w, Real time,
   }
 }
 
-// depreciated -- save for record?
-void Radiation::CalculateRadFlux(int k, int j, int il, int iu) {
-  RadiationBand *p = pband;
-  if (pband == NULL) return;
-
-  MeshBlock *pmb = pmy_block;
-
-  // x1-flux divergence
-  p = pband;
-  while (p != NULL) {
-#pragma omp simd
-    for (int i = il; i <= iu; ++i)
-      rad_flux[X1DIR](k,j,i) += p->bflxup(k,j,i) - p->bflxdn(k,j,i);
-    p = p->next;
-  }
-}
-
-void Radiation::ClearRadFlux() {
-  rad_flux[X1DIR].ZeroClear();
-  rad_flux[X2DIR].ZeroClear();
-  rad_flux[X3DIR].ZeroClear();
-}
-
-//rename
-void Radiation::AddRadiationSourceTerm(const Real dt, AthenaArray<Real> &du)
-{
+void Radiation::CalculateEnergyAbsorption(const Real dt) {
   RadiationBand *p = pband;
   MeshBlock *pmb = pmy_block;
 
@@ -216,21 +179,40 @@ void Radiation::AddRadiationSourceTerm(const Real dt, AthenaArray<Real> &du)
   int ie = pmb->ie; int je = pmb->je; int ke = pmb->ke;
 
   AthenaArray<Real> &vol = cell_volume_, &dflx = dflx_;
+  du.ZeroClear();
 
   p = pband;
   while (p != NULL) {
     for (int k=ks; k<=ke; ++k) {
       for (int j=js; j<=je; ++j) {
-        p->CalculateEnergyDeposition(dflx, k, j, is, ie);
+        p->CalculateEnergyAbsorption(dflx, k, j, is, ie);
 
         // apply change in energy to conserved variables
         pmb->pcoord->CellVolume(k,j,is,ie,vol);
 #pragma omp simd
         for (int i=is; i<=ie; ++i) {
-          du(IEN, k, j, i) -= dt*dflx(i)/vol(i);
+          du(k, j, i) -= dt*dflx(i)/vol(i);
         }
       } // j loop
     } // k loop
     p = p->next;
   } // p loop
+}
+
+void Radiation::AddRadiationSourceTerm(const Real dt, AthenaArray<Real> &du_hydro)
+{
+  MeshBlock *pmb = pmy_block;
+
+  int is = pmb->is; int js = pmb->js; int ks = pmb->ks;
+  int ie = pmb->ie; int je = pmb->je; int ke = pmb->ke;
+
+  for (int k=ks; k<=ke; ++k) {
+    for (int j=js; j<=je; ++j) {
+#pragma omp simd
+      for (int i=is; i<=ie; ++i) {
+        // apply change in energy from radiation to hydro conserved variables
+        du_hydro(IEN, k, j, i) += du(k,j,i);
+      }
+    } // j loop
+  } // k loop
 }

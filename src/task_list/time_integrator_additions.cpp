@@ -72,37 +72,44 @@ TaskStatus TimeIntegratorTaskList::IntegrateChemistry(MeshBlock *pmb, int stage)
 //----------------------------------------------------------------------------------------
 // Functions to calculate radiation flux
 TaskStatus TimeIntegratorTaskList::CalculateRadiationFlux(MeshBlock *pmb, int stage) {
-  // only do radiation at first rk step  -- quickening assumption for now
-  if (stage != 1) return TaskStatus::next;
-
   Radiation *prad = pmb->prad;
   Hydro *phydro=pmb->phydro;
+  
+  // only do radiation at first RK stage  -- quickening assumption for now
+  if (stage == 1) {
+    if (prad->current > 0.) {
+      prad->current -= pmb->pmy_mesh->dt;  // radiation is in cool-down
+    } else {
+      prad->current = prad->cooldown;
 
-  if (prad->current > 0.) {
-    prad->current -= pmb->pmy_mesh->dt;  // radiation is in cool-down
-  } else {
-    prad->current = prad->cooldown;
+      int is = pmb->is; int js = pmb->js; int ks = pmb->ks;
+      int ie = pmb->ie; int je = pmb->je; int ke = pmb->ke;
+      int jl, ju, kl, ku;
 
-    prad->ClearRadFlux();
+      jl = js, ju = je, kl = ks, ku = ke;
 
-    int is = pmb->is; int js = pmb->js; int ks = pmb->ks;
-    int ie = pmb->ie; int je = pmb->je; int ke = pmb->ke;
-    int jl, ju, kl, ku;
+      if (pmb->block_size.nx2 > 1) {
+        if (pmb->block_size.nx3 == 1) // 2D
+          jl = js-1, ju = je+1, kl = ks, ku = ke;
+        else // 3D
+          jl = js-1, ju = je+1, kl = ks-1, ku = ke+1;
+      }
 
-    jl = js, ju = je, kl = ks, ku = ke;
-
-    if (pmb->block_size.nx2 > 1) {
-      if (pmb->block_size.nx3 == 1) // 2D
-        jl = js-1, ju = je+1, kl = ks, ku = ke;
-      else // 3D
-        jl = js-1, ju = je+1, kl = ks-1, ku = ke+1;
+      for (int k = kl; k <= ku; ++k)
+        for (int j = jl; j <= ju; ++j)
+          prad->CalculateRadiativeTransfer(phydro->w, pmb->pmy_mesh->time, k, j, is, ie+1);
     }
-
-    for (int k = kl; k <= ku; ++k)
-      for (int j = jl; j <= ju; ++j)
-        prad->CalculateFluxes(phydro->w, pmb->pmy_mesh->time, k, j, is, ie+1);
   }
-  return TaskStatus::next;
+  // Calculate energy deposition at every RK stage
+  // could be called "int_rad"
+  if (stage <= nstages) {
+    // Real t_start_stage = pmb->pmy_mesh->time + pmb->stage_abscissae[stage-1][0];
+    Real dt = (stage_wghts[(stage-1)].beta)*(pmb->pmy_mesh->dt);
+    prad->CalculateEnergyAbsorption(dt);
+
+    return TaskStatus::next;
+  }
+  return TaskStatus::fail;
 }
 
 // after integrate hydro

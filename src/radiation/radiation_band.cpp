@@ -262,34 +262,7 @@ void RadiationBand::SetSpectralProperties(AthenaArray<Real> const& w,
   }
 }
 
-void RadiationBand::CalculateNetFlux(int k, int j, int il, int iu) {
-  Radiation *prad = pmy_rad;
-  MeshBlock *pmb = pmy_rad->pmy_block;
-
-  AthenaArray<Real> &x1area = prad->x1face_area_;
-  pmb->pcoord->Face1Area(k, j, il, iu+1, x1area);
-
-  Real flux_in[3]; // Incoming flux (Energy/time)
-  Real flux_out[3]; // Outgoing flux (Energy/time)
-
-  Absorber *a = pabs;
-  while (a != NULL) {
-    // this loop could be more efficient, calculating x1area * boundary_flux twice for each i
-    for (int i=il; i<=iu; ++i) {
-#pragma omp simd
-      for (int n = 0; n<nspec; ++n) {
-        // X1DIR
-        flux_in[X1DIR]  = x1area(i+1) * boundary_flux[X1DIR](n,k,j,i+1);
-        flux_out[X1DIR] = x1area(i) * boundary_flux[X1DIR](n,k,j,i);
-        net_spectral_flux(n,k,j,i) = flux_in[X1DIR]-flux_out[X1DIR];
-      }
-    }
-
-    a = a->next;
-  }
-}
-
-void RadiationBand::CalculateEnergyDeposition(AthenaArray<Real> &dflx, int k, int j, int il, int iu) {
+void RadiationBand::CalculateEnergyAbsorption(AthenaArray<Real> &dflx, int k, int j, int il, int iu) {
   Radiation *prad = pmy_rad;
   MeshBlock *pmb = pmy_rad->pmy_block;
 

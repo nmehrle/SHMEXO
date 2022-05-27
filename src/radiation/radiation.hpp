@@ -59,8 +59,7 @@ public:
     int k, int j, int il, int iu);
   void RadtranRadiance(Direction const rin, Direction const *rout, int nrout, Real dist, Real ref_dist,
     int k, int j, int il, int iu);
-  void CalculateNetFlux(int k, int j, int il, int iu);
-  void CalculateEnergyDeposition(AthenaArray<Real> &dflx, int k, int j, int il, int iu);
+  void CalculateEnergyAbsorption(AthenaArray<Real> &dflx, int k, int j, int il, int iu);
 
 #ifdef RT_DISORT
   void init_disort(ParameterInput *pin);
@@ -88,7 +87,7 @@ public:
   Real cooldown, current;
   CelestrialBody *planet;
 
-  AthenaArray<Real> rad_flux[3];  // face-averaged flux vector
+  AthenaArray<Real> du;
 
   // functions
   Radiation(MeshBlock *pmb); // delayed initialization
@@ -96,13 +95,12 @@ public:
   ~Radiation();
   RadiationBand* GetBand(int n);
   int GetNumBands();
-  void ClearRadFlux();
-  void CalculateFluxes(AthenaArray<Real> const& w, Real time,
+  void CalculateRadiativeTransfer(AthenaArray<Real> const& w, Real time,
     int k, int j, int il, int iu);
   void CalculateRadiances(AthenaArray<Real> const& w, Real time,
     int k, int j, int il, int iu);
-  void CalculateRadFlux(int k, int j, int il, int iu);
-  void AddRadiationSourceTerm(const Real dt, AthenaArray<Real> &du);
+  void CalculateEnergyAbsorption(const Real dt);
+  void AddRadiationSourceTerm(const Real dt, AthenaArray<Real> &du_hydro);
   bool IsDynamic() { return dynamic_; }
   Real GetBeam() { return beam_; }
 

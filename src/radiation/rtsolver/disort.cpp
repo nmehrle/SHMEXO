@@ -177,9 +177,15 @@ void RadiationBand::RadtranFlux(Direction const rin, Real dist, Real ref_dist, i
                      *farea(il)/farea(i);  // flux down
       bflxup(k,j,i) += spec[n].wgt*flxup_[i][n];
       bflxdn(k,j,i) += spec[n].wgt*flxdn_[i][n];
+
       boundary_flux[X1DIR](n,k,j,i) = spec[n].wgt*(flxup_[i][n] - flxdn_[i][n]); //flux density at the cell boundaries
-    }
-  }
+
+      // calculate net spectral flux (energy/time/wavelength) in cells
+      if (i > il) {
+        net_spectral_flux(n,k,j,i-1) = (farea(i) * boundary_flux[X1DIR](n,k,j,i)) - (farea(i-1) * boundary_flux[X1DIR](n,k,j,i-1));
+      }
+    } // i loop
+  } // n loop
 }
 
 #endif // RT_DISORT
