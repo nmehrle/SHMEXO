@@ -55,7 +55,7 @@ public:
   void AddAbsorber(std::string name, std::string file, ParameterInput *pin);
   void AddAbsorber(Absorber *pab);
   void SetSpectralProperties(AthenaArray<Real> const& w, int k, int j, int il, int iu);
-  void RadtranFlux(Direction const rin, Real dist, Real ref_dist,
+  void RadtranFlux(Direction const rin, Real rad_scaling,
     int k, int j, int il, int iu);
   void RadtranRadiance(Direction const rin, Direction const *rout, int nrout, Real dist, Real ref_dist,
     int k, int j, int il, int iu);
@@ -112,6 +112,8 @@ protected:
   Real dist_;
   Real ref_dist_;
   Real beam_;
+
+  RadiationTimeFunc UserRadiationTimeFunc;
 
   // scratch space to compute change in radflux
   AthenaArray<Real> x1face_area_, x2face_area_, x3face_area_;
