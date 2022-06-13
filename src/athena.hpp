@@ -202,5 +202,6 @@ using FieldDiffusionCoeffFunc = void (*)(
     const AthenaArray<Real> &w,
     const AthenaArray<Real> &bmag,
     int is, int ie, int js, int je, int ks, int ke);
+using RadiationTimeFunc = Real (*)(AthenaArray<Real> const &prim, Real time, int k, int j, int il, int iu);
 
 #endif // ATHENA_HPP_

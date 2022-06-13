@@ -207,6 +207,7 @@ class Mesh {
   friend class Gravity;
   friend class HydroDiffusion;
   friend class FieldDiffusion;
+  friend class Radiation;
 #ifdef HDF5OUTPUT
   friend class ATHDF5Output;
 #endif
@@ -320,6 +321,7 @@ class Mesh {
   ConductionCoeffFunc ConductionCoeff_;
   FieldDiffusionCoeffFunc FieldDiffusivity_;
   MGBoundaryFunc MGGravityBoundaryFunction_[6];
+  RadiationTimeFunc UserRadiationTimeFunc_;
 
   void AllocateRealUserMeshDataField(int n);
   void AllocateIntUserMeshDataField(int n);
@@ -377,6 +379,8 @@ class Mesh {
   void SetFourPiG(Real fpg) { four_pi_G_=fpg; }
   void SetGravityThreshold(Real eps) { grav_eps_=eps; }
   void SetMeanDensity(Real d0) { grav_mean_rho_=d0; }
+
+  void EnrollUserRadiationTimeFunc(RadiationTimeFunc my_func);
 };
 
 

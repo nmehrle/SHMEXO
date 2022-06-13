@@ -1202,6 +1202,11 @@ void Mesh::EnrollUserExplicitGravityFunction(GravFunc my_func) {
   return;
 }
 
+void Mesh::EnrollUserRadiationTimeFunc(RadiationTimeFunc my_func) {
+  UserRadiationTimeFunc_ = my_func;
+  return;
+}
+
 //----------------------------------------------------------------------------------------
 //! \fn void Mesh::EnrollUserTimeStepFunction(TimeStepFunc my_func)
 //  \brief Enroll a user-defined time step function

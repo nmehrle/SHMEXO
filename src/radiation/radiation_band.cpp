@@ -177,7 +177,7 @@ void __attribute__((weak)) RadiationBand::AddAbsorber(
 
 // overide in rtsolver folder
 void __attribute__((weak)) RadiationBand::RadtranFlux(
-  Direction const rin, Real dist, Real ref_dist, int k, int j, int il, int iu)
+  Direction const rin, Real rad_scaling, int k, int j, int il, int iu)
 {}
 
 // overide in rtsolver folder

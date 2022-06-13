@@ -109,7 +109,7 @@ void RadiationBand::RadtranRadiance(Direction const rin, Direction const *rout, 
   }*/
 }
 
-void RadiationBand::RadtranFlux(Direction const rin, Real dist, Real ref_dist, int k, int j, int il, int iu)
+void RadiationBand::RadtranFlux(Direction const rin, Real rad_scaling, int k, int j, int il, int iu)
 {
   std::stringstream msg;
   if (ds->flag.ibcnd != 0) {
@@ -143,9 +143,9 @@ void RadiationBand::RadtranFlux(Direction const rin, Real dist, Real ref_dist, i
   for (int n = 0; n < nspec; ++n) {
     // stellar source function
     if (pmy_rad->GetBeam() < 0.)
-      ds->bc.fbeam = pmy_rad->planet->ParentInsolationFlux(spec[n].wav, dist, ref_dist);
+      ds->bc.fbeam = pmy_rad->planet->ParentInsolationFlux(spec[n].wav) * rad_scaling;
     else
-      ds->bc.fbeam = pmy_rad->GetBeam();
+      ds->bc.fbeam = pmy_rad->GetBeam() * rad_scaling;
 
     // planck source function
     ds->wvnmlo = spec[n].wav;

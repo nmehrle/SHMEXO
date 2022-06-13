@@ -58,6 +58,8 @@ Radiation::Radiation(MeshBlock *pmb, ParameterInput *pin):
   dist_ = pin->GetOrAddReal("radiation", "distance", 1.);
   ref_dist_ = pin->GetOrAddReal("radiation", "reference_distance", 1.);
 
+  UserRadiationTimeFunc = pmy_block->pmy_mesh->UserRadiationTimeFunc_;
+
   int b = 1;
   char name[80];
   while (true) {
@@ -132,9 +134,16 @@ void Radiation::CalculateRadiativeTransfer(AthenaArray<Real> const& w, Real time
   RadiationBand *p = pband;
   if (pband == NULL) return;
 
-  if (dynamic_) {
-    planet->ParentZenithAngle(&rin_->mu, &rin_->phi, time, pcoord->x2v(j), pcoord->x3v(k));
-    dist_ = planet->ParentDistanceInAu(time);
+  Real rad_scaling;
+  if (UserRadiationTimeFunc != nullptr) {
+    rad_scaling = UserRadiationTimeFunc(w, time, k, j, il, iu);
+  }
+  else {
+    if (dynamic_) {
+      planet->ParentZenithAngle(&rin_->mu, &rin_->phi, time, pcoord->x2v(j), pcoord->x3v(k));
+      dist_ = planet->ParentDistanceInAu(time);
+    }
+    rad_scaling = (ref_dist_*ref_dist_)/(dist_*dist_);
   }
 
   while (p != NULL) {
@@ -144,7 +153,7 @@ void Radiation::CalculateRadiativeTransfer(AthenaArray<Real> const& w, Real time
     // bc this boundary_flux is not calculated for the k+1, j+1 cells yet
     // possible fix is reverse order of k,j loop
     // at the moment, radtranflux only does radiative transfer in -i direction
-    p->RadtranFlux(*rin_, dist_, ref_dist_, k, j, il, iu);
+    p->RadtranFlux(*rin_, rad_scaling, k, j, il, iu);
     p = p->next;
   }
 }
@@ -191,6 +200,7 @@ void Radiation::CalculateEnergyAbsorption(const Real dt) {
         pmb->pcoord->CellVolume(k,j,is,ie,vol);
 #pragma omp simd
         for (int i=is; i<=ie; ++i) {
+          // negative reflects radiation in -i direction
           du(k, j, i) -= dt*dflx(i)/vol(i);
         }
       } // j loop
