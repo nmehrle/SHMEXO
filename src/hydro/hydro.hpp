@@ -56,6 +56,8 @@ class Hydro {
   int implicit_flag;
   AthenaArray<Real> implicit_correction; // stores the implicit correction in a substep
 
+  bool decompose_pressure_flag;
+
   // storage for SMR/AMR
   // TODO(KGF): remove trailing underscore or revert to private:
   AthenaArray<Real> coarse_cons_, coarse_prim_;
