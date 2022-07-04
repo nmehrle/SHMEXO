@@ -28,7 +28,11 @@ Real T_iso, rho_ambient, p_ambient;
 Real G, Mp, Ms, Rp, period, a;
 Real wave_to_meters_conversion;
 
+Real dist_, ref_dist_;
+
 AthenaArray<Real> rad_flux_ion;
+AthenaArray<Real> rad_eng;
+AthenaArray<Real> ionization_rate, recombination_rate, recombinative_cooling, lya_cooling, output_du;
 
 //constants
 Real A0=6.30431812E-22; // (m^2)
@@ -43,12 +47,16 @@ Real Ry=2.1798723611E-18;// J (joules)
 //----------------------------------------------------------------------------------------
 void MeshBlock::InitUserMeshBlockData(ParameterInput *pin)
 {
-  AllocateUserOutputVariables(5);
+  AllocateUserOutputVariables(9);
   SetUserOutputVariableName(0, "temp");
   SetUserOutputVariableName(1, "g1");
   SetUserOutputVariableName(2, "netSpectralFlux");
-  SetUserOutputVariableName(3, "radflux_ion");
-  SetUserOutputVariableName(4, "rad_u");
+  SetUserOutputVariableName(3, "rad_eng");
+  SetUserOutputVariableName(4, "ionization_rate");
+  SetUserOutputVariableName(5, "recombination_rate");
+  SetUserOutputVariableName(6, "recombinative_cooling");
+  SetUserOutputVariableName(7, "lya_cooling");
+  SetUserOutputVariableName(8, "du");
 }
 
 void MeshBlock::UserWorkBeforeOutput(ParameterInput *pin)
@@ -63,11 +71,12 @@ void MeshBlock::UserWorkBeforeOutput(ParameterInput *pin)
 
         user_out_var(2,k,j,i) = prad->pband->net_spectral_flux(5,k,j,i);
 
-        // user_out_var(2,k,j,i) = prad->rad_flux[X1DIR](k,j,i);
-        // user_out_var(3,k,j,i) = phydro->flux[X1DIR](k,j,i);
-
-        user_out_var(3,k,j,i) = rad_flux_ion(k,j,i);
-        user_out_var(4,k,j,i) = prad->du(k,j,i);
+        user_out_var(3,k,j,i) = rad_eng(k,j,i);
+        user_out_var(4,k,j,i) = ionization_rate(k,j,i);
+        user_out_var(5,k,j,i) = recombination_rate(k,j,i);
+        user_out_var(6,k,j,i) = recombinative_cooling(k,j,i);
+        user_out_var(7,k,j,i) = lya_cooling(k,j,i);
+        user_out_var(8,k,j,i) = output_du(k,j,i);
       }
 }
 //----------------------------------------------------------------------------------------
@@ -151,31 +160,39 @@ void RadiationBand::AddAbsorber(std::string name, std::string file, ParameterInp
 //----------------------------------------------------------------------------------------
 // Additional Physics
 //----------------------------------------------------------------------------------------
-void MeshBlock::UserWorkInLoop() {
-  // // happens at last stage, at end
+// void MeshBlock::UserWorkInLoop() {
+//   // happens at last stage, at end
 
-  // AthenaArray<Real> vol;
-  // vol.NewAthenaArray(ncells1);
-  // Real dt = pmy_mesh->dt;
+//   // AthenaArray<Real> vol;
+//   // vol.NewAthenaArray(ncells1);
+//   // Real dt = pmy_mesh->dt;
+//   PassiveScalars *ps = pscalars;
 
-  // // calculate energy that goes into ionizing
-  // for (int k = ks; k <= ke; ++k) {
-  //   for (int j = js; j <= je; ++j) {
-  //     pcoord->CellVolume(k,j,is,ie,vol);
 
-  //     for (int i = is; i <= ie; ++i) {
-  //       // du(IEN, k, j, i) -= dt*dflx(i)/vol(i);
+//   // calculate energy that goes into ionizing
+//   for (int k = ks; k <= ke; ++k) {
+//     for (int j = js; j <= je; ++j) {
+//       // pcoord->CellVolume(k,j,is,ie,vol);
 
-  //       Real energy_ion = -dt * rad_eng_ion(k,j,i);
-  //       Real n_ion_gain = energy_ion/Ry/vol(i);
-  //       Real n = phydro->w(IDN,k,j,i)/mh;
+//       for (int i = is; i <= ie; ++i) {
+//         // du(IEN, k, j, i) -= dt*dflx(i)/vol(i);
 
-  //       ion_fraction(k,j,i) += (n_ion_gain/n);
-  //     }
-  //   }
-  // }
-  return;
-}
+//         // Real energy_ion = -dt * rad_eng_ion(k,j,i);
+//         // Real n_ion_gain = energy_ion/Ry/vol(i);
+//         // Real n = phydro->w(IDN,k,j,i)/mh;
+
+//         // ion_fraction(k,j,i) += (n_ion_gain/n);
+//         for (int s = 0; s <= NSCALARS; ++s) {
+//           if (ps->s(s,k,j,i) <= sfloor) {
+//             ps->s(s,k,j,i) = sfloor;
+//           }
+//         }
+
+//       }
+//     }
+//   }
+//   return;
+// }
 
 void SourceTerms(MeshBlock *pmb, const Real time, const Real dt,
   const AthenaArray<Real> &w, const AthenaArray<Real> &r,
@@ -188,12 +205,18 @@ void SourceTerms(MeshBlock *pmb, const Real time, const Real dt,
   AthenaArray<Real> vol;
   vol.NewAthenaArray(pmb->ncells1);
 
+  PassiveScalars *ps = pmb->pscalars;
+
   for (int k = ks; k <= ke; ++k) {
     for (int j = js; j <= je; ++j) {
       pmb->pcoord->CellVolume(k,j,is,ie,vol);
 
       for (int i = is; i <= ie; ++i) {
+        // just for output land
+        rad_eng(k,j,i) = pmb->prad->du(k,j,i); // J m-3 s-1
+
         //ionization
+        // negative sign bc downward energy transfer
         Real energy_ion = -dt * rad_flux_ion(k,j,i);
         Real n_ion_gain = energy_ion/Ry/vol(i);
         Real n = w(IDN,k,j,i)/mh;
@@ -205,9 +228,36 @@ void SourceTerms(MeshBlock *pmb, const Real time, const Real dt,
               << "    Re-run with lower timestep." << std::endl;
         }
 
+        // recombination
+        Real T = pmb->pthermo->Temp(pmb->phydro->w.at(k,j,i));
+        Real n_ion = ps->s(1,k,j,i)/mh;
+        Real n_neu = ps->s(0,k,j,i)/mh;
+
+        Real alpha_B  = 2.59E-19 * pow(T/1.E4,-0.7); // m3 s-1
+        Real n_recomb = dt * alpha_B * (n_ion * n_ion); //m-3
+
         // neutrals lose
-        ds(0,k,j,i)-=n_ion_gain*mh;
-        ds(1,k,j,i)+=n_ion_gain*mh;
+        ds(0,k,j,i) += ( n_recomb - n_ion_gain) * mh;
+        ds(1,k,j,i) += (-n_recomb + n_ion_gain) * mh;
+
+        ionization_rate(k,j,i) = n_ion_gain/dt;
+        recombination_rate(k,j,i) = n_recomb/dt;
+
+        // cooling processes
+        // -- recomb cooling
+        Real kb = 1.3806504E-23; // J/K
+        Real recomb_cooling_const = 6.11E-16 * pow(T,-0.89); // m3 s-1
+        Real recomb_cooling_rate = recomb_cooling_const * (kb * T) * (n_ion * n_ion); //J s-1 m-3
+
+        output_du(k,j,i) = du(IEN,k,j,i);
+
+        // -- lya cooling
+        Real lya_cooling_const = 7.5E-32 * exp(-118348./T); // J m3 s-1
+        Real lya_cooling_rate = lya_cooling_const * n_ion * n_neu; // J m-3 s-1
+
+        du(IEN,k,j,i) -= (recomb_cooling_rate + lya_cooling_rate) * dt; // J m-3
+        lya_cooling(k,j,i) = lya_cooling_rate;
+        recombinative_cooling(k,j,i) = recomb_cooling_rate;
       }
     }
   }
@@ -233,14 +283,24 @@ void Gravity(MeshBlock *pmb, AthenaArray<Real> &g1, AthenaArray<Real> &g2, Athen
         rad_sq = x*x + y*y + z*z;
         rad = sqrt(rad_sq);
 
+        // planet
         gc1 = - (G * Mp) / (rad_sq);
+        // star
         gc2 = (G * Ms) / pow((a-rad),2);
+        // centrifugal
         gc3 = - (G * Ms) * (a-rad) / pow(a,3);
 
         g1(k, j, i) = gc1+gc2+gc3;
       }
     }
   }
+}
+
+Real RadiationTime(AthenaArray<Real> const &prim, Real time, int k, int j, int il, int iu) {
+  Real rad_scaling = (ref_dist_*ref_dist_)/(dist_*dist_);
+  Real time_factor = (std::tanh(time/2000. - 5.)+1.)/2.;
+
+  return rad_scaling*time_factor;
 }
 
 //----------------------------------------------------------------------------------------
@@ -251,15 +311,20 @@ void Mesh::InitUserMeshData(ParameterInput *pin)
   EnrollUserExplicitGravityFunction(Gravity);
   EnrollUserExplicitSourceFunction(SourceTerms);
 
-  // Real G, Mp, Ms, Rp, period, a;
+
+  // Radiation parameters
+  dist_ = pin->GetOrAddReal("radiation", "distance", 1.);
+  ref_dist_ = pin->GetOrAddReal("radiation", "reference_distance", 1.);
+
+  wave_to_meters_conversion = pin->GetOrAddReal("radiation","wave_to_meters",1.e-9);
+  EnrollUserRadiationTimeFunc(RadiationTime);
+
+  // Gravity/System Parameters
   G = pin->GetReal("problem","G");
   Mp = pin->GetReal("problem","Mp");
   Ms = pin->GetReal("problem","Ms");
   Rp = pin->GetReal("problem","Rp");
   period = pin->GetReal("problem","period");
-
-  wave_to_meters_conversion = pin->GetOrAddReal("radiation","wave_to_meters",1.e-9);
-
 
   Real x = 4. * pow(M_PI,2.) / (G * Ms);
   a = pow( pow(period*86400.,2.)/x ,(1./3));
@@ -285,8 +350,18 @@ void MeshBlock::ProblemGenerator(ParameterInput *pin)
   rad_flux_ion.NewAthenaArray(ncells3, ncells2, ncells1);
   rad_flux_ion.ZeroClear();
 
+  rad_eng.NewAthenaArray(ncells3,ncells2,ncells1);
+  ionization_rate.NewAthenaArray(ncells3,ncells2,ncells1);
+  recombination_rate.NewAthenaArray(ncells3,ncells2,ncells1);
+  recombinative_cooling.NewAthenaArray(ncells3,ncells2,ncells1);
+  lya_cooling.NewAthenaArray(ncells3,ncells2,ncells1);
+  output_du.NewAthenaArray(ncells3,ncells2,ncells1);
+
   int nx1 = pmy_mesh->mesh_size.nx1;
 
+
+  //-- file_loading
+  // checks for stuff I haven't included yet
   if (block_size.nx1 != nx1) {
     std::stringstream msg;
     msg << "### FATAL ERROR in problem generator" << std::endl
@@ -298,6 +373,14 @@ void MeshBlock::ProblemGenerator(ParameterInput *pin)
     std::stringstream msg;
     msg << "### FATAL ERROR in problem generator" << std::endl
         << "File Load is not configured for multiple dimensions." << std::endl;
+    ATHENA_ERROR(msg);
+  }
+
+
+  if (NSCALARS != 2) {
+    std::stringstream msg;
+    msg << "### FATAL ERROR in Problem Generator" << std::endl
+        << "    NSCALARS ("<< NSCALARS <<") must be exactly 2." << std::endl;
     ATHENA_ERROR(msg);
   }
 
@@ -351,16 +434,22 @@ void MeshBlock::ProblemGenerator(ParameterInput *pin)
   Real *DN = new Real [numRows-1];
   Real *PR = new Real [numRows-1];
 
+  REAL *NEU = new Real [numRows-1];
+  Real *ION = new Real [numRows-1];
+
   int i = 0;
   while (std::getline(inp, line)) {
-    Real dn_i, pr_i, v1_i, v2_i, v3_i;
-    sscanf(line.c_str(), "%le %le %le %le %le\n", &dn_i, &pr_i, &v1_i, &v2_i, &v3_i);
+    Real dn_i, pr_i, v1_i, v2_i, v3_i, neu, ion;
+    sscanf(line.c_str(), "%le %le %le %le %le %le %le\n", &dn_i, &pr_i, &v1_i, &v2_i, &v3_i &neu, &ion);
     V1[i] = v1_i;
     V2[i] = v2_i;
     V3[i] = v3_i;
 
     DN[i] = dn_i;
     PR[i] = pr_i;
+
+    NEU[i] = neu;
+    ION[i] = ion;
 
     i+=1;
   }
@@ -391,9 +480,15 @@ void MeshBlock::ProblemGenerator(ParameterInput *pin)
         phydro->w(IV1,k,j,i) = V1[ii];
         phydro->w(IV2,k,j,i) = V2[ii];
         phydro->w(IV3,k,j,i) = V3[ii];
+
+        // s0 -- neutral hydrogen
+        pscalars->s(0,k,j,i) = NEU[ii] * dens;
+        // s1 -- ionized hydrogen
+        pscalars->s(1,k,j,i) = ION[ii] * dens;
       }
     }
   }
+  //-- end file loading
 
   // set spectral properties
   for (int k = kl; k <= ku; ++k)
@@ -401,26 +496,6 @@ void MeshBlock::ProblemGenerator(ParameterInput *pin)
       prad->CalculateRadiativeTransfer(phydro->w, pmy_mesh->time, k, j, is, ie+1);
 
   peos->PrimitiveToConserved(phydro->w, pfield->bcc, phydro->u, pcoord, is, ie, js, je, ks, ke);
-
-
-  constexpr int scalar_norm = NSCALARS > 0 ? NSCALARS : 1.0;
-  if (NSCALARS != 2) {
-    std::stringstream msg;
-    msg << "### FATAL ERROR in Problem Generator" << std::endl
-        << "    NSCALARS ("<< NSCALARS <<") must be exactly 2." << std::endl;
-    ATHENA_ERROR(msg);  
-  } else {
-    for (int k=kl; k<=ku; ++k) {
-      for (int j=jl; j<=ju; ++j) {
-        for (int i=il; i<=iu; ++i) {
-          // s0 -- neutral hydrogen
-          pscalars->s(0,k,j,i) = phydro->u(IDN,k,j,i);
-          // s1 -- ionized hydrogen
-          pscalars->s(1,k,j,i) = 0.0;
-        }
-      }
-    }
-  }
 
   delete[] V1;
   delete[] V2;
