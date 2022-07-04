@@ -76,7 +76,7 @@ TaskStatus TimeIntegratorTaskList::CalculateRadiationFlux(MeshBlock *pmb, int st
   Hydro *phydro=pmb->phydro;
   
   // only do radiation at first RK stage  -- quickening assumption for now
-  if (stage == 1) {
+  if (stage <= nstages) {
     if (prad->current > 0.) {
       prad->current -= pmb->pmy_mesh->dt;  // radiation is in cool-down
     } else {
