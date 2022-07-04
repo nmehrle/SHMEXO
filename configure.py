@@ -115,7 +115,7 @@ parser.add_argument(
 # --eos=[name] argument
 parser.add_argument('--eos',
                     default='adiabatic',
-                    choices=['adiabatic', 'isothermal', 'general/eos_table',
+                    choices=['adiabatic', 'isothermal', 'ideal', 'general/eos_table',
                              'general/hydrogen', 'general/ideal'],
                     help='select equation of state')
 
@@ -453,16 +453,18 @@ definitions['EQUATION_OF_STATE'] = args['eos']
 definitions['GENERAL_EOS'] = '0'
 makefile_options['GENERAL_EOS_FILE'] = 'noop'
 definitions['EOS_TABLE_ENABLED'] = '0'
-if args['eos'] == 'isothermal':
-    definitions['NHYDRO_VARIABLES'] = '4'
-elif args['eos'] == 'adiabatic':
-    definitions['NHYDRO_VARIABLES'] = '5'
-else:
+
+if args['eos'][:8] == 'general/':
     definitions['GENERAL_EOS'] = '1'
     makefile_options['GENERAL_EOS_FILE'] = 'general'
     definitions['NHYDRO_VARIABLES'] = '5'
     if args['eos'] == 'general/eos_table':
         definitions['EOS_TABLE_ENABLED'] = '1'
+elif args['eos'] == 'isothermal':
+    definitions['NHYDRO_VARIABLES'] = '4'
+else:
+    definitions['NHYDRO_VARIABLES'] = '5'
+
 if int(args['nvapor']) == 0:
   args['nphase'] = '1'
 definitions['NUMBER_VAPORS'] = args['nvapor']
