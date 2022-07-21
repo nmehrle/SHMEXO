@@ -244,7 +244,7 @@ parser.add_argument('--chem',
 # --rt=[name] argument
 parser.add_argument('--rt',
                     default='OFF',
-                    choices=['OFF','2sess','disort','lambert'],
+                    choices=['OFF','2sess','disort','lambert','simple'],
                     help='select radiative transfer solver')
 
 # --nvapor=[value] argument
@@ -682,8 +682,10 @@ else:
       makefile_options['LIBRARY_FLAGS'] += ' -lcdisort'
   elif args['rt'] == 'lambert':
     definitions['RT_SOLVER'] = 'RT_LAMBERT'
+  elif args['rt'] == 'simple':
+    definitions['RT_SOLVER'] = 'RT_SIMPLE'
   else:
-    definitions['RT_SOLVER'] = 'RT_UNKNOW'
+    definitions['RT_SOLVER'] = 'RT_UNKNOWN'
 
 # -float argument
 if args['float']:
