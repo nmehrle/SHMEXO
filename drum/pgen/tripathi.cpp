@@ -31,10 +31,6 @@ Real wave_to_meters_conversion;
 Real dist_, ref_dist_;
 Real r_0, r_e, rho_0, rho_e, P_0, P_e;
 
-AthenaArray<Real> rad_flux_ion;
-AthenaArray<Real> rad_eng;
-AthenaArray<Real> ionization_rate, recombination_rate, recombinative_cooling, lya_cooling, output_du;
-
 //Constants -- for problem file?
 Real A0=6.30431812E-22; // (m^2)
 Real nu_0=3.2898419603E15; // (1/s) Rydberg frequency
@@ -69,14 +65,21 @@ void MeshBlock::InitUserMeshBlockData(ParameterInput *pin)
   SetUserOutputVariableName(9, "du");
 
   // User mesh data
-  // 0 -- rad_flux_ion
-  // 0 -- rad_flux_ion
-  // 0 -- rad_flux_ion
-  // 0 -- rad_flux_ion
-  // 0 -- rad_flux_ion
-  // 0 -- rad_flux_ion
-  AllocateRealUserMeshBlockDataField(1);
-  ruser_meshblock_data[0].NewAthenaArray();
+  // 0 -- energy/time absorbed into absorber -- turns into ions
+  // 1 -- radiation energy absorbed prad->du
+  // 2 -- ionization rate
+  // 3 -- recombination rate
+  // 4 -- recombinative cooling rate
+  // 5 -- lyman alpha cooling rate
+  // 6 -- output du?
+  AllocateRealUserMeshBlockDataField(7);
+  ruser_meshblock_data[0].NewAthenaArray(ncells3, ncells2, ncells1);
+  ruser_meshblock_data[1].NewAthenaArray(ncells3, ncells2, ncells1);
+  ruser_meshblock_data[2].NewAthenaArray(ncells3, ncells2, ncells1);
+  ruser_meshblock_data[3].NewAthenaArray(ncells3, ncells2, ncells1);
+  ruser_meshblock_data[4].NewAthenaArray(ncells3, ncells2, ncells1);
+  ruser_meshblock_data[5].NewAthenaArray(ncells3, ncells2, ncells1);
+  ruser_meshblock_data[6].NewAthenaArray(ncells3, ncells2, ncells1);
 }
 
 void MeshBlock::UserWorkBeforeOutput(ParameterInput *pin)
@@ -103,12 +106,9 @@ void MeshBlock::UserWorkBeforeOutput(ParameterInput *pin)
         user_out_var(2,k,j,i) = phydro->hsrc.g2(k,j,i);
         user_out_var(3,k,j,i) = phydro->hsrc.g3(k,j,i);
 
-        user_out_var(4,k,j,i) = rad_eng(k,j,i);
-        user_out_var(5,k,j,i) = ionization_rate(k,j,i);
-        user_out_var(6,k,j,i) = recombination_rate(k,j,i);
-        user_out_var(7,k,j,i) = recombinative_cooling(k,j,i);
-        user_out_var(8,k,j,i) = lya_cooling(k,j,i);
-        user_out_var(9,k,j,i) = output_du(k,j,i);
+        for (int o=0; o<6; ++o) {
+          user_out_var(o+4,k,j,i) = ruser_meshblock_data[o+1](k,j,i);
+        }
       }
     }
   }
@@ -160,7 +160,7 @@ Real EnergyAbsorption(Absorber *pabs, Real wave, Real flux, int k, int j, int i)
     // Real energy_fraction = 1 - (wave_nm/nm_0);
     Real energy_fraction = 0.15;
 
-    rad_flux_ion(k,j,i) += (1-energy_fraction) * flux;
+    pabs->pmy_band->pmy_rad->pmy_block->ruser_meshblock_data[0](k,j,i) += (1-energy_fraction) * flux;
 
     return flux*energy_fraction;
   }
@@ -204,16 +204,13 @@ void SourceTerms(MeshBlock *pmb, const Real time, const Real dt,
       pmb->pcoord->CellVolume(k,j,is,ie,vol);
 
       for (int i = is; i <= ie; ++i) {
-        // just for output land
-        rad_eng(k,j,i) = pmb->prad->du(k,j,i); // J m-3 s-1
-
         // number densities
         Real n_ion = ps->s(1,k,j,i)/mh;
         Real n_neu = ps->s(0,k,j,i)/mh;
 
         //ionization
         // negative sign bc downward energy transfer
-        Real energy_ion = -dt * rad_flux_ion(k,j,i);
+        Real energy_ion = -dt * pmb->ruser_meshblock_data[0](k,j,i);
         Real n_ion_gain = energy_ion/Ry/vol(i);
 
         // Real n = ps->s(0,k,j,i)/mh;
@@ -252,18 +249,25 @@ void SourceTerms(MeshBlock *pmb, const Real time, const Real dt,
         ds(0,k,j,i) += ( n_recomb - n_ion_gain) * mh;
         ds(1,k,j,i) += (-n_recomb + n_ion_gain) * mh;
 
-        ionization_rate(k,j,i) = n_ion_gain/dt;
-        recombination_rate(k,j,i) = n_recomb/dt;
-
-        lya_cooling(k,j,i) = lya_cooling_rate;
-        recombinative_cooling(k,j,i) = recomb_cooling_rate;
-        output_du(k,j,i) = du(IEN,k,j,i);
+        // Outputs
+        // 1 -- radiation energy absorbed prad->du
+        pmb->ruser_meshblock_data[1](k,j,i) = pmb->prad->du(k,j,i);
+        // 2 -- ionization rate
+        pmb->ruser_meshblock_data[2](k,j,i) = n_ion_gain/dt;
+        // 3 -- recombination rate
+        pmb->ruser_meshblock_data[3](k,j,i) = n_recomb/dt;
+        // 4 -- recombinative cooling rate
+        pmb->ruser_meshblock_data[4](k,j,i) = recomb_cooling_rate;
+        // 5 -- lyman alpha cooling rate
+        pmb->ruser_meshblock_data[5](k,j,i) = lya_cooling_rate;
+        // 6 -- output du?
+        pmb->ruser_meshblock_data[6](k,j,i) = du(IEN,k,j,i);
       }
     }
   }
 
   // clear eng deposited for next iteration
-  rad_flux_ion.ZeroClear();
+  pmb->ruser_meshblock_data[0].ZeroClear();
 }
 
 // needs validation
@@ -442,18 +446,6 @@ void SetInitialConditions(Real rad, Real &dens, Real &press, Real &ion_f, Real &
 
 void MeshBlock::ProblemGenerator(ParameterInput *pin)
 {
-  // initialize data arrays
-  rad_flux_ion.NewAthenaArray(ncells3, ncells2, ncells1);
-  rad_flux_ion.ZeroClear();
-
-  // output vars
-  rad_eng.NewAthenaArray(ncells3,ncells2,ncells1);
-  ionization_rate.NewAthenaArray(ncells3,ncells2,ncells1);
-  recombination_rate.NewAthenaArray(ncells3,ncells2,ncells1);
-  recombinative_cooling.NewAthenaArray(ncells3,ncells2,ncells1);
-  lya_cooling.NewAthenaArray(ncells3,ncells2,ncells1);
-  output_du.NewAthenaArray(ncells3,ncells2,ncells1);
-
   if (NSCALARS != 2) {
     std::stringstream msg;
     msg << "### FATAL ERROR in Problem Generator" << std::endl
