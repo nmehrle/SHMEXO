@@ -22,13 +22,11 @@
 #include "../radiation/null_absorber.hpp"
 #include "../scalars/scalars.hpp"
 
-// global parameters
-Real T_iso, rho_ambient, p_ambient;
 //gravity
 Real G, Mp, Ms, Rp, period, a;
 Real wave_to_meters_conversion;
 
-//x is ion fraction (1-rho_n/rho_tot)
+// x0 is ion fraction (1-rho_n/rho_tot)
 // stores initial conditions
 AthenaArray<Real> rho0,press0,x0;
 Real gas_gamma;
@@ -52,41 +50,52 @@ Real Ry=2.1798723611E-18;// J (joules)
 //----------------------------------------------------------------------------------------
 void MeshBlock::InitUserMeshBlockData(ParameterInput *pin)
 {
-  AllocateUserOutputVariables(9);
+  AllocateUserOutputVariables(10);
   SetUserOutputVariableName(0, "temp");
   SetUserOutputVariableName(1, "g1");
-  SetUserOutputVariableName(2, "flux_top");
-  SetUserOutputVariableName(3, "rad_eng");
-  SetUserOutputVariableName(4, "ionization_rate");
-  SetUserOutputVariableName(5, "recombination_rate");
-  SetUserOutputVariableName(6, "recombinative_cooling");
-  SetUserOutputVariableName(7, "lya_cooling");
-  SetUserOutputVariableName(8, "du");
+  SetUserOutputVariableName(2, "g2");
+  SetUserOutputVariableName(3, "g3");
+  SetUserOutputVariableName(4, "rad_eng");
+  SetUserOutputVariableName(5, "ionization_rate");
+  SetUserOutputVariableName(6, "recombination_rate");
+  SetUserOutputVariableName(7, "recombinative_cooling");
+  SetUserOutputVariableName(8, "lya_cooling");
+  SetUserOutputVariableName(9, "du");
 }
 
 void MeshBlock::UserWorkBeforeOutput(ParameterInput *pin)
 {
   Real dq[1+NVAPOR], rh;
 
-  for (int k = ks; k <= ke; ++k)
-    for (int j = js; j <= je; ++j)
+  AthenaArray<Real> vol, farea;
+  vol.NewAthenaArray(ncells1);
+  farea.NewAthenaArray(ncells1+1);
+
+  for (int k = ks; k <= ke; ++k) {
+    for (int j = js; j <= je; ++j) {
+      pcoord->Face1Area(k, j, is, ie+1, farea);
+      pcoord->CellVolume(k,j, is, ie,   vol);
+
       for (int i = is-NGHOST; i <= ie+NGHOST; ++i) {
         Real R = pthermo->GetRd();
         Real T = phydro->w(IPR,k,j,i)/(R * phydro->w(IDN,k,j,i));
         Real ion_f = pscalars->r(1,k,j,i);
         T = T * (1.-ion_f/2.);
+
         user_out_var(0,k,j,i) = T;
         user_out_var(1,k,j,i) = phydro->hsrc.g1(k,j,i);
+        user_out_var(2,k,j,i) = phydro->hsrc.g2(k,j,i);
+        user_out_var(3,k,j,i) = phydro->hsrc.g3(k,j,i);
 
-        user_out_var(2,k,j,i) = -prad->pband->bflxdn(k,j,i) +prad->pband->bflxup(k,j,i);
-
-        user_out_var(3,k,j,i) = rad_eng(k,j,i);
-        user_out_var(4,k,j,i) = ionization_rate(k,j,i);
-        user_out_var(5,k,j,i) = recombination_rate(k,j,i);
-        user_out_var(6,k,j,i) = recombinative_cooling(k,j,i);
-        user_out_var(7,k,j,i) = lya_cooling(k,j,i);
-        user_out_var(8,k,j,i) = output_du(k,j,i);
+        user_out_var(4,k,j,i) = rad_eng(k,j,i);
+        user_out_var(5,k,j,i) = ionization_rate(k,j,i);
+        user_out_var(6,k,j,i) = recombination_rate(k,j,i);
+        user_out_var(7,k,j,i) = recombinative_cooling(k,j,i);
+        user_out_var(8,k,j,i) = lya_cooling(k,j,i);
+        user_out_var(9,k,j,i) = output_du(k,j,i);
       }
+    }
+  }
 }
 //----------------------------------------------------------------------------------------
 // Absorber Info
@@ -105,15 +114,7 @@ Real AbsorptionCoefficient(Absorber const *pabs, Real wave, Real const prim[], i
   else if (freq == nu_0)
     return A0*n_neutral;
 
-  Real eps   = sqrt(freq/nu_0 - 1.);
-  Real term1 = A0 * pow(nu_0/freq,4.);
-  
-  Real numerator   = exp(4. - 4.*(atan2(eps,1)/eps));
-  Real denominator = 1. - exp(-(2*M_PI)/eps);
-
-  Real sigma = term1 * numerator/denominator; // cross-section m^2
-
-  return sigma * n_neutral; // 1/m
+  return A0 * n_neutral; // 1/m
 }
 
 Real EnergyAbsorption(Absorber *pabs, Real wave, Real flux, int k, int j, int i)
@@ -127,7 +128,7 @@ Real EnergyAbsorption(Absorber *pabs, Real wave, Real flux, int k, int j, int i)
   else {
     // fraction of energy turned into heat
     // removes ionizatoin energy cost
-    Real energy_fraction = 1 - (wave_nm/nm_0);
+    Real energy_fraction = 0.15;
 
     rad_flux_ion(k,j,i) += (1-energy_fraction) * flux;
 
@@ -187,16 +188,16 @@ void MeshBlock::UserWorkInLoop() {
           // prim
           phydro->w(IPR,k,j,i) = press;
           phydro->w(IDN,k,j,i) = dens;
-          phydro->w(IV1,k,j,i) = 0;
-          phydro->w(IV2,k,j,i) = 0;
-          phydro->w(IV3,k,j,i) = 0;
+          phydro->w(IV1,k,j,i) = 0.;
+          phydro->w(IV2,k,j,i) = 0.;
+          phydro->w(IV3,k,j,i) = 0.;
 
           //cons
           phydro->u(IEN,k,j,i) = press/gm1;
           phydro->u(IDN,k,j,i) = dens;
-          phydro->u(IM1,k,j,i) = 0;
-          phydro->u(IM2,k,j,i) = 0;
-          phydro->u(IM3,k,j,i) = 0;
+          phydro->u(IM1,k,j,i) = 0.;
+          phydro->u(IM2,k,j,i) = 0.;
+          phydro->u(IM3,k,j,i) = 0.;
 
           // scalars
           // s0 -- neutral hydrogen
@@ -239,8 +240,13 @@ void SourceTerms(MeshBlock *pmb, const Real time, const Real dt,
 
         //ionization
         // negative sign bc downward energy transfer
-        Real energy_ion = -dt * rad_flux_ion(k,j,i);
-        Real n_ion_gain = energy_ion/Ry/vol(i);
+        // Real energy_ion = -dt * rad_flux_ion(k,j,i);
+        // Real n_ion_gain = energy_ion/Ry/vol(i);
+
+        // Real n = ps->s(0,k,j,i)/mh;
+        Real Fx = pmb->prad->pband->bflxdn(k,j,i)/2.563e-18;// Divide by 16eV per photon to get photon number flux
+        Real I = Fx * (n_neu * A0);
+        Real n_ion_gain = dt * I;
 
         if (n_ion_gain > n_neu) {
           std::stringstream msg;
@@ -253,19 +259,11 @@ void SourceTerms(MeshBlock *pmb, const Real time, const Real dt,
         Real R = pmb->pthermo->GetRd();
         Real T = w(IPR,k,j,i)/(R * w(IDN,k,j,i));
         Real ion_f = ps->r(1,k,j,i);
-        T = T * (1.-ion_f/2.);
+        T = T * (1.- ion_f/2.);
 
         // Real T = pmb->pthermo->Temp(pmb->phydro->w.at(k,j,i));
-
         Real alpha_B  = 2.59E-19 * pow(T/1.E4,-0.7); // m3 s-1
         Real n_recomb = dt * alpha_B * (n_ion * n_ion); //m-3
-
-        // neutrals lose
-        ds(0,k,j,i) += ( n_recomb - n_ion_gain) * mh;
-        ds(1,k,j,i) += (-n_recomb + n_ion_gain) * mh;
-
-        ionization_rate(k,j,i) = n_ion_gain/dt;
-        recombination_rate(k,j,i) = n_recomb/dt;
 
         // cooling processes
         // -- recomb cooling
@@ -273,15 +271,20 @@ void SourceTerms(MeshBlock *pmb, const Real time, const Real dt,
         Real recomb_cooling_const = 6.11E-16 * pow(T,-0.89); // m3 s-1
         Real recomb_cooling_rate = recomb_cooling_const * (kb * T) * (n_ion * n_ion); //J s-1 m-3
 
-        output_du(k,j,i) = du(IEN,k,j,i);
-
         // -- lya cooling
         Real lya_cooling_const = 7.5E-32 * exp(-118348./T); // J m3 s-1
         Real lya_cooling_rate = lya_cooling_const * n_ion * n_neu; // J m-3 s-1
 
         du(IEN,k,j,i) -= (recomb_cooling_rate + lya_cooling_rate) * dt; // J m-3
+        ds(0,k,j,i) += ( n_recomb - n_ion_gain) * mh;
+        ds(1,k,j,i) += (-n_recomb + n_ion_gain) * mh;
+
+        ionization_rate(k,j,i) = n_ion_gain/dt;
+        recombination_rate(k,j,i) = n_recomb/dt;
+
         lya_cooling(k,j,i) = lya_cooling_rate;
         recombinative_cooling(k,j,i) = recomb_cooling_rate;
+        output_du(k,j,i) = du(IEN,k,j,i);
       }
     }
   }
@@ -290,12 +293,15 @@ void SourceTerms(MeshBlock *pmb, const Real time, const Real dt,
   rad_flux_ion.ZeroClear();
 }
 
+
+// needs validation
 void Gravity(MeshBlock *pmb, AthenaArray<Real> &g1, AthenaArray<Real> &g2, AthenaArray<Real> &g3) {
   int is = pmb->is, js = pmb->js, ks = pmb->ks;
   int ie = pmb->ie, je = pmb->je, ke = pmb->ke;
 
-  Real x,y,z, rad, rad_sq;
-  Real gc1, gc2, gc3;
+  Real x,y,z;
+  Real r, rsq, rs, rs_sq;
+  Real gp, gs, gc;
 
   for (int k=ks; k<=ke; ++k) {
     for (int j=js; j<=je; ++j) {
@@ -304,17 +310,33 @@ void Gravity(MeshBlock *pmb, AthenaArray<Real> &g1, AthenaArray<Real> &g2, Athen
         y = pmb->pcoord->x2v(j);
         z = pmb->pcoord->x3v(k);
 
-        rad_sq = x*x + y*y + z*z;
-        rad = sqrt(rad_sq);
+        // planet placed at (x,y,z) = (0,0,0)
+        rsq = x*x + y*y + z*z;
+        r = sqrt(rsq);
 
-        // planet
-        gc1 = - (G * Mp) / (rad_sq);
-        // star
-        gc2 = (G * Ms) / pow((a-rad),2);
-        // centrifugal
-        gc3 = - (G * Ms) * (a-rad) / pow(a,3);
+        // enforce rmin for center of planet
+        if (r < 0.2 * Rp) {
+          r = 0.2*Rp;
+        }
 
-        g1(k, j, i) = gc1+gc2+gc3;
+        // star placed at (x,y,z) = (a,0,0)
+        rs_sq = (a-x)*(a-x) + y*y + z*z;
+        rs = sqrt(rs_sq);
+        // rs = (a-x, -y, -z)
+
+        // magnitudes (div by r)
+        // planet -- in (-r) direction
+        gp = (G * Mp) / pow(r,3);
+
+        // star -- in (a-r) direction
+        gs = (G * Ms) / pow(rs,3);
+        // centrifugal -- in ( -(a-r) ) direction (note negative sign)
+        gc = (G * Ms) / pow(a,3);
+
+        // missing negative signs?
+        g1(k, j, i) = gp * (-x) + (gs - gc) * (a-x);
+        g2(k, j, i) = gp * (-y) + (gs - gc) * (-y);
+        g3(k, j, i) = gp * (-z) + (gs - gc) * (-z);
       }
     }
   }
@@ -358,17 +380,16 @@ void Mesh::InitUserMeshData(ParameterInput *pin)
 
   gas_gamma = pin->GetReal("hydro","gamma");
 
-  rho_ambient = pin->GetOrAddReal("problem","rho_ambient", 0.0);
-  T_iso       = pin->GetOrAddReal("problem","T_iso",0.0);
+  std::string filename;
+  filename = pin->GetString("problem", "initial_conditions_file");
 
-  if (rho_ambient != 0.0) {
-    Real R = pin->GetReal("thermodynamics","Rd");
-    p_ambient = rho_ambient * R * T_iso;
-  }
-  else {
-    p_ambient = 0.0;
-  }
+  // AthenaArray<Real> data;
+  // ReadDataTable(data, filename);
 
+  // std::cout << "dim 1 -- "<< data.GetDim1() << std::endl;
+  // std::cout << "dim 2 -- "<< data.GetDim2() << std::endl;
+  // std::cout << "dim 3 -- "<< data.GetDim3() << std::endl;
+  // std::cout << "size -- "<< data.GetSize() << std::endl;
 }
 
 //----------------------------------------------------------------------------------------
@@ -376,6 +397,7 @@ void Mesh::InitUserMeshData(ParameterInput *pin)
 //----------------------------------------------------------------------------------------
 void MeshBlock::ProblemGenerator(ParameterInput *pin)
 {
+  // initialize data arrays
   rad_flux_ion.NewAthenaArray(ncells3, ncells2, ncells1);
   rad_flux_ion.ZeroClear();
 
@@ -391,24 +413,13 @@ void MeshBlock::ProblemGenerator(ParameterInput *pin)
   x0.NewAthenaArray(ncells3,ncells2,ncells1);
 
   int nx1 = pmy_mesh->mesh_size.nx1;
+  int nx2 = pmy_mesh->mesh_size.nx2;
+  int nx3 = pmy_mesh->mesh_size.nx3;
 
-
-  //-- file_loading
-  // checks for stuff I haven't included yet
-  if (block_size.nx1 != nx1) {
-    std::stringstream msg;
-    msg << "### FATAL ERROR in problem generator" << std::endl
-        << "Currently file_load is not configured for multiple meshblocks." << std::endl;
-    ATHENA_ERROR(msg);
-  }
-
-  if (pmy_mesh->f2 || pmy_mesh->f3) {
-    std::stringstream msg;
-    msg << "### FATAL ERROR in problem generator" << std::endl
-        << "File Load is not configured for multiple dimensions." << std::endl;
-    ATHENA_ERROR(msg);
-  }
-
+  int nxg1 = nx1 + 2*NGHOST;
+  int nxg2 = nx2 + 2*NGHOST;
+  int nxg3 = nx3 + 2*NGHOST;
+  int nr = nxg1*nxg2*nxg3;
 
   if (NSCALARS != 2) {
     std::stringstream msg;
@@ -417,40 +428,32 @@ void MeshBlock::ProblemGenerator(ParameterInput *pin)
     ATHENA_ERROR(msg);
   }
 
+  //-- file_loading
+  // checks for stuff I haven't included yet
+  // if (block_size.nx1 != nx1) {
+  //   std::stringstream msg;
+  //   msg << "### FATAL ERROR in problem generator" << std::endl
+  //       << "Currently file_load is not configured for multiple meshblocks." << std::endl;
+  //   ATHENA_ERROR(msg);
+  // }
+
   std::string filename;
   filename = pin->GetString("problem", "initial_conditions_file");
 
+  // AthenaArray<Real> data;
+  // ReadDataTable(data, filename);
+
   int numRows = GetNumRows(filename.c_str());
-  int il, iu;
-  bool include_ghost_zones;
 
   // check size of input file is compatible
-  if (numRows == nx1+1) {
-    il = is;
-    iu = ie;
-    include_ghost_zones = false;
-
-    if (pbval->block_bcs[inner_x1] == BoundaryFlag::outflow ||
-        pbval->block_bcs[outer_x1] == BoundaryFlag::outflow) {
-      std::stringstream msg;
-      msg << "### FATAL ERROR in problem generator" << std::endl
-          << "    outflow boundary conditions require initial conditions to be set in ghost zones" << std::endl;
-      ATHENA_ERROR(msg);
-    }
-
-  }
-  else if (numRows == nx1 + 2*NGHOST +1) {
-    il = is - NGHOST;
-    iu = ie + NGHOST;
-    include_ghost_zones = true;
-  }
-  else {
+  if (numRows != nr + 1) {
     std::stringstream msg;
     msg << "### FATAL ERROR in problem generator" << std::endl
-        << "Input file dimension mismatch with nx1." << std::endl
-        << "Input file number of rows must match nx1+1 (no ghost cells)" << std::endl
-        << "Or nx1 + 2*NGHOST+1 (with ghost cells)" << std::endl
-        << "with one row for header" << std::endl;
+        << "Input file dimension mismatch with initial_conditions_file." << std::endl
+        << "Input file number of rows must match (nx + 2*NGHOST)**3" << std::endl
+        << "with one row for header" << std::endl
+        << "found -- " << numRows << std::endl
+        << "wanted -- " << (nr+1) << std::endl;
     ATHENA_ERROR(msg);
   }
 
@@ -467,13 +470,12 @@ void MeshBlock::ProblemGenerator(ParameterInput *pin)
   Real *DN = new Real [numRows-1];
   Real *PR = new Real [numRows-1];
 
-  Real *NEUF = new Real [numRows-1];
   Real *IONF = new Real [numRows-1];
 
   int i = 0;
   while (std::getline(inp, line)) {
-    Real dn_i, pr_i, v1_i, v2_i, v3_i, neu, ion;
-    sscanf(line.c_str(), "%le %le %le %le %le %le %le\n", &dn_i, &pr_i, &v1_i, &v2_i, &v3_i, &neu, &ion);
+    Real dn_i, pr_i, v1_i, v2_i, v3_i, ion, x, y, z;
+    sscanf(line.c_str(), "%le %le %le %le %le %le\n", &dn_i, &pr_i, &v1_i, &v2_i, &v3_i, &ion);
     V1[i] = v1_i;
     V2[i] = v2_i;
     V3[i] = v3_i;
@@ -481,49 +483,43 @@ void MeshBlock::ProblemGenerator(ParameterInput *pin)
     DN[i] = dn_i;
     PR[i] = pr_i;
 
-    NEUF[i] = neu;
     IONF[i] = ion;
-
     i+=1;
   }
 
   // setup initial condition
+  int il = is-NGHOST;
+  int iu = ie+NGHOST;
   int kl = block_size.nx3 == 1 ? ks : ks-NGHOST;
   int ku = block_size.nx3 == 1 ? ke : ke+NGHOST;
   int jl = block_size.nx2 == 1 ? js : js-NGHOST;
   int ju = block_size.nx2 == 1 ? je : je+NGHOST;
 
   for (int i = il; i <= iu; ++i) {
-    for (int k = kl; k <= ku; ++k) {
-      for (int j = jl; j <= ju; ++j) {
-        int ii;
-        // offset i to match start index depending on ghost include or not
-        if (include_ghost_zones) {
-          ii = i;
-        }
-        else {
-          ii = i - NGHOST;
-        }
+    for (int j = jl; j <= ju; ++j) {
+      for (int k = kl; k <= ku; ++k) {
+        int idx;
+        idx = (nxg1*((nxg2*k)+j))+i;
 
-        Real press = PR[ii] + p_ambient;
-        Real dens  = DN[ii] + rho_ambient;
+        Real press = PR[idx];
+        Real dens  = DN[idx];
+        Real ion = IONF[idx];
 
         phydro->w(IPR,k,j,i) = press;
         phydro->w(IDN,k,j,i) = dens;
-        phydro->w(IV1,k,j,i) = V1[ii];
-        phydro->w(IV2,k,j,i) = V2[ii];
-        phydro->w(IV3,k,j,i) = V3[ii];
+        phydro->w(IV1,k,j,i) = V1[idx];
+        phydro->w(IV2,k,j,i) = V2[idx];
+        phydro->w(IV3,k,j,i) = V3[idx];
 
         // s0 -- neutral hydrogen
-        pscalars->s(0,k,j,i) = NEUF[ii] * dens;
+        pscalars->s(0,k,j,i) = (1-ion) * dens;
 
         // s1 -- ionized hydrogen
-        pscalars->s(1,k,j,i) = IONF[ii] * dens;
-
+        pscalars->s(1,k,j,i) = ion * dens;
 
         rho0(k,j,i)   = dens;
         press0(k,j,i) = press;
-        x0(k,j,i)     = IONF[ii];
+        x0(k,j,i)     = ion;
       }
     }
   }
