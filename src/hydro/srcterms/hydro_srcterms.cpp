@@ -85,18 +85,8 @@ HydroSourceTerms::HydroSourceTerms(Hydro *phyd, ParameterInput *pin) :
   if (UserSourceTerm != nullptr) hydro_sourceterms_defined = true;
 
   UserGravFunc = phyd->pmy_block->pmy_mesh->UserGravFunc_;
-  if (UserGravFunc != nullptr) {
-    if (std::strcmp(COORDINATE_SYSTEM, "cartesian") == 0)
-      hydro_sourceterms_defined = true;
-    else {
-      std::stringstream msg;
-      msg << "### FATAL ERROR in HydroSourceTerms constructor" << std::endl
-          << "User defined gravity only works in cartesian coordinates at the moment"
-          << std::endl
-          << "Verify it will work in your geometry before proceeding." << std::endl;
-      ATHENA_ERROR(msg);
-    }
-  }
+  if (UserGravFunc != nullptr)
+    hydro_sourceterms_defined = true;
 
   SetGravityStores();
 }
