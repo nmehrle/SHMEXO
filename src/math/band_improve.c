@@ -41,7 +41,7 @@ void band_improve(int     n,
 {
   int
     k,j,i,tmploop;
-  static int
+  int
     n_max = 0;
   double
    *r;
@@ -58,15 +58,8 @@ void band_improve(int     n,
   /*
    * Allocate memory.
    */
-  if (n_max == 0) {
-    n_max = n;
-    r     = (double*)malloc(n_max*sizeof(double));
-  }
-  else if (n > n_max) {
-    free(r);
-    n_max = n;
-    r     = (double*)malloc(n_max*sizeof(double));
-  }
+  n_max = n;
+  r     = (double*)malloc(n_max*sizeof(double));
 
   /*
    * The band-diagonal indexing is as in band_multiply().
