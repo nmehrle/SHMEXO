@@ -105,7 +105,7 @@ $(EXECUTABLE) : $(OBJ_FILES) $(MATH_LIBRARY) $(DISORT_LIBRARY)
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -o $@ $(OBJ_FILES) $(LDFLAGS) $(LDLIBS)
 
 $(MATH_LIBRARY):
-	make -C src/math CC=$(CXX)
+	make -C src/math CC=$(CXX) CFLAGS="$(CXXFLAGS)"
 
 $(DISORT_LIBRARY):
 	make -C src/radiation/rtsolver/cdisort213 -f Makefile_cdisort CC=gcc CFLAGS=-O3
