@@ -38,15 +38,14 @@ void Hydro::CheckHydro() {
               << k << "," << j << "," << i << ") in rank " << myrank;
           ATHENA_ERROR(msg);
         }
-        Real temp = pmb->pthermo->Temp(w.at(k,j,i));
+        Real RT = w(IPR,k,j,i)/w(IDN,k,j,i);
         Real grav = -hsrc.GetG1(k, j, i);
         if (grav != 0) {
-          Real Tmin = 2.*grav*pmb->pcoord->dx1f(i)/pmb->pthermo->GetRd();
-          if (temp < Tmin) {
+          Real RTmin = 2.*grav*pmb->pcoord->dx1f(i);
+          if (RT < RTmin) {
             msg << "### FATAL ERROR in Hydro::CheckHydro" << std::endl
                 << "Vertical spacing is less than half scale height at position ("
-                << k << "," << j << "," << i << ") in rank " << myrank << std::endl
-                << "Minimum allowed temperature is " << Tmin << " K";
+                << k << "," << j << "," << i << ") in rank " << myrank << std::endl;
             ATHENA_ERROR(msg);
           }
         }
