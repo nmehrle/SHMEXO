@@ -30,17 +30,18 @@ namespace {
   Real wave_to_meters_conversion;
 
   Real dist_, ref_dist_;
+
+  Real rho_p, cs, space_density_factor;
+
   Real r_0, r_e, rho_0, rho_e, P_0, P_e;
 
-  //Constants -- for problem file?
+  //Physical Constants -- for problem file?
   Real A0=6.30431812E-22; // (m^2)
   Real nu_0=3.2898419603E15; // (1/s) Rydberg frequency
   Real c=2.998E8; // m/s
   Real mh=1.674E-27; // kg
   Real nm_0=91.126705058; // Hydrogen ionization wavelength in nm
   Real Ry=2.1798723611E-18;// J (joules)
-  Real rho_p = 1.0e-12; // kg/m3
-  Real cs    = 3.0e3;   // m/s
 
   // Function declarations
   Real getRad(Coordinates *pcoord, int i, int j, int k);
@@ -86,6 +87,10 @@ void Mesh::InitUserMeshData(ParameterInput *pin)
   dfloor = pin->GetOrAddReal("hydro", "dfloor", 0);
   pfloor = pin->GetOrAddReal("hydro", "pfloor", 0);
   sfloor = pin->GetOrAddReal("hydro", "sfloor", 0);
+
+  rho_p = pin->GetOrAddReal("problem","rho_p",1.0e-12);
+  cs = pin->GetOrAddReal("problem","cs",3.0e3);
+  space_density_factor = pin->GetOrAddReal("problem", "space_density_factor", 1.e-4);
 
   r_0 = 0.5*Rp;
   r_e = 1.02*Rp;
@@ -414,7 +419,7 @@ void SetInitialConditions(Real rad, Real &dens, Real &press, Real &ion_f, Real &
     ion_f = sfloor;
   }
   else {
-    dens  = rho_e * 1.0e-4;
+    dens  = rho_e * space_density_factor;
     press = P_e;
     ion_f = 1-sfloor;
   }
@@ -475,6 +480,11 @@ void MeshBlock::UserWorkInLoop() {
   Real gm1 = gas_gamma - 1.0;
   Real rad, dens, press, ion_f, v1, v2, v3;
 
+  bool nancheck = false;
+  std::stringstream nan_msg;
+  nan_msg << "### FATAL ERROR" << std::endl;
+  nan_msg << "    nan value detected in (";
+
   // calculate energy that goes into ionizing
   int il, iu, jl, ju, kl, ku;
   getMBBounds(this, il, iu, jl, ju, kl, ku);
@@ -483,6 +493,31 @@ void MeshBlock::UserWorkInLoop() {
     for (int j = jl; j <= ju; ++j) {
       for (int i = il; i <= iu; ++i) {
         rad = getRad(pcoord, i, j, k);
+
+        if (std::isnan(phydro->w(IDN,k,j,i))) {
+          nancheck = true;
+          nan_msg << "dens";
+        } else if (std::isnan(phydro->w(IPR,k,j,i))) {
+          nancheck = true;
+          nan_msg << "press";
+        } else if (std::isnan(phydro->w(IV1,k,j,i))) {
+          nancheck = true;
+          nan_msg << "vel1";
+        } else if (std::isnan(phydro->w(IV2,k,j,i))) {
+          nancheck = true;
+          nan_msg << "vel2";
+        } else if (std::isnan(phydro->w(IV3,k,j,i))) {
+          nancheck = true;
+          nan_msg << "vel3";
+        }
+
+
+        if (nancheck) {
+          nan_msg << ") at (k=" << k << ", j=" << j << ", i=" << i << ")." << std::endl;
+          nan_msg << " at time: " << pmy_mesh->time << " cycle: " << pmy_mesh->ncycle << std::endl;
+          std::cout << nan_msg.str() << std::endl;
+          ATHENA_ERROR(nan_msg);
+        }
 
         // reset conditions interior to 0.75 Rp
         // probably best to do both cons and prim
