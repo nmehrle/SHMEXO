@@ -50,11 +50,11 @@ class HydroBoundaryVariable : public CellCenteredBoundaryVariable {
                       int il, int iu, int jl, int ju, int kl, int ngh) override;
   void ReflectOuterX3(Real time, Real dt,
                       int il, int iu, int jl, int ju, int ku, int ngh) override;
-  // BoundaryPhysics: implement adiabatic extrapolation
-  void OutflowInnerX1(Real time, Real dt,
-                      int il, int iu, int jl, int ju, int ku, int ngh) override;
-  void OutflowOuterX1(Real time, Real dt,
-                      int il, int iu, int jl, int ju, int ku, int ngh) override;
+  // // BoundaryPhysics: implement adiabatic extrapolation
+  // void OutflowInnerX1(Real time, Real dt,
+  //                     int il, int iu, int jl, int ju, int ku, int ngh) override;
+  // void OutflowOuterX1(Real time, Real dt,
+  //                     int il, int iu, int jl, int ju, int ku, int ngh) override;
   //protected:
  private:
   // Hydro is a unique cell-centered variable because of the relationship between
