@@ -150,8 +150,8 @@ void HydroSourceTerms::SetGravityStores() {
           }
           else // block boundary
             g1(k, j, ie+i) = g1(k, j, ie); //copied from CHENG drum/hydro/decompose_assemble.cpp line 121
-        }
-      }
+        } // i
+      } // j
     } // k loop
   } // if
   else { // non user-gravity
@@ -214,9 +214,9 @@ void HydroSourceTerms::SetGravityStores() {
           }
           else // block boundary
             g1(k, j, ie+i) = g1(k, j, ie); //copied from CHENG drum/hydro/decompose_assemble.cpp line 121
-        }
-      }
-    }
+        } // i
+      } // j
+    } // k
   } // else
 }
 

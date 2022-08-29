@@ -76,6 +76,10 @@ TaskStatus TimeIntegratorTaskList::CalculateRadiationFlux(MeshBlock *pmb, int st
   Hydro *phydro=pmb->phydro;
   
   // only do radiation at first RK stage  -- quickening assumption for now
+  // dont think this cooldown thing is done correctly for this stage setup
+    // dt should consider stage_wghts.beta
+    // maybe do cooldown consideration outside of rk stages
+    // and radiation caculation inside?
   if (stage <= nstages) {
     if (prad->current > 0.) {
       prad->current -= pmb->pmy_mesh->dt;  // radiation is in cool-down
