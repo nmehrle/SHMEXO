@@ -22,17 +22,27 @@
 #include "../radiation/null_absorber.hpp"
 #include "../scalars/scalars.hpp"
 
-namespace {
   // user set variables
   Real G, Mp, Ms, Rp, period, a;
   Real dfloor, pfloor, sfloor;
   Real gas_gamma;
   Real wave_to_meters_conversion;
 
+  //-- domain_values
+    // set in problem file
+    Real r_interior, r_replenish, r_outer;
+    Real cell_ratio, cell_ratio_outer;
+    int n_cells;
+
+    // computed
+    int n_outer, n_middle;
+    Real initial_cell_size, calc_r_outer;
+
+  // radiation variables
   Real dist_, ref_dist_;
 
+  // tripathi conditions variables
   Real rho_p, cs, space_density_factor;
-
   Real r_0, r_e, rho_0, rho_e, P_0, P_e;
 
   //Physical Constants -- for problem file?
@@ -55,7 +65,10 @@ namespace {
     const AthenaArray<Real> &bcc,
     AthenaArray<Real> &du, AthenaArray<Real> &ds);
   Real RadiationTime(AthenaArray<Real> const &prim, Real time, int k, int j, int il, int iu);
-}
+  
+  Real CubeMeshSpacing(Real x, RegionSize rs);
+  Real geometricSum(Real r, int k);
+  int findNOuter(int n, Real x_max, Real &calc_r_outer, Real &initial_cell_size);
 
 //----------------------------------------------------------------------------------------
 // User Setup
@@ -92,6 +105,7 @@ void Mesh::InitUserMeshData(ParameterInput *pin)
   cs = pin->GetOrAddReal("problem","cs",3.0e3);
   space_density_factor = pin->GetOrAddReal("problem", "space_density_factor", 1.e-4);
 
+  // Tripathi initial conditions variables
   r_0 = 0.5*Rp;
   r_e = 1.02*Rp;
 
@@ -99,6 +113,32 @@ void Mesh::InitUserMeshData(ParameterInput *pin)
   rho_e = rho_func(r_e);
   P_0   = press_func(rho_0);
   P_e   = press_func(rho_e);
+
+  // Domain Variables
+  r_interior = pin->GetOrAddReal("problem", "r_interior_Rp", 0.7)*Rp;
+  r_replenish = pin->GetOrAddReal("problem", "r_replenish_Rp", 0.75)*Rp;
+  r_outer = pin->GetOrAddReal("problem", "r_outer_Rp", 3.0)*Rp;
+
+  cell_ratio = pin->GetOrAddReal("problem","cell_ratio", 1.01);
+  cell_ratio_outer = pin->GetOrAddReal("problem","cell_ratio_outer", 1.1);
+
+
+  // Domain logic 
+  int n = mesh_size.nx1;
+  Real x_max = mesh_size.x1max;
+
+  n_outer = findNOuter(n, x_max, calc_r_outer, initial_cell_size);
+  n_middle = n - NGHOST - n_outer;
+  n_cells = n;
+
+  EnrollUserMeshGenerator(X1DIR, CubeMeshSpacing);
+
+  if (f2) {
+    EnrollUserMeshGenerator(X2DIR, CubeMeshSpacing);
+  }
+  if (f3) {
+    EnrollUserMeshGenerator(X3DIR, CubeMeshSpacing);
+  }
 }
 
 void MeshBlock::InitUserMeshBlockData(ParameterInput *pin)
@@ -236,7 +276,7 @@ void RadiationBand::AddAbsorber(std::string name, std::string file, ParameterInp
 //----------------------------------------------------------------------------------------
 // Additional Physics
 //----------------------------------------------------------------------------------------
-namespace {
+
 
 // sources in ghost cells?
 void SourceTerms(MeshBlock *pmb, const Real time, const Real dt,
@@ -400,7 +440,50 @@ Real RadiationTime(AthenaArray<Real> const &prim, Real time, int k, int j, int i
   return rad_scaling*time_factor;
 }
 
-} // namespace
+//----------------------------------------------------------------------------------------
+// Cell Sizing
+//----------------------------------------------------------------------------------------
+
+// sets x1f
+Real CubeMeshSpacing(Real x, RegionSize rs) {
+  // problematic! repeats values
+  int i = int(round(x * n_cells));
+
+  if (i <= NGHOST) {
+    return rs.x1min + i*(r_interior - rs.x1min)/NGHOST;
+  }
+  else if (i < NGHOST + n_middle + 1) {
+    return r_interior + initial_cell_size * geometricSum(cell_ratio, i-NGHOST);
+  }
+  else {
+    return calc_r_outer + initial_cell_size * pow(cell_ratio, n_middle) * geometricSum(cell_ratio_outer, i-NGHOST-n_middle);
+  }
+}
+
+int findNOuter(int n, Real x_max, Real &calc_r_outer, Real &initial_cell_size) {
+  Real test_outer_r, test_cell_size;
+  Real sum1, sum2;
+  int m;
+  for (int n_outer = NGHOST; n_outer < n; ++n_outer)
+  {
+    m = n - NGHOST - n_outer;
+    sum1 = geometricSum(cell_ratio, m);
+    sum2 = geometricSum(cell_ratio_outer, n_outer);
+    test_cell_size = (x_max - r_interior)/(sum1 + pow(cell_ratio,m)*sum2);
+    test_outer_r = r_interior + test_cell_size * sum1;
+    if (test_outer_r < r_outer) {
+      initial_cell_size = test_cell_size;
+      calc_r_outer = test_outer_r;
+      return n_outer;
+    }
+  }
+
+  std::stringstream msg;
+  msg << "### FATAL ERROR in ProblemGenerator::findNE"
+        << std::endl << "   Unable to find valid value for n_outer";
+    ATHENA_ERROR(msg);
+}
+
 
 //----------------------------------------------------------------------------------------
 // Initial Conditions
@@ -473,7 +556,7 @@ void MeshBlock::ProblemGenerator(ParameterInput *pin)
   peos->PrimitiveToConserved(phydro->w, pfield->bcc, phydro->u, pcoord, is, ie, js, je, ks, ke);
 }
 
-// resets things inside 0.75Rp
+// resets things inside r_replenish
 void MeshBlock::UserWorkInLoop() {
   // happens at last stage, at end
 
@@ -519,9 +602,9 @@ void MeshBlock::UserWorkInLoop() {
           ATHENA_ERROR(nan_msg);
         }
 
-        // reset conditions interior to 0.75 Rp
+        // reset conditions interior to r_replenish
         // probably best to do both cons and prim
-        if (rad <= 0.75 * Rp) {
+        if (rad <= r_replenish) {
           SetInitialConditions(rad, dens, press, ion_f, v1, v2, v3);
 
           // prim
@@ -556,7 +639,6 @@ void MeshBlock::UserWorkInLoop() {
 //----------------------------------------------------------------------------------------
 // Utility
 //----------------------------------------------------------------------------------------
-namespace {
 
 Real rho_func(Real r) {  
   Real gm1   = gas_gamma - 1.0;
@@ -603,4 +685,9 @@ void getMBBounds(MeshBlock *pmb, int &il, int &iu, int &jl, int &ju, int &kl, in
   ku = pmb->block_size.nx3 == 1 ? pmb->ke : pmb->ke+NGHOST;
 }
 
-} // namespace
+Real geometricSum(Real r, int k) {
+  if (r == 1) {
+    return k;
+  }
+  return (1-pow(r,k))/(1-r);
+}
