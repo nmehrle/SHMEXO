@@ -131,13 +131,17 @@ void Mesh::InitUserMeshData(ParameterInput *pin)
   n_middle = n - NGHOST - n_outer;
   n_cells = n;
 
-  EnrollUserMeshGenerator(X1DIR, CubeMeshSpacing);
+  if (mesh_size.x1rat == -1.0)
+    EnrollUserMeshGenerator(X1DIR, CubeMeshSpacing);
+
 
   if (f2) {
-    EnrollUserMeshGenerator(X2DIR, CubeMeshSpacing);
+    if (mesh_size.x2rat == -1.0)
+      EnrollUserMeshGenerator(X2DIR, CubeMeshSpacing);
   }
   if (f3) {
-    EnrollUserMeshGenerator(X3DIR, CubeMeshSpacing);
+    if (mesh_size.x3rat == -1.0)
+      EnrollUserMeshGenerator(X3DIR, CubeMeshSpacing);
   }
 }
 
