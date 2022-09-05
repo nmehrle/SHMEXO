@@ -1354,7 +1354,7 @@ void Mesh::Initialize(int res_flag, ParameterInput *pin) {
         MeshBlock *pmb = pmb_array[i];
         pmb->ProblemGenerator(pin);
         pmb->pbval->CheckUserBoundaries();
-        pmb->phydro->CheckHydro();
+        // pmb->phydro->CheckHydro();
       }
     }
 
