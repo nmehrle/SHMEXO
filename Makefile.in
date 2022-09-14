@@ -12,6 +12,7 @@ RSOLVER_DIR = @RSOLVER_DIR@
 MPIFFT_FILE = @MPIFFT_FILE@
 MATH_DIR = src/math/
 MATH_LIBRARY = $(MATH_DIR)libclimath.a
+MAKE_DISORT=@MAKE_DISORT@
 DISORT_DIR = src/radiation/rtsolver/cdisort213/
 DISORT_LIBRARY = $(DISORT_DIR)libcdisort.a
 
@@ -74,7 +75,10 @@ GCDA_FILES := $(wildcard $(OBJ_DIR)/*.gcda)
 SRC_PREFIX := src/
 SRC_DIRS := $(dir $(SRC_FILES))
 VPATH := $(SRC_DIRS)
-
+TOEXECUTE := $(OBJ_FILES) $(MATH_LIBRARY)
+ifeq ($(MAKE_DISORT), 1)
+	TOEXECUTE = $(TOEXECUTE) $(DISORT_LIBRARY)
+endif
 # Generally useful targets
 
 .PHONY : all dirs clean
@@ -101,7 +105,7 @@ $(OBJ_DIR):
 
 # Link objects into executable
 
-$(EXECUTABLE) : $(OBJ_FILES) $(MATH_LIBRARY) $(DISORT_LIBRARY)
+$(EXECUTABLE) : $(TOEXECUTE)
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -o $@ $(OBJ_FILES) $(LDFLAGS) $(LDLIBS)
 
 $(MATH_LIBRARY):
