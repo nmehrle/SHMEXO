@@ -668,6 +668,7 @@ if args['cxx'] == 'clang++-apple':
     makefile_options['LIBRARY_FLAGS'] = '-lclimath'
 
 # --rt=[name] argument
+makefile_options['MAKE_DISORT'] = 0
 if args['rt'] == 'OFF':
   definitions['RT_SOLVER'] = 'RT_OFF'
   definitions['RADIATION_ENABLED'] = '0'
@@ -676,6 +677,7 @@ else:
   if args['rt'] == '2sess':
     definitions['RT_SOLVER'] = 'RT_2SESS'
   elif args['rt'] == 'disort':
+    makefile_options['MAKE_DISORT'] = 1
     definitions['RT_SOLVER'] = 'RT_DISORT'
     if args['cxx'] == 'g++' or args['cxx'] == 'icpc' or args['cxx'] == 'cray':
       makefile_options['LINKER_FLAGS'] += ' -Lsrc/radiation/rtsolver/cdisort213'

@@ -36,6 +36,8 @@ void ShowConfig() {
       std::cout<<"  Radiation solver:           LAMBERT" << std::endl;
 #elif defined RT_UNKOW
       std::cout<<"  Radiation solver:           UNKOWN" << std::endl;
+#elif defined RT_SIMPLE
+      std::cout<<"  Radiation solver:           SIMPLE" << std::endl;
 #else
       std::cout<<"  Radiation solver:           OTHER" << std::endl;
 #endif
