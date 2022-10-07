@@ -112,7 +112,11 @@ $(MATH_LIBRARY):
 	make -C src/math CC=$(CXX) CFLAGS="$(CXXFLAGS)"
 
 $(DISORT_LIBRARY):
+
+ifeq ($(MAKE_DISORT), 1)
 	make -C src/radiation/rtsolver/cdisort213 -f Makefile_cdisort CC=gcc CFLAGS=-O3
+endif
+
 
 # Create objects from source files
 
@@ -133,5 +137,4 @@ clean :
 	rm -f $(DISORT_DIR)*.o
 	rm -f $(DISORT_DIR)disotest
 	rm -rf $(OBJ_DIR)*
-	rm -rf $(EXECUTABLE)
 	rm -rf *.gcov
