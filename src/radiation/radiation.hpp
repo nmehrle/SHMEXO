@@ -113,7 +113,7 @@ protected:
   Real ref_dist_;
   Real beam_;
 
-  RadiationTimeFunc UserRadiationTimeFunc = nullptr;
+  RadiationTimeFunc UserRadiationTimeFunc;
 
   // scratch space to compute change in radflux
   AthenaArray<Real> x1face_area_, x2face_area_, x3face_area_;

@@ -780,23 +780,23 @@ void OutputType::LoadOutputData(MeshBlock *pmb) {
     }
   }
 
-  // radiation
-  if (output_params.variable.compare("rad") == 0 ||
-      output_params.variable.compare("radtoa") == 0) {
-    RadiationBand *p = prad->pband;
-    while (p != NULL) {
-      // toa
-      pod = new OutputData;
-      pod->type = "SCALARS";
-      pod->grid = "-CC";
-      pod->name = p->myname+"toa";
-      pod->data.InitWithShallowSlice(p->btoa,3,0,p->btoa.GetDim3());
-      AppendOutputDataNode(pod);
-      num_vars_ += p->btoa.GetDim3();
+  // // radiation
+  // if (output_params.variable.compare("rad") == 0 ||
+  //     output_params.variable.compare("radtoa") == 0) {
+  //   RadiationBand *p = prad->pband;
+  //   while (p != NULL) {
+  //     // toa
+  //     pod = new OutputData;
+  //     pod->type = "SCALARS";
+  //     pod->grid = "-CC";
+  //     pod->name = p->myname+"toa";
+  //     pod->data.InitWithShallowSlice(p->btoa,3,0,p->btoa.GetDim3());
+  //     AppendOutputDataNode(pod);
+  //     num_vars_ += p->btoa.GetDim3();
 
-      p = p->next;
-    }
-  }
+  //     p = p->next;
+  //   }
+  // }
 
   // throw an error if output variable name not recognized
   if (num_vars_ == 0) {

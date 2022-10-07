@@ -26,10 +26,10 @@ VerticalCommunication::VerticalCommunication(Hydro *phydro) :
 VerticalCommunication::~VerticalCommunication() {
   delete[] buffer_;
   FreeCArray(implicit_data_);
-#ifdef MPI_PARALLEL
-  FreeCArray(req_send_bot_data_);
-  FreeCArray(req_send_top_data_);
-#endif
+// #ifdef MPI_PARALLEL
+//   FreeCArray(req_send_bot_data_);
+//   FreeCArray(req_send_top_data_);
+// #endif
 }
 
 void VerticalCommunication::FindNeighbors() {

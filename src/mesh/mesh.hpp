@@ -321,7 +321,7 @@ class Mesh {
   ConductionCoeffFunc ConductionCoeff_;
   FieldDiffusionCoeffFunc FieldDiffusivity_;
   MGBoundaryFunc MGGravityBoundaryFunction_[6];
-  RadiationTimeFunc UserRadiationTimeFunc_;
+  RadiationTimeFunc UserRadiationTimeFunc_ = nullptr;
 
   void AllocateRealUserMeshDataField(int n);
   void AllocateIntUserMeshDataField(int n);
