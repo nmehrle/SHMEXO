@@ -198,7 +198,6 @@ void Radiation::CalculateEnergyAbsorption(const Real dt) {
 
         // apply change in energy to conserved variables
         pmb->pcoord->CellVolume(k,j,is,ie,vol);
-#pragma omp simd
         for (int i=is; i<=ie; ++i) {
           // negative reflects radiation in -i direction
           du(k, j, i) -= dt*dflx(i)/vol(i);
@@ -218,7 +217,6 @@ void Radiation::AddRadiationSourceTerm(const Real dt, AthenaArray<Real> &du_hydr
 
   for (int k=ks; k<=ke; ++k) {
     for (int j=js; j<=je; ++j) {
-#pragma omp simd
       for (int i=is; i<=ie; ++i) {
         // apply change in energy from radiation to hydro conserved variables
         du_hydro(IEN, k, j, i) += du(k,j,i);
