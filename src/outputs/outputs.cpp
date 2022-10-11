@@ -137,9 +137,22 @@ Outputs::Outputs(Mesh *pm, ParameterInput *pin) {
 
       // set time of last output, time between outputs
       op.next_time = pin->GetOrAddReal(op.block_name,"next_time", pm->time);
-      op.dt = pin->GetReal(op.block_name,"dt");
+      op.dt = pin->GetOrAddReal(op.block_name,"dt", 0.0);
+      op.dcycle = pin->GetOrAddInteger(op.block_name,"dcycle", 0);
 
-      if (op.dt > 0.0) {  // only add output if dt>0
+      if (op.dt == 0.0 && op.dcycle == 0) {
+        msg << "### FATAL ERROR in Outputs constructor" << std::endl
+            << "Either dt or dcycle must be specified in " << op.block_name
+            << std::endl;
+        ATHENA_ERROR(msg);
+      }
+      if (op.dt > 0.0 && op.dcycle > 0) {
+        msg << "### FATAL ERROR in Outputs constructor" << std::endl
+            << "dt and dcycle cannot be specified simultaneously in " << op.block_name
+            << std::endl;
+        ATHENA_ERROR(msg);
+      }
+      if (op.dt > 0.0 || op.dcycle > 0) {  // only add output if dt > 0 or dycle > 0
         // set file number, basename, id, and format
         op.file_number = pin->GetOrAddInteger(op.block_name,"file_number",0);
         op.file_basename = pin->GetString("job","problem_id");
