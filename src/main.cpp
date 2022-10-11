@@ -388,28 +388,16 @@ int main(int argc, char *argv[]) {
 
   //--- Step 7. --------------------------------------------------------------------------
   // Change to run directory, initialize outputs object, and make output of ICs
-  // Also, copy over the input file to run directory to save
 
   Outputs *pouts;
 #ifdef ENABLE_EXCEPTIONS
   try {
 #endif
 
-    char cwd[2048];
-    getcwd(cwd, 2048);
-
-    std::string command = "cp ";
-    command += cwd;
-    command += "/";
-    command += input_filename;
-    command += " " + pinput->GetString("job","problem_id") + ".input";
-
     ChangeRunDir(prundir);
     pouts = new Outputs(pmesh, pinput);
-    if (res_flag == 0){
+    if (res_flag == 0)
       pouts->MakeOutputs(pmesh, pinput);
-      std::system(const_cast<char*>(command.c_str()));
-    }
 #ifdef ENABLE_EXCEPTIONS
   }
   catch(std::bad_alloc& ba) {
