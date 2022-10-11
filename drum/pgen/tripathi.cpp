@@ -35,7 +35,7 @@
     int n_cells;
 
     // computed
-    int n_outer, n_middle;
+    int n_inner, n_outer, n_middle;
     Real initial_cell_size, calc_r_outer;
 
   // radiation variables
@@ -122,18 +122,30 @@ void Mesh::InitUserMeshData(ParameterInput *pin)
   cell_ratio = pin->GetOrAddReal("problem","cell_ratio", 1.01);
   cell_ratio_outer = pin->GetOrAddReal("problem","cell_ratio_outer", 1.1);
 
+  // check for cubic mesh
+  if ( (f2 || f3) && !(mesh_size.nx1 == mesh_size.nx2 && mesh_size.nx1 == mesh_size.nx3)) {
+    std::stringstream msg;
+    msg << "### FATAL ERROR in InitUserMeshData" << std::endl
+        << "    Must use a cubic mesh size for 3d." << std::endl
+  }
 
-  // Domain logic 
+  if (r_interior == 0.0) {
+    n_inner = 0;
+  }
+  else {
+    n_inner = NGHOST;
+  }
+
+  // Domain logic
   int n = mesh_size.nx1;
   Real x_max = mesh_size.x1max;
 
   n_outer = findNOuter(n, x_max, calc_r_outer, initial_cell_size);
-  n_middle = n - NGHOST - n_outer;
+  n_middle = n - n_inner - n_outer;
   n_cells = n;
 
   if (mesh_size.x1rat == -1.0)
     EnrollUserMeshGenerator(X1DIR, CubeMeshSpacing);
-
 
   if (f2) {
     if (mesh_size.x2rat == -1.0)
@@ -448,19 +460,20 @@ Real RadiationTime(AthenaArray<Real> const &prim, Real time, int k, int j, int i
 // Cell Sizing
 //----------------------------------------------------------------------------------------
 
-// sets x1f
 Real CubeMeshSpacing(Real x, RegionSize rs) {
-  // problematic! repeats values
   int i = int(round(x * n_cells));
 
-  if (i <= NGHOST) {
-    return rs.x1min + i*(r_interior - rs.x1min)/NGHOST;
+  if (i == 0) {
+    return rs.x1min;
   }
-  else if (i < NGHOST + n_middle + 1) {
-    return r_interior + initial_cell_size * geometricSum(cell_ratio, i-NGHOST);
+  else if (i <= n_inner) {
+    return rs.x1min + i*(r_interior - rs.x1min)/n_inner;
+  }
+  else if (i < n_inner + n_middle + 1) {
+    return r_interior + initial_cell_size * geometricSum(cell_ratio, i-n_inner);
   }
   else {
-    return calc_r_outer + initial_cell_size * pow(cell_ratio, n_middle) * geometricSum(cell_ratio_outer, i-NGHOST-n_middle);
+    return calc_r_outer + initial_cell_size * pow(cell_ratio, n_middle) * geometricSum(cell_ratio_outer, i-n_inner-n_middle);
   }
 }
 
@@ -468,9 +481,9 @@ int findNOuter(int n, Real x_max, Real &calc_r_outer, Real &initial_cell_size) {
   Real test_outer_r, test_cell_size;
   Real sum1, sum2;
   int m;
-  for (int n_outer = NGHOST; n_outer < n; ++n_outer)
+  for (int n_outer = n_inner; n_outer < n; ++n_outer)
   {
-    m = n - NGHOST - n_outer;
+    m = n - n_inner - n_outer;
     sum1 = geometricSum(cell_ratio, m);
     sum2 = geometricSum(cell_ratio_outer, n_outer);
     test_cell_size = (x_max - r_interior)/(sum1 + pow(cell_ratio,m)*sum2);
