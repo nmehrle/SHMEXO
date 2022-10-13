@@ -35,6 +35,7 @@
   // tripathi conditions variables
   Real rho_p, cs, space_density_factor;
   Real r_0, r_e, rho_0, rho_e, P_0, P_e;
+  Real r_replenish;
 
   //Physical Constants -- for problem file?
   Real A0=6.30431812E-22; // (m^2)
@@ -56,6 +57,13 @@
     const AthenaArray<Real> &bcc,
     AthenaArray<Real> &du, AthenaArray<Real> &ds);
   Real RadiationTime(AthenaArray<Real> const &prim, Real time, int k, int j, int il, int iu);
+
+  // mesh generators
+  MeshGenerator meshgen_x1, meshgen_x2, meshgen_x3;
+  Real MeshSpacingX1(Real x, RegionSize rs);
+  Real MeshSpacingX2(Real x, RegionSize rs);
+  Real MeshSpacingX3(Real x, RegionSize rs);
+
 
 //----------------------------------------------------------------------------------------
 // User Setup
@@ -91,6 +99,8 @@ void Mesh::InitUserMeshData(ParameterInput *pin)
   rho_p = pin->GetOrAddReal("problem","rho_p",1.0e-12);
   cs = pin->GetOrAddReal("problem","cs",3.0e3);
   space_density_factor = pin->GetOrAddReal("problem", "space_density_factor", 1.e-4);
+  r_replenish = pin->GetOrAddReal("problem", "r_replenish_Rp", 0.75)*Rp;
+
 
   // Tripathi initial conditions variables
   r_0 = 0.5*Rp;
@@ -103,21 +113,33 @@ void Mesh::InitUserMeshData(ParameterInput *pin)
 
   // Domain logic
   if (mesh_size.x1rat == -1.0) {
-    MeshGenerator meshgen_x1 = MeshGenerator(mesh_size.x1min, mesh_size.x1max, mesh_size.nx1, *pin);
-    EnrollUserMeshGenerator(X1DIR, meshgen_x1.MeshSpacing);
+    meshgen_x1 = MeshGenerator(mesh_size.x1min, mesh_size.x1max, mesh_size.nx1, pin);
+    EnrollUserMeshGenerator(X1DIR, MeshSpacingX1);
   }
   if (f2) {
     if (mesh_size.x2rat == -1.0) {
-      MeshGenerator meshgen_x2 = MeshGenerator(mesh_size.x2min, mesh_size.x2max, mesh_size.nx2, *pin);  
-      EnrollUserMeshGenerator(X2DIR, meshgen_x2.MeshSpacing);
+      meshgen_x2 = MeshGenerator(mesh_size.x2min, mesh_size.x2max, mesh_size.nx2, pin);  
+      EnrollUserMeshGenerator(X2DIR, MeshSpacingX2);
     }
   }
   if (f3) {
     if (mesh_size.x3rat == -1.0) {
-      MeshGenerator meshgen_x3 = MeshGenerator(mesh_size.x3min, mesh_size.x3max, mesh_size.nx3, *pin);
-      EnrollUserMeshGenerator(X3DIR, meshgen_x3.MeshSpacing);
+      meshgen_x3 = MeshGenerator(mesh_size.x3min, mesh_size.x3max, mesh_size.nx3, pin);
+      EnrollUserMeshGenerator(X3DIR, MeshSpacingX3);
     }
   }
+}
+
+Real MeshSpacingX1(Real x, RegionSize rs) {
+  return meshgen_x1.MeshSpacing(x);
+}
+
+Real MeshSpacingX2(Real x, RegionSize rs) {
+  return meshgen_x2.MeshSpacing(x);
+}
+
+Real MeshSpacingX3(Real x, RegionSize rs) {
+  return meshgen_x3.MeshSpacing(x);
 }
 
 // outputs and stored values

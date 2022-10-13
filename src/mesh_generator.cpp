@@ -12,7 +12,6 @@
 #include "utils/utils.hpp"
 #include "mesh_generator.hpp"
 
-
 MeshGenerator::MeshGenerator(Real input_r_min, Real input_r_max, int input_n, ParameterInput *pin):
   r_min(input_r_min), r_max(input_r_max), n(input_n)
 {
@@ -62,9 +61,8 @@ Real MeshGenerator::CalculateTurnoverPoint(Real x0, int maxit, Real convergence)
   maxit-=1;
 
   Real x1 = x0 - ImplicitTurnoverPoint(x0)/ImplicitTurnoverPointDerivative(x0);
-  bool converged = abs(x1 - x0) < convergence;
 
-  if (converged) {
+  if (std::abs(x1 - x0) < convergence) {
     return x1;
   }
 
@@ -106,7 +104,7 @@ Real MeshGenerator::HighXFunction(Real x) {
   return A2 * pow(outer_cell_ratio, exp) + B2;
 }
 
-Real MeshGenerator::MeshSpacing(Real x, RegionSize rs) {
+Real MeshGenerator::MeshSpacing(Real x) {
   if (x < x_turnover) {
     return LowXFunction(x);
   }

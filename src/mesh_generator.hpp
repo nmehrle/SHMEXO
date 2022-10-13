@@ -14,9 +14,10 @@
 
 class MeshGenerator {
 public:
+  MeshGenerator(){};
   MeshGenerator(Real input_r_min, Real input_r_max, int input_n, ParameterInput *pin);
 
-  Real MeshSpacing(Real x, RegionSize rs);
+  Real MeshSpacing(Real x);
 
 protected:
   // mesh_size params
@@ -39,4 +40,4 @@ protected:
   // Functions for calculating mesh spacing
   Real LowXFunction(Real x);
   Real HighXFunction(Real x);
-}
+};
