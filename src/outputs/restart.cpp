@@ -151,6 +151,7 @@ void RestartOutput::WriteOutputFile(Mesh *pm, ParameterInput *pin, bool force_wr
 
   // Loop over MeshBlocks and pack the data
   pmb = pm->pblock;
+  int b = 0;
   while (pmb != nullptr) {
     char *pdata = &(data[pmb->lid*datasize]);
 
@@ -207,6 +208,7 @@ void RestartOutput::WriteOutputFile(Mesh *pm, ParameterInput *pin, bool force_wr
       pdata += pmb->ruser_meshblock_data[n].GetSizeInBytes();
     }
     pmb = pmb->next;
+    ++b;
     // now write restart data in parallel
     myoffset = headeroffset + listsize*nbtotal + datasize*(myns+b);
     if (b < nbmin)
