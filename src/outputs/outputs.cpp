@@ -4,72 +4,71 @@
 // Licensed under the 3-clause BSD License, see LICENSE file for details
 //========================================================================================
 //! \file outputs.cpp
-//  \brief implements functions for Athena++ outputs
+//! \brief implements functions for Athena++ outputs
+//!
+//! The number and types of outputs are all controlled by the number and values of
+//! parameters specified in <output[n]> blocks in the input file.  Each output block must
+//! be labelled by a unique integer "n".  Following the convention of the parser
+//! implemented in the ParameterInput class, a second output block with the same integer
+//! "n" of an earlier block will silently overwrite the values read by the first block.
+//! The numbering of the output blocks does not need to be consecutive, and blocks may
+//! appear in any order in the input file.  Moreover, unlike the C version of Athena,
+//! the total number of <output[n]> blocks does not need to be specified --
+//! in Athena++ a new output type will be created for each and every <output[n]> block
+//! in the input file.
+//!
+//! Required parameters that must be specified in an <output[n]> block are:
+//!   - variable     = cons,prim,D,d,E,e,m,m1,m2,m3,v,v1=vx,v2=vy,v3=vz,p,
+//!                    bcc,bcc1,bcc2,bcc3,b,b1,b2,b3,phi,uov
+//!   - file_type    = rst,tab,vtk,hst,hdf5
+//!   - dt           = problem time between outputs
+//!
+//! EXAMPLE of an <output[n]> block for a VTK dump:
+//!
+//!     <output3>
+//!     file_type   = tab       # Tabular data dump
+//!     variable    = prim      # variables to be output
+//!     data_format = %12.5e    # Optional data format string
+//!     dt          = 0.01      # time increment between outputs
+//!     x2_slice    = 0.0       # slice in x2
+//!     x3_slice    = 0.0       # slice in x3
+//!
+//!
+//! Each <output[n]> block will result in a new node being created in a linked list of
+//! OutputType stored in the Outputs class.  During a simulation, outputs are made when
+//! the simulation time satisfies the criteria implemented in the MakeOutputs() function.
+//!
+//! \note
+//! To implement a new output type, write a new OutputType derived class, and construct
+//! an object of this class in the Outputs constructor at the location indicated by the
+//! comment text: 'NEW_OUTPUT_TYPES'. Current summary:
+//! - outputs.cpp, OutputType:LoadOutputData() (below): conditionally add new OutputData
+//!   node to linked list, depending on the user-input 'variable' string.
+//!   Provide direction on how to slice a possible 4D source AthenaArray into separate
+//!   3D arrays; automatically enrolls quantity in vtk.cpp, formatted_table.cpp outputs.
+//! - athena_hdf5.cpp, ATHDF5Output::WriteOutputFile(): need to allocate space for the new
+//!   OutputData node as an HDF5 "variable" inside an existing HDF5 "dataset"
+//!   (cell-centered vs. face-centered data).
+//! - restart.cpp, RestartOutput::WriteOutputFile(): memcpy array of quantity to pdata
+//!   pointer and increment the pointer. pdata points to an allocated region of
+//!   memory whose "datasize" is inferred from MeshBlock::GetBlockSizeInBytes(), ---->
+//! - mesh/meshblock.cpp, MeshBlock::GetBlockSizeInBytes(): increment std::size_t size by
+//!   the size of the new quantity's array(s)
+//! - mesh/meshblock.cpp, MeshBlock restart constructor: memcpy quantity
+//!   (IN THE SAME ORDER AS THE VARIABLES ARE WRITTEN IN restart.cpp)
+//!   from the loaded .rst file to the MeshBlock's appropriate physics member object
+//!
+//! - history.cpp, HistoryOutput::WriteOutputFile() (3x places):
+//!   1) modify NHISTORY_VARS macro
+//!      so that the size of data_sum[] can accommodate the new physics, when active.
+//!   2) Compute volume-weighted data_sum[i] for the new quantity + etc. factors
+//!   3) Provide short string to serve as the column header description of new quantity
+//!
+//! HDF5 note: packing gas velocity into the "prim" HDF5 dataset will cause VisIt to treat
+//! the 3x components as independent scalars instead of a physical vector, unlike how it
+//! treats .vtk velocity output from Athena++. The workaround is to import the
+//! vis/visit/*.xml expressions file, which can pack these HDF5 scalars into a vector.
 //
-// The number and types of outputs are all controlled by the number and values of
-// parameters specified in <output[n]> blocks in the input file.  Each output block must
-// be labelled by a unique integer "n".  Following the convention of the parser
-// implemented in the ParameterInput class, a second output block with the same integer
-// "n" of an earlier block will silently overwrite the values read by the first block. The
-// numbering of the output blocks does not need to be consecutive, and blocks may appear
-// in any order in the input file.  Moreover, unlike the C version of Athena, the total
-// number of <output[n]> blocks does not need to be specified -- in Athena++ a new output
-// type will be created for each and every <output[n]> block in the input file.
-//
-// Required parameters that must be specified in an <output[n]> block are:
-//   - variable     = cons,prim,D,d,E,e,m,m1,m2,m3,v,v1=vx,v2=vy,v3=vz,p,
-//                    bcc,bcc1,bcc2,bcc3,b,b1,b2,b3,phi,uov
-//   - file_type    = rst,tab,vtk,hst,hdf5
-//   - dt           = problem time between outputs
-//
-// EXAMPLE of an <output[n]> block for a VTK dump:
-//   <output3>
-//   file_type   = tab       # Tabular data dump
-//   variable    = prim      # variables to be output
-//   data_format = %12.5e    # Optional data format string
-//   dt          = 0.01      # time increment between outputs
-//   x2_slice    = 0.0       # slice in x2
-//   x3_slice    = 0.0       # slice in x3
-//
-// Each <output[n]> block will result in a new node being created in a linked list of
-// OutputType stored in the Outputs class.  During a simulation, outputs are made when
-// the simulation time satisfies the criteria implemented in the MakeOutputs() function.
-//
-// To implement a new output type, write a new OutputType derived class, and construct
-// an object of this class in the Outputs constructor at the location indicated by the
-// comment text: 'NEW_OUTPUT_TYPES'. Current summary:
-// -----------------------------------
-// - outputs.cpp, OutputType:LoadOutputData() (below): conditionally add new OutputData
-// node to linked list, depending on the user-input 'variable' string. Provide direction
-// on how to slice a possible 4D source AthenaArray into separate 3D arrays; automatically
-// enrolls quantity in vtk.cpp, formatted_table.cpp outputs.
-
-// - athena_hdf5.cpp, ATHDF5Output::WriteOutputFile(): need to allocate space for the new
-// OutputData node as an HDF5 "variable" inside an existing HDF5 "dataset" (cell-centered
-// vs. face-centered data).
-
-// - restart.cpp, RestartOutput::WriteOutputFile(): memcpy array of quantity to pdata
-// pointer and increment the pointer. pdata points to an allocated region of memory whose
-// "datasize" is inferred from MeshBlock::GetBlockSizeInBytes(), ---->
-
-// - mesh/meshblock.cpp, MeshBlock::GetBlockSizeInBytes(): increment std::size_t size by
-// the size of the new quantity's array(s)
-
-// - mesh/meshblock.cpp, MeshBlock restart constructor: memcpy quantity (IN THE SAME ORDER
-// AS THE VARIABLES ARE WRITTEN IN restart.cpp) from the loaded .rst file to the
-// MeshBlock's appropriate physics member object
-
-// - history.cpp, HistoryOutput::WriteOutputFile() (3x places): 1) modify NHISTORY_VARS
-// macro so that the size of data_sum[] can accommodate the new physics, when active.
-// 2) Compute volume-weighted data_sum[i] for the new quantity + etc. factors
-// 3) Provide short string to serve as the column header description of new quantity
-// -----------------------------------
-
-// HDF5 note: packing gas velocity into the "prim" HDF5 dataset will cause VisIt to treat
-// the 3x components as independent scalars instead of a physical vector, unlike how it
-// treats .vtk velocity output from Athena++. The workaround is to import the
-// vis/visit/*.xml expressions file, which can pack these HDF5 scalars into a vector.
-
 // TODO(felker): Replace MeshBlock::GetBlockSizeInBytes() by 2x RegisterMeshBlockData()
 // overloads. Replace "NEW_OUTPUT_TYPES" region of RestartOutput::WriteOutputFile() with
 // automatic loops over registered MeshBlock quantities in pvars_cc, pvars_fc vectors.
@@ -114,7 +113,7 @@ OutputType::OutputType(OutputParameters oparams) :
 }
 
 //----------------------------------------------------------------------------------------
-// Outputs constructor
+//! Outputs constructor
 
 Outputs::Outputs(Mesh *pm, ParameterInput *pin) {
   pfirst_type_ = nullptr;
@@ -357,7 +356,7 @@ Outputs::~Outputs() {
 
 //----------------------------------------------------------------------------------------
 //! \fn void OutputType::LoadOutputData(MeshBlock *pmb)
-//  \brief Create doubly linked list of OutputData's containing requested variables
+//! \brief Create doubly linked list of OutputData's containing requested variables
 
 void OutputType::LoadOutputData(MeshBlock *pmb) {
   Hydro *phyd = pmb->phydro;
@@ -372,8 +371,8 @@ void OutputType::LoadOutputData(MeshBlock *pmb) {
   // NEW_OUTPUT_TYPES:
 
   // (lab-frame) density
-  if (output_params.variable.compare("D") == 0 ||
-      output_params.variable.compare("cons") == 0) {
+  if (ContainVariable(output_params.variable, "D") ||
+      ContainVariable(output_params.variable, "cons")) {
     pod = new OutputData;
     pod->type = "SCALARS";
     pod->name = "dens";
@@ -383,8 +382,8 @@ void OutputType::LoadOutputData(MeshBlock *pmb) {
   }
 
   // (rest-frame) density
-  if (output_params.variable.compare("d") == 0 ||
-      output_params.variable.compare("prim") == 0) {
+  if (ContainVariable(output_params.variable, "d") ||
+      ContainVariable(output_params.variable, "prim")) {
     pod = new OutputData;
     pod->type = "SCALARS";
     pod->name = "rho";
@@ -395,8 +394,8 @@ void OutputType::LoadOutputData(MeshBlock *pmb) {
 
   // total energy
   if (NON_BAROTROPIC_EOS) {
-    if (output_params.variable.compare("E") == 0 ||
-        output_params.variable.compare("cons") == 0) {
+    if (ContainVariable(output_params.variable, "E") ||
+        ContainVariable(output_params.variable, "cons")) {
       pod = new OutputData;
       pod->type = "SCALARS";
       pod->name = "Etot";
@@ -406,8 +405,8 @@ void OutputType::LoadOutputData(MeshBlock *pmb) {
     }
 
     // pressure
-    if (output_params.variable.compare("p") == 0 ||
-        output_params.variable.compare("prim") == 0) {
+    if (ContainVariable(output_params.variable, "p") ||
+        ContainVariable(output_params.variable, "prim")) {
       pod = new OutputData;
       pod->type = "SCALARS";
       pod->name = "press";
@@ -418,8 +417,8 @@ void OutputType::LoadOutputData(MeshBlock *pmb) {
   }
 
   // momentum vector
-  if (output_params.variable.compare("m") == 0 ||
-      output_params.variable.compare("cons") == 0) {
+  if (ContainVariable(output_params.variable, "m") ||
+      ContainVariable(output_params.variable, "cons")) {
     pod = new OutputData;
     pod->type = "VECTORS";
     pod->name = "mom";
@@ -441,7 +440,7 @@ void OutputType::LoadOutputData(MeshBlock *pmb) {
   }
 
   // each component of momentum
-  if (output_params.variable.compare("m1") == 0) {
+  if (ContainVariable(output_params.variable, "m1")) {
     pod = new OutputData;
     pod->type = "SCALARS";
     pod->name = "mom1";
@@ -449,7 +448,7 @@ void OutputType::LoadOutputData(MeshBlock *pmb) {
     AppendOutputDataNode(pod);
     num_vars_++;
   }
-  if (output_params.variable.compare("m2") == 0) {
+  if (ContainVariable(output_params.variable, "m2")) {
     pod = new OutputData;
     pod->type = "SCALARS";
     pod->name = "mom2";
@@ -457,7 +456,7 @@ void OutputType::LoadOutputData(MeshBlock *pmb) {
     AppendOutputDataNode(pod);
     num_vars_++;
   }
-  if (output_params.variable.compare("m3") == 0) {
+  if (ContainVariable(output_params.variable, "m3")) {
     pod = new OutputData;
     pod->type = "SCALARS";
     pod->name = "mom3";
@@ -467,8 +466,8 @@ void OutputType::LoadOutputData(MeshBlock *pmb) {
   }
 
   // velocity vector
-  if (output_params.variable.compare("v") == 0 ||
-      output_params.variable.compare("prim") == 0) {
+  if (ContainVariable(output_params.variable, "v") ||
+      ContainVariable(output_params.variable, "prim")) {
     pod = new OutputData;
     pod->type = "VECTORS";
     pod->name = "vel";
@@ -490,8 +489,8 @@ void OutputType::LoadOutputData(MeshBlock *pmb) {
   }
 
   // each component of velocity
-  if (output_params.variable.compare("vx") == 0 ||
-      output_params.variable.compare("v1") == 0) {
+  if (ContainVariable(output_params.variable, "vx") ||
+      ContainVariable(output_params.variable, "v1")) {
     pod = new OutputData;
     pod->type = "SCALARS";
     pod->name = "vel1";
@@ -499,8 +498,8 @@ void OutputType::LoadOutputData(MeshBlock *pmb) {
     AppendOutputDataNode(pod);
     num_vars_++;
   }
-  if (output_params.variable.compare("vy") == 0 ||
-      output_params.variable.compare("v2") == 0) {
+  if (ContainVariable(output_params.variable, "vy") ||
+      ContainVariable(output_params.variable, "v2")) {
     pod = new OutputData;
     pod->type = "SCALARS";
     pod->name = "vel2";
@@ -508,8 +507,8 @@ void OutputType::LoadOutputData(MeshBlock *pmb) {
     AppendOutputDataNode(pod);
     num_vars_++;
   }
-  if (output_params.variable.compare("vz") == 0 ||
-      output_params.variable.compare("v3") == 0) {
+  if (ContainVariable(output_params.variable, "vz") ||
+      ContainVariable(output_params.variable, "v3")) {
     pod = new OutputData;
     pod->type = "SCALARS";
     pod->name = "vel3";
@@ -519,9 +518,9 @@ void OutputType::LoadOutputData(MeshBlock *pmb) {
   }
 
   if (SELF_GRAVITY_ENABLED) {
-    if (output_params.variable.compare("phi") == 0 ||
-        output_params.variable.compare("prim") == 0 ||
-        output_params.variable.compare("cons") == 0) {
+    if (ContainVariable(output_params.variable, "phi") ||
+        ContainVariable(output_params.variable, "prim") ||
+        ContainVariable(output_params.variable, "cons")) {
       pod = new OutputData;
       pod->type = "SCALARS";
       pod->name = "Phi";
@@ -537,8 +536,8 @@ void OutputType::LoadOutputData(MeshBlock *pmb) {
     for (int n=0; n<NSCALARS; n++) {
       std::string scalar_name_cons = root_name_cons + std::to_string(n);
       std::string scalar_name_prim = root_name_prim + std::to_string(n);
-      if (output_params.variable.compare(scalar_name_cons) == 0 ||
-          output_params.variable.compare("cons") == 0) {
+      if (ContainVariable(output_params.variable, scalar_name_cons) ||
+          ContainVariable(output_params.variable, "cons")) {
         pod = new OutputData;
         pod->type = "SCALARS";
         pod->name = scalar_name_cons;
@@ -546,8 +545,8 @@ void OutputType::LoadOutputData(MeshBlock *pmb) {
         AppendOutputDataNode(pod);
         num_vars_++;
       }
-      if (output_params.variable.compare(scalar_name_prim) == 0 ||
-          output_params.variable.compare("prim") == 0) {
+      if (ContainVariable(output_params.variable, scalar_name_prim) ||
+          ContainVariable(output_params.variable, "prim")) {
         pod = new OutputData;
         pod->type = "SCALARS";
         pod->name = scalar_name_prim;
@@ -561,9 +560,9 @@ void OutputType::LoadOutputData(MeshBlock *pmb) {
   // nodes, and it must come after those nodes in the linked list
   if (MAGNETIC_FIELDS_ENABLED) {
     // vector of cell-centered magnetic field
-    if (output_params.variable.compare("bcc") == 0 ||
-        output_params.variable.compare("prim") == 0 ||
-        output_params.variable.compare("cons") == 0) {
+    if (ContainVariable(output_params.variable, "bcc") ||
+        ContainVariable(output_params.variable, "prim") ||
+        ContainVariable(output_params.variable, "cons")) {
       pod = new OutputData;
       pod->type = "VECTORS";
       pod->name = "Bcc";
@@ -585,7 +584,7 @@ void OutputType::LoadOutputData(MeshBlock *pmb) {
     }
 
     // each component of cell-centered magnetic field
-    if (output_params.variable.compare("bcc1") == 0) {
+    if (ContainVariable(output_params.variable, "bcc1")) {
       pod = new OutputData;
       pod->type = "SCALARS";
       pod->name = "Bcc1";
@@ -593,7 +592,7 @@ void OutputType::LoadOutputData(MeshBlock *pmb) {
       AppendOutputDataNode(pod);
       num_vars_++;
     }
-    if (output_params.variable.compare("bcc2") == 0) {
+    if (ContainVariable(output_params.variable, "bcc2")) {
       pod = new OutputData;
       pod->type = "SCALARS";
       pod->name = "Bcc2";
@@ -601,7 +600,7 @@ void OutputType::LoadOutputData(MeshBlock *pmb) {
       AppendOutputDataNode(pod);
       num_vars_++;
     }
-    if (output_params.variable.compare("bcc3") == 0) {
+    if (ContainVariable(output_params.variable, "bcc3")) {
       pod = new OutputData;
       pod->type = "SCALARS";
       pod->name = "Bcc3";
@@ -610,8 +609,8 @@ void OutputType::LoadOutputData(MeshBlock *pmb) {
       num_vars_++;
     }
     // each component of face-centered magnetic field
-    if (output_params.variable.compare("b1") == 0
-        || output_params.variable.compare("b") == 0) {
+    if (ContainVariable(output_params.variable, "b1")
+        || ContainVariable(output_params.variable, "b")) {
       pod = new OutputData;
       pod->type = "SCALARS";
       pod->name = "B1";
@@ -619,8 +618,8 @@ void OutputType::LoadOutputData(MeshBlock *pmb) {
       AppendOutputDataNode(pod);
       num_vars_++;
     }
-    if (output_params.variable.compare("b2") == 0
-        || output_params.variable.compare("b") == 0) {
+    if (ContainVariable(output_params.variable, "b2")
+        || ContainVariable(output_params.variable, "b")) {
       pod = new OutputData;
       pod->type = "SCALARS";
       pod->name = "B2";
@@ -628,8 +627,8 @@ void OutputType::LoadOutputData(MeshBlock *pmb) {
       AppendOutputDataNode(pod);
       num_vars_++;
     }
-    if (output_params.variable.compare("b3") == 0
-        || output_params.variable.compare("b") == 0) {
+    if (ContainVariable(output_params.variable, "b3")
+        || ContainVariable(output_params.variable, "b")) {
       pod = new OutputData;
       pod->type = "SCALARS";
       pod->name = "B3";
@@ -639,25 +638,23 @@ void OutputType::LoadOutputData(MeshBlock *pmb) {
     }
   } // endif (MAGNETIC_FIELDS_ENABLED)
 
-  if (output_params.variable.compare(0, 3, "uov") == 0
-      || output_params.variable.compare(0, 12, "user_out_var") == 0) {
-    int iv, ns = 0, ne = pmb->nuser_out_var-1;
-    if (sscanf(output_params.variable.c_str(), "uov%d", &iv)>0) {
-      if (iv>=0 && iv<pmb->nuser_out_var)
-        ns=iv, ne=iv;
-    } else if (sscanf(output_params.variable.c_str(), "user_out_var%d", &iv)>0) {
-      if (iv>=0 && iv<pmb->nuser_out_var)
-        ns=iv, ne=iv;
-    }
-    for (int n = ns; n <= ne; ++n) {
+  bool output_all_uov = ContainVariable(output_params.variable, "uov")
+                        || ContainVariable(output_params.variable, "user_out_var");
+  for (int n = 0; n < pmb->nuser_out_var; ++n) {
+    char abbr_name[16], full_name[32];
+    std::snprintf(abbr_name, sizeof(abbr_name), "uov%d", n);
+    std::snprintf(full_name, sizeof(full_name), "user_out_var%d", n);
+    if (output_all_uov ||
+        (pmb->user_out_var_names_[n].length() != 0
+         && ContainVariable(output_params.variable, pmb->user_out_var_names_[n]))
+        || ContainVariable(output_params.variable, abbr_name)
+        || ContainVariable(output_params.variable, full_name)) {
       pod = new OutputData;
       pod->type = "SCALARS";
       if (pmb->user_out_var_names_[n].length() != 0) {
         pod->name = pmb->user_out_var_names_[n];
       } else {
-        char vn[16];
-        std::snprintf(vn, sizeof(vn), "user_out_var%d", n);
-        pod->name = vn;
+        pod->name = full_name;
       }
       pod->data.InitWithShallowSlice(pmb->user_out_var, 4, n, 1);
       AppendOutputDataNode(pod);
@@ -665,23 +662,10 @@ void OutputType::LoadOutputData(MeshBlock *pmb) {
     }
   }
 
-  for (int n = 0; n < pmb->nuser_out_var; ++n) {
-    if (pmb->user_out_var_names_[n].length() != 0) {
-      if (output_params.variable.compare(pmb->user_out_var_names_[n]) == 0) {
-        pod = new OutputData;
-        pod->type = "SCALARS";
-        pod->name = pmb->user_out_var_names_[n];
-        pod->data.InitWithShallowSlice(pmb->user_out_var, 4, n, 1);
-        AppendOutputDataNode(pod);
-        num_vars_++;
-      }
-    }
-  }
-
   // vapor
   if (NVAPOR > 0) {
-    if (output_params.variable.compare("prim") == 0 ||
-        output_params.variable.compare("vapor") == 0) {
+    if (ContainVariable(output_params.variable, "prim") ||
+        ContainVariable(output_params.variable, "vapor")) {
       pod = new OutputData;
       pod->type = "VECTORS";
       pod->name = "vapor";
@@ -690,7 +674,7 @@ void OutputType::LoadOutputData(MeshBlock *pmb) {
       num_vars_+=NVAPOR;
     }
 
-    if (output_params.variable.compare("cons") == 0) {
+    if (ContainVariable(output_params.variable, "cons")) {
       pod = new OutputData;
       pod->type = "VECTORS";
       pod->name = "vapor";
@@ -704,8 +688,8 @@ void OutputType::LoadOutputData(MeshBlock *pmb) {
   if (NVAPOR > 0) {
     std::string str = "cloud?";
     for (int i = 1; i < NPHASE; ++i) {
-      if (output_params.variable.compare("prim") == 0 ||
-          output_params.variable.compare("cloud") == 0) {
+      if (ContainVariable(output_params.variable, "prim") ||
+          ContainVariable(output_params.variable, "cloud")) {
         pod = new OutputData;
         pod->type = "VECTORS";
         char c = '1' + i - 1;
@@ -715,7 +699,7 @@ void OutputType::LoadOutputData(MeshBlock *pmb) {
         num_vars_+=NVAPOR;
       }
 
-      if (output_params.variable.compare("cons") == 0) {
+      if (ContainVariable(output_params.variable, "cons")) {
         pod = new OutputData;
         pod->type = "VECTORS";
         char c = '1' + i - 1;
@@ -728,12 +712,11 @@ void OutputType::LoadOutputData(MeshBlock *pmb) {
   }
 
   // diagnostic
-  if (output_params.variable.compare("diag") == 0) {
+  if (ContainVariable(output_params.variable, "diag")) {
     Diagnostics *p = pdiag->next;
     while (p != NULL) {
       pod = new OutputData;
       pod->type = p->type;
-      pod->grid = p->grid;
       pod->name = p->myname;
       p->Finalize(phyd->w);
 
@@ -752,8 +735,8 @@ void OutputType::LoadOutputData(MeshBlock *pmb) {
   }
 
   // radiation
-  if (output_params.variable.compare("rad") == 0 ||
-      output_params.variable.compare("radtau") == 0) {
+  if (ContainVariable(output_params.variable, "rad") ||
+      ContainVariable(output_params.variable, "radtau")) {
     RadiationBand *p = prad->pband;
     while (p != NULL) {
       // tau
@@ -768,14 +751,13 @@ void OutputType::LoadOutputData(MeshBlock *pmb) {
     }
   }
 
-  if (output_params.variable.compare("rad") == 0 ||
-      output_params.variable.compare("radflux") == 0) {
+  if (ContainVariable(output_params.variable, "rad") ||
+      ContainVariable(output_params.variable, "radflux")) {
     RadiationBand *p = prad->pband;
     while (p != NULL) {
       // flux up and down
       pod = new OutputData;
       pod->type = "SCALARS";
-      pod->grid = "CCF";
       pod->name = p->myname+"flxup";
       pod->data.InitWithShallowSlice(p->bflxup,4,0,1);
       AppendOutputDataNode(pod);
@@ -783,7 +765,6 @@ void OutputType::LoadOutputData(MeshBlock *pmb) {
 
       pod = new OutputData;
       pod->type = "SCALARS";
-      pod->grid = "CCF";
       pod->name = p->myname+"flxdn";
       pod->data.InitWithShallowSlice(p->bflxdn,4,0,1);
       AppendOutputDataNode(pod);
@@ -794,14 +775,13 @@ void OutputType::LoadOutputData(MeshBlock *pmb) {
   }
 
   // // radiation
-  // if (output_params.variable.compare("rad") == 0 ||
-  //     output_params.variable.compare("radtoa") == 0) {
+  // if (ContainVariable(output_params.variable, "rad") ||
+  //     ContainVariable(output_params.variable, "radtoa")) {
   //   RadiationBand *p = prad->pband;
   //   while (p != NULL) {
   //     // toa
   //     pod = new OutputData;
   //     pod->type = "SCALARS";
-  //     pod->grid = "-CC";
   //     pod->name = p->myname+"toa";
   //     pod->data.InitWithShallowSlice(p->btoa,3,0,p->btoa.GetDim3());
   //     AppendOutputDataNode(pod);
@@ -824,8 +804,8 @@ void OutputType::LoadOutputData(MeshBlock *pmb) {
 }
 
 //----------------------------------------------------------------------------------------
-//! \fn void OutputData::AppendOutputDataNode(OutputData *pod)
-//  \brief
+//! \fn void OutputType::AppendOutputDataNode(OutputData *pnew_data)
+//! \brief
 
 void OutputType::AppendOutputDataNode(OutputData *pnew_data) {
   if (pfirst_data_ == nullptr) {
@@ -839,8 +819,8 @@ void OutputType::AppendOutputDataNode(OutputData *pnew_data) {
 }
 
 //----------------------------------------------------------------------------------------
-//! \fn void OutputData::ReplaceOutputDataNode()
-//  \brief
+//! \fn void OutputType::ReplaceOutputDataNode(OutputData *pold, OutputData *pnew)
+//! \brief
 
 void OutputType::ReplaceOutputDataNode(OutputData *pold, OutputData *pnew) {
   if (pold == pfirst_data_) {
@@ -865,8 +845,8 @@ void OutputType::ReplaceOutputDataNode(OutputData *pold, OutputData *pnew) {
 }
 
 //----------------------------------------------------------------------------------------
-//! \fn void OutputData::ClearOutputData()
-//  \brief
+//! \fn void OutputType::ClearOutputData()
+//! \brief
 
 void OutputType::ClearOutputData() {
   OutputData *pdata = pfirst_data_;
@@ -882,22 +862,28 @@ void OutputType::ClearOutputData() {
 
 //----------------------------------------------------------------------------------------
 //! \fn void Outputs::MakeOutputs(Mesh *pm, ParameterInput *pin, bool wtflag)
-//  \brief scans through singly linked list of OutputTypes and makes any outputs needed.
+//! \brief scans through singly linked list of OutputTypes and makes any outputs needed.
 
 void Outputs::MakeOutputs(Mesh *pm, ParameterInput *pin, bool wtflag) {
+  // wtflag = only true for making final outputs due to signal or wall-time/cycle/time
+  // limit. Used by restart file output to change suffix to .final
   bool first=true;
   OutputType* ptype = pfirst_type_;
   while (ptype != nullptr) {
-    if ((pm->time == pm->start_time) ||
-        (pm->time >= ptype->output_params.next_time) ||
-        (pm->time >= pm->tlim) ||
-        (wtflag && ptype->output_params.file_type == "rst")) {
+    if (((pm->time == pm->start_time) // output initial conditions, unless next_time set
+         && (ptype->output_params.next_time <= pm->start_time ))
+      || (ptype->output_params.dt > 0.0 && pm->time >= ptype->output_params.next_time)
+      || (ptype->output_params.dcycle > 0 && pm->ncycle%ptype->output_params.dcycle == 0)
+      || (pm->time >= pm->tlim)
+      || (wtflag && ptype->output_params.file_type == "rst")) {
       if (first && ptype->output_params.file_type != "hst") {
         pm->ApplyUserWorkBeforeOutput(pin);
         first = false;
       }
       ptype->WriteOutputFile(pm, pin, wtflag);
-      ptype->CombineBlocks();
+      if (ptype->file_type.compare("netcdf") == 0 || ptype->file_type.compare("pnetcdf") == 0) {
+        ptype->CombineBlocks();  
+      }
     }
     ptype = ptype->pnext_type; // move to next OutputType node in signly linked list
   }
@@ -905,8 +891,8 @@ void Outputs::MakeOutputs(Mesh *pm, ParameterInput *pin, bool wtflag) {
 
 //----------------------------------------------------------------------------------------
 //! \fn void OutputType::TransformOutputData(MeshBlock *pmb)
-//  \brief Calls sum and slice functions on each direction in turn, in order to allow
-//  mulitple operations performed on the same data set
+//! \brief Calls sum and slice functions on each direction in turn, in order to allow
+//! mulitple operations performed on the same data set
 
 bool OutputType::TransformOutputData(MeshBlock *pmb) {
   bool flag = true;
@@ -936,7 +922,7 @@ bool OutputType::TransformOutputData(MeshBlock *pmb) {
 
 //----------------------------------------------------------------------------------------
 //! \fn bool OutputType::SliceOutputData(MeshBlock *pmb, int dim)
-//  \brief perform data slicing and update the data list
+//! \brief perform data slicing and update the data list
 
 bool OutputType::SliceOutputData(MeshBlock *pmb, int dim) {
   int islice(0), jslice(0), kslice(0);
@@ -1046,7 +1032,7 @@ bool OutputType::SliceOutputData(MeshBlock *pmb, int dim) {
 
 //----------------------------------------------------------------------------------------
 //! \fn void OutputType::SumOutputData(OutputData* pod, int dim)
-//  \brief perform data summation and update the data list
+//! \brief perform data summation and update the data list
 
 void OutputType::SumOutputData(MeshBlock* pmb, int dim) {
   // For each node in OutputData doubly linked list, sum arrays containing output data
@@ -1118,8 +1104,8 @@ void OutputType::SumOutputData(MeshBlock* pmb, int dim) {
 
 //----------------------------------------------------------------------------------------
 //! \fn void OutputType::CalculateCartesianVector(AthenaArray<Real> &src,
-//                                AthenaArray<Real> &dst, Coordinates *pco)
-//  \brief Convert vectors in curvilinear coordinates into Cartesian
+//!                               AthenaArray<Real> &dst, Coordinates *pco)
+//! \brief Convert vectors in curvilinear coordinates into Cartesian
 
 void OutputType::CalculateCartesianVector(AthenaArray<Real> &src, AthenaArray<Real> &dst,
                                           Coordinates *pco) {
@@ -1176,4 +1162,17 @@ void OutputType::CalculateCartesianVector(AthenaArray<Real> &src, AthenaArray<Re
     }
   }
   return;
+}
+
+bool OutputType::ContainVariable(const std::string &haystack, const std::string &needle) {
+  if (haystack.compare(needle) == 0)
+    return true;
+  if (haystack.find(',' + needle + ',') != std::string::npos)
+    return true;
+  if (haystack.find(needle + ',') == 0)
+    return true;
+  if (haystack.find(',' + needle) != std::string::npos
+    && haystack.find(',' + needle) == haystack.length() - needle.length() - 1)
+    return true;
+  return false;
 }
