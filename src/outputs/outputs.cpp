@@ -881,7 +881,7 @@ void Outputs::MakeOutputs(Mesh *pm, ParameterInput *pin, bool wtflag) {
         first = false;
       }
       ptype->WriteOutputFile(pm, pin, wtflag);
-      if (ptype->output_params->file_type.compare("netcdf") == 0 || ptype->output_params->file_type.compare("pnetcdf") == 0) {
+      if (ptype->output_params.file_type.compare("netcdf") == 0 || ptype->output_params.file_type.compare("pnetcdf") == 0) {
         ptype->CombineBlocks();  
       }
     }
