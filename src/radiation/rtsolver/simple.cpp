@@ -87,8 +87,8 @@ void RadiationBand::RadtranFlux(Direction const rin, Real rad_scaling, int k, in
       else {
         attenuation = exp(-tau_[i][n]);
         Ftop = boundary_flux[X1DIR](n,k,j,i+1);
-        Fbot = Ftop * attenuation * farea(i+1);
-        net_spectral_flux(n,k,j,i) = (Ftop*farea(i+1)) - (Fbot*farea(i));
+        Fbot = Ftop * attenuation;
+        net_spectral_flux(n,k,j,i) = (Ftop - Fbot) * farea(i);
       }
 
       // boundary_flux includes directional sign (negative for down)
