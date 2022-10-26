@@ -263,12 +263,7 @@ TimeIntegratorTaskList::TimeIntegratorTaskList(ParameterInput *pin, Mesh *pm) {
       AddTask(RECV_HYDFLX,CALC_HYDFLX);
       AddTask(INT_HYD,RECV_HYDFLX);
     } else {
-      if (RADIATION_ENABLED) {
-        AddTask(INT_HYD, (CALC_HYDFLX|CALC_RADFLX));
-      } else {
-        AddTask(INT_HYD, CALC_HYDFLX);
-      }
-      // AddTask(INT_HYD, (CALC_HYDFLX|CALC_RADFLX));
+      AddTask(INT_HYD, CALC_HYDFLX);
     }
     if (NSCALARS > 0) {
       AddTask(SRC_TERM,(INT_HYD|INT_SCLR));
@@ -277,7 +272,7 @@ TimeIntegratorTaskList::TimeIntegratorTaskList(ParameterInput *pin, Mesh *pm) {
     }
     // ADD RADIATION HERE?
     if (RADIATION_ENABLED) {
-      AddTask(SRCTERM_RAD, SRC_TERM);
+      AddTask(SRCTERM_RAD, SRC_TERM|CALC_RADFLX);
       AddTask(UPDATE_HYD, SRCTERM_RAD|SRC_TERM); //bitwise or means both are deps
     } else {
       AddTask(UPDATE_HYD,SRC_TERM);
