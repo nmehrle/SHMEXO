@@ -82,12 +82,12 @@ void RadiationBand::RadtranFlux(Direction const rin, Real rad_scaling, int k, in
 
         // Area ratio account for conical geometry
         // negative sign indicates downwards transfer
-        Fbot = -Fbot * rad_scaling * farea(il)/farea(i) * spec[n].wgt;
+        Fbot = -Fbot * rad_scaling * spec[n].wgt;
       }
       else {
         attenuation = exp(-tau_[i][n]);
         Ftop = boundary_flux[X1DIR](n,k,j,i+1);
-        Fbot = Ftop * attenuation * farea(i+1)/farea(i);
+        Fbot = Ftop * attenuation * farea(i+1);
         net_spectral_flux(n,k,j,i) = (Ftop*farea(i+1)) - (Fbot*farea(i));
       }
 
