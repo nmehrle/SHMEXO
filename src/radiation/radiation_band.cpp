@@ -6,7 +6,7 @@
 
 // Athena++ header
 #include "../parameter_input.hpp"
-#include "absorber.hpp"
+#include "absorber/absorber.hpp"
 #include "radiation.hpp"
 #include "../mesh/mesh.hpp"
 #include "../thermodynamics/thermodynamics.hpp"

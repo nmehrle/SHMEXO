@@ -16,10 +16,7 @@
 #include "../utils/utils.hpp"
 #include "../thermodynamics/thermodynamics.hpp"
 #include "../radiation/radiation.hpp"
-#include "../radiation/freedman_mean.hpp"
-#include "../radiation/hydrogen_absorber.hpp"
-#include "../radiation/user_absorber.hpp"
-#include "../radiation/null_absorber.hpp"
+#include "../radiation/absorber/user_absorber.hpp"
 #include "../scalars/scalars.hpp"
 #include "../mesh_generator.hpp"
 
