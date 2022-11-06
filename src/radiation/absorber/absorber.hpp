@@ -9,7 +9,7 @@
 #include <iostream>
 
 // Athena++ headers
-#include "../athena.hpp"
+#include "../../athena.hpp"
 
 /**@file
  * @brief This file contains declaration of Absorber
