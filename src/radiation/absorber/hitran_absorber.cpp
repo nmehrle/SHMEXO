@@ -5,7 +5,7 @@
 #include <cstring>
 
 // Athena++ headers
-#include "../math/interpolation.h"
+#include "../../math/interpolation.h"
 #include "hitran_absorber.hpp"
 
 // External library headers

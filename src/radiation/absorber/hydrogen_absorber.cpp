@@ -7,12 +7,12 @@
 #include <cassert>  // assert
 
 // Athena++ headers
-#include "../athena_arrays.hpp"
-#include "../globals.hpp"
+#include "../../athena_arrays.hpp"
+#include "../../globals.hpp"
 #include "absorber.hpp"
-#include "radiation.hpp"
-#include "../mesh/mesh.hpp"
-#include "../thermodynamics/thermodynamics.hpp"
+#include "../radiation.hpp"
+#include "../../mesh/mesh.hpp"
+#include "../../thermodynamics/thermodynamics.hpp"
 #include "hydrogen_absorber.hpp"
 
 

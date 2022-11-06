@@ -65,6 +65,7 @@ SRC_FILES := $(wildcard src/*.cpp) \
        $(wildcard src/diagnostics/*.cpp) \
        $(wildcard src/astronomy/*.cpp) \
        $(wildcard src/radiation/*.cpp) \
+       $(wildcard src/radiation/absorber/*.cpp) \
        $(wildcard src/radiation/rtsolver/*.cpp) \
        $(wildcard src/radiation/microwave/*.cpp) \
 	     $(MPIFFT_FILE)

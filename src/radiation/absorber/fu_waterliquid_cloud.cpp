@@ -6,10 +6,10 @@
 #include <cassert>  // assert
 
 // Athena++ headers
-#include "../math/interpolation.h"
+#include "../../math/interpolation.h"
 #include "absorber.hpp"
 #include "water_cloud.hpp"
-#include "radiation_utils.hpp"  // GetPhaseMomentum
+#include "../radiation_utils.hpp"  // GetPhaseMomentum
 
 
 // coefficient from fu and liou

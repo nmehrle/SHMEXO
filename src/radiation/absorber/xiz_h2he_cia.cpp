@@ -5,8 +5,8 @@
 #include <stdexcept>
 
 // Athena++ headers
-#include "../math/interpolation.h"
-#include "../utils/utils.hpp"
+#include "../../math/interpolation.h"
+#include "../../utils/utils.hpp"
 #include "hydrogen_cia.hpp"
 
 void XizH2HeCIA::LoadCoefficient(std::string fname)
