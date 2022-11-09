@@ -81,28 +81,22 @@ TaskStatus TimeIntegratorTaskList::CalculateRadiationFlux(MeshBlock *pmb, int st
     // maybe do cooldown consideration outside of rk stages
     // and radiation caculation inside?
   if (stage <= nstages) {
-    if (prad->current > 0.) {
-      prad->current -= pmb->pmy_mesh->dt;  // radiation is in cool-down
-    } else {
-      prad->current = prad->cooldown;
+    int is = pmb->is; int js = pmb->js; int ks = pmb->ks;
+    int ie = pmb->ie; int je = pmb->je; int ke = pmb->ke;
+    int jl, ju, kl, ku;
 
-      int is = pmb->is; int js = pmb->js; int ks = pmb->ks;
-      int ie = pmb->ie; int je = pmb->je; int ke = pmb->ke;
-      int jl, ju, kl, ku;
+    jl = js, ju = je, kl = ks, ku = ke;
 
-      jl = js, ju = je, kl = ks, ku = ke;
-
-      if (pmb->block_size.nx2 > 1) {
-        if (pmb->block_size.nx3 == 1) // 2D
-          jl = js-1, ju = je+1, kl = ks, ku = ke;
-        else // 3D
-          jl = js-1, ju = je+1, kl = ks-1, ku = ke+1;
-      }
-
-      for (int k = kl; k <= ku; ++k)
-        for (int j = jl; j <= ju; ++j)
-          prad->CalculateRadiativeTransfer(phydro->w, pmb->pmy_mesh->time, k, j, is, ie+1);
+    if (pmb->block_size.nx2 > 1) {
+      if (pmb->block_size.nx3 == 1) // 2D
+        jl = js-1, ju = je+1, kl = ks, ku = ke;
+      else // 3D
+        jl = js-1, ju = je+1, kl = ks-1, ku = ke+1;
     }
+
+    for (int k = kl; k <= ku; ++k)
+      for (int j = jl; j <= ju; ++j)
+        prad->CalculateRadiativeTransfer(phydro->w, pmb->pmy_mesh->time, k, j, is, ie+1);
   }
   // Calculate energy deposition at every RK stage
   // could be called "int_rad"
