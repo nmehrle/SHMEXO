@@ -169,7 +169,7 @@ void ConstructRTSolver(std::string name, ParameterInput *pin) {
 
 // To be overridden in pgen file
 // Constructs an absorber object based on the name from the problem file
-void __attribute__((weak)) RadiationBand::GetAbsorberByName(
+Absorber* __attribute__((weak)) RadiationBand::GetAbsorberByName(
   std::string name, ParameterInput *pin) {}
 
 void SetSpectralProperties(AthenaArray<Real> const& w, int k, int j, int il, int iu) {
