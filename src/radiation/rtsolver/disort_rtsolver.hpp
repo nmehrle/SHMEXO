@@ -7,12 +7,12 @@ class Radiation;
 struct disort_state;
 struct disort_output;
 
-class DISORTRTSolver: public RTSolver {
+class DisortRTSolver: public RTSolver {
 public:
   RadiationBand *pmy_band;
 
-  DISORTRTSolver(RadiationBand *pband, ParameterInput *pin) {};
-  ~DISORTRTSolver();
+  DisortRTSolver(RadiationBand *pband, ParameterInput *pin) {};
+  ~DisortRTSolver();
 
   void RadiativeTransfer(int n, int k, int j, int il, int iu);
 
