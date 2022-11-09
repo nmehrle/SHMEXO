@@ -67,7 +67,6 @@ SRC_FILES := $(wildcard src/*.cpp) \
        $(wildcard src/radiation/*.cpp) \
        $(wildcard src/radiation/absorber/*.cpp) \
        $(wildcard src/radiation/rtsolver/*.cpp) \
-       $(wildcard src/radiation/microwave/*.cpp) \
 	     $(MPIFFT_FILE)
 OBJ_DIR := obj/
 OBJ_FILES := $(addprefix $(OBJ_DIR),$(notdir $(SRC_FILES:.cpp=.o)))
