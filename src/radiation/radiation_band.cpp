@@ -28,7 +28,7 @@ RadiationBand::RadiationBand(Radiation *prad, std::string band_id, ParameterInpu
 
   // Gather wavelength details
   sprintf(key, "%s.wavelength", my_id);
-  value = pin->GetReal("radiation", key);
+  value = pin->GetString("radiation", key);
   std::vector<Real> v = Vectorize(value.c_str());
   if (v.size() != 3) {
     msg << "### FATAL ERROR in RadiationBand::RadiationBand" << std::endl
@@ -42,7 +42,7 @@ RadiationBand::RadiationBand(Radiation *prad, std::string band_id, ParameterInpu
   nspec = (int)((v[1] - v[0])/v[2]) + 1; // including the last one
   spec = new Spectrum [nspec];
   for (int i = 0; i < nspec; ++i) {
-    spec[i].wav = v[0] + v[2]*i;
+    spec[i].wave = v[0] + v[2]*i;
     spec[i].wgt = (i == 0) || (i == nspec - 1) ? 0.5*v[2] : v[2];
   }
   if (nspec == 1) spec[0].wgt = 1.;
@@ -148,17 +148,17 @@ void RadiationBand::LoadInputSpectrum(std::string file) {
 
   for (int n = 0; n < nspec; ++n)
   {
-    Real wave = spec[n].wav;
+    Real wave = spec[n].wave;
     ii = find_place_in_table(n_file, file_spec, wave, &dx, ii);
     spec[n].flux = splint(wave, file_spec+ii, dx);
   }
 }
 
 void RadiationBand::ConstructRTSolver(std::string name, ParameterInput *pin) {
-  if (strcmp(name, "SIMPLE") == 0) {
+  if (strcmp(name.c_str(), "SIMPLE") == 0) {
     my_rtsolver = new SimpleRTSolver(this, pin);
   }
-  else if (strcmp(name, "DISORT") == 0) {
+  else if (strcmp(name.c_str(), "DISORT") == 0) {
     my_rtsolver = new DisortRTSolver(this, pin);
   }
   else {

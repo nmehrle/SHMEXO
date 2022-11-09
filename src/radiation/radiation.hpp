@@ -15,7 +15,7 @@ class Radiation;
 class RadiationBand;
 
 struct Spectrum {
-  Real flux, wav, wgt;
+  Real flux, wave, wgt;
 };
 
 struct float_triplet;
