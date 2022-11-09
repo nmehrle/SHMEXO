@@ -125,7 +125,7 @@ PassiveScalars::PassiveScalars(MeshBlock *pmb, ParameterInput *pin)  :
 
   // Assign mass of scalar particles from problem file
   // Default to 0
-  char[80] key;
+  char key[80];
   for (int n=0; n<NSCALARS; ++n)
   {
     sprintf(key,"s%d", n);
