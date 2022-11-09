@@ -1,6 +1,3 @@
-#ifndef SIMPLE_RTSOLVER_HPP
-#define SIMPLE_RTSOLVER_HPP
-
 // Athena++ header
 #include "rtsolver.hpp"
 

@@ -1,6 +1,3 @@
-#ifndef DISORT_RTSOLVER_HPP
-#define DISORT_RTSOLVER_HPP
-
 // Athena++ headers
 #include "../../athena.hpp"
 
@@ -26,5 +23,3 @@ protected:
   void init_disort(ParameterInput *pin);
   void free_disort();
 };
-
-#endif

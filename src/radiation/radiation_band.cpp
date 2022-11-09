@@ -234,6 +234,6 @@ void RadiationBand::RadiativeTransfer(Real radiation_scaling, int k, int j, int 
     ATHENA_ERROR(msg);
 
     // fills in spectral_flux_density
-    my_rtsolver.RadiativeTransfer(int n, int k, int j, int il, int iu);
+    my_rtsolver->RadiativeTransfer(int n, int k, int j, int il, int iu);
   }
 }
