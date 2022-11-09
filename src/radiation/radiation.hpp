@@ -10,12 +10,9 @@
 class MeshBlock;
 class ParameterInput;
 class Absorber;
+class RTSolver;
 class Radiation;
-
-#ifdef RT_DISORT
-  struct disort_state;
-  struct disort_output;
-#endif
+class RadiationBand;
 
 struct Spectrum {
   Real flux, wav, wgt;
