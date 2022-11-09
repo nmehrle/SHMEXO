@@ -208,7 +208,7 @@ void MeshBlock::UserWorkBeforeOutput(ParameterInput *pin)
 // Absorber Info
 //----------------------------------------------------------------------------------------
 // oddly expensive calculation!
-Real AbsorptionCoefficient(Absorber const *pabs, AthenaArray<Real> const& prim, Real wave, int k, int j, int i
+Real AbsorptionCoefficient(Absorber const *pabs, AthenaArray<Real> const& prim, Real wave, int k, int j, int i)
 {
   // convert microns to meters
   Real freq = c / (wave * wave_to_meters_conversion);
