@@ -75,7 +75,7 @@ void Mesh::InitUserMeshData(ParameterInput *pin)
   ref_dist_ = pin->GetOrAddReal("radiation", "reference_distance", 1.);
 
   wave_to_meters_conversion = pin->GetOrAddReal("radiation","wave_to_meters",1.e-9);
-  EnrollUserRadiationTimeFunc(RadiationTime);
+  EnrollUserRadiationScalingFunction(RadiationTime);
 
   // Gravity/System Parameters
   G = pin->GetReal("problem","G");

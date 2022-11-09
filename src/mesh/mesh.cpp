@@ -1202,8 +1202,8 @@ void Mesh::EnrollUserExplicitGravityFunction(GravFunc my_func) {
   return;
 }
 
-void Mesh::EnrollUserRadiationTimeFunc(RadiationTimeFunc my_func) {
-  UserRadiationTimeFunc_ = my_func;
+void Mesh::EnrollUserRadiationScalingFunction(RadiationScalingFunc my_func) {
+  UserRadiationScalingFunc_ = my_func;
   return;
 }
 
