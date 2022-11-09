@@ -15,6 +15,8 @@
 #include "../utils/utils.hpp"
 #include "absorber/absorber.hpp"
 #include "rtsolver/rtsolver.hpp"
+#include "rtsolver/simple_rtsolver.hpp"
+#include "rtsolver/disort_rtsolver.hpp"
 #include "radiation.hpp"
 
 RadiationBand::RadiationBand(Radiation *prad, std::string band_id, ParameterInput *pin):
