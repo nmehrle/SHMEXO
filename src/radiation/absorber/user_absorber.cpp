@@ -35,7 +35,7 @@ Real UserDefinedAbsorber::AbsorptionCoefficient(AthenaArray<Real> const& prim,
   }
 }
 
-Real UserDefinedAbsorber::EnergyAbsorption(Real wave, Real flux, int k, int j, int i)
+Real UserDefinedAbsorber::EnergyAbsorption(Real wave, Real const flux, int k, int j, int i)
 {
   if (UserEnergyAbsorbFunc_ != nullptr) {
     return UserEnergyAbsorbFunc_(this, wave, flux, k, j, i);

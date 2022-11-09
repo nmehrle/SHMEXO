@@ -15,7 +15,7 @@ public:
   Absorber(RadiationBand *pband): pmy_band(pband), ps(pmy_band->pmy_rad->pmy_block->pscalars) {};
   ~Absorber() {}
 
-  void SetScalar(int n) {scalar_num = n};
+  void SetScalar(int n) {scalar_num = n;};
   virtual Real AbsorptionCoefficient(AthenaArray<Real> const& prim, Real wave, int k, int j, int i);
 
 protected:
