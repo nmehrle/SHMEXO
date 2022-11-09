@@ -14,16 +14,17 @@
 
 UserDefinedAbsorber::UserDefinedAbsorber(RadiationBand *pband):
   Absorber(pband),
-  UserAbsorptionCoeffFunc_{},
-  UserEnergyAbsorbFunc_{}
+  UserAbsorptionCoeffFunc_(nullptr),
+  UserEnergyAbsorbFunc_(nullptr)
 {
   return;
 }
 
-Real UserDefinedAbsorber::AbsorptionCoefficient(Real wave, Real const prim[], int k, int j, int i) const
+Real UserDefinedAbsorber::AbsorptionCoefficient(AthenaArray<Real> const& prim,
+  Real wave, int k, int j, int i)
 {
   if (UserAbsorptionCoeffFunc_ != nullptr) {
-    return UserAbsorptionCoeffFunc_(this, wave, prim, k, j, i);
+    return UserAbsorptionCoeffFunc_(this, prim, wave, k, j, i);
   }
   else {
     std::stringstream msg;
@@ -34,7 +35,7 @@ Real UserDefinedAbsorber::AbsorptionCoefficient(Real wave, Real const prim[], in
   }
 }
 
-Real __attribute__((weak)) UserDefinedAbsorber::EnergyAbsorption(Real wave, Real flux, int k, int j, int i)
+Real UserDefinedAbsorber::EnergyAbsorption(Real wave, Real flux, int k, int j, int i)
 {
   if (UserEnergyAbsorbFunc_ != nullptr) {
     return UserEnergyAbsorbFunc_(this, wave, flux, k, j, i);
