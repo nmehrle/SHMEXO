@@ -7,6 +7,8 @@
 
 // Athena++ header
 #include "../math/core.h"
+#include "../math/interpolation.h"
+
 #include "../mesh/mesh.hpp"
 #include "../parameter_input.hpp"
 #include "../coordinates/coordinates.hpp"
@@ -148,7 +150,7 @@ void RadiationBand::LoadInputSpectrum(std::string file) {
   {
     Real wave = spec[n].wav;
     ii = find_place_in_table(n_file, file_spec, wave, &dx, ii);
-    spec[n].flux = splint(wave, file_spec+i, dx);
+    spec[n].flux = splint(wave, file_spec+ii, dx);
   }
 }
 
