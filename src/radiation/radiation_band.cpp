@@ -6,13 +6,13 @@
 #include <type_traits>
 
 // Athena++ header
-#include "../parameter_input.hpp"
-#include "absorber/absorber.hpp"
-#include "radiation.hpp"
+#include "../math/core.h"
 #include "../mesh/mesh.hpp"
-#include "../thermodynamics/thermodynamics.hpp"
+#include "../parameter_input.hpp"
 #include "../coordinates/coordinates.hpp"
 #include "../utils/utils.hpp"
+#include "absorber/absorber.hpp"
+#include "radiation.hpp"
 
 RadiationBand::RadiationBand(Radiation *prad, std::string band_id, ParameterInput *pin):
   my_id(band_id), pmy_rad(prad)
@@ -27,7 +27,7 @@ RadiationBand::RadiationBand(Radiation *prad, std::string band_id, ParameterInpu
   // Gather wavelength details
   sprintf(key, "%s.wavelength", my_id);
   value = pin->GetReal("radiation", key);
-  std::vector<Real> v = Vectorize(str.c_str());
+  std::vector<Real> v = Vectorize(value.c_str());
   if (v.size() != 3) {
     msg << "### FATAL ERROR in RadiationBand::RadiationBand" << std::endl
         << "Length of input file value" << std::endl
@@ -63,7 +63,7 @@ RadiationBand::RadiationBand(Radiation *prad, std::string band_id, ParameterInpu
 
   // Gather RT Solver Info
   sprintf(key, "%s.rtsolver", my_id);
-  value = pin->GetOrAddReal("radiation", key, "");
+  value = pin->GetOrAddString("radiation", key, "");
   if (value.empty()) {
     if (pmy_rad->default_rt_solver.empty()) {
       msg << "### FATAL ERROR in RadiationBand::RadiationBand" << std::endl
@@ -147,7 +147,7 @@ void RadiationBand::LoadInputSpectrum(std::string file) {
   for (int n = 0; n < nspec; ++n)
   {
     Real wave = spec[n].wav;
-    ii = fine_place_in_table(n_file, file_spec, wave, &dx, ii);
+    ii = find_place_in_table(n_file, file_spec, wave, &dx, ii);
     spec[n].flux = splint(wave, file_spec+i, dx);
   }
 }
@@ -194,7 +194,7 @@ void RadiationBand::SetSpectralProperties(AthenaArray<Real> const& w, int k, int
       for (int a = 0; i < nabs; ++a)
       {
         Absorber *pabs = absorbers(a);
-        tau_cell(n,k,j,i) += pabs->AbsorptionCoefficient(w, spec.wave[n], k, j, i);
+        tau_cell(n,k,j,i) += pabs->AbsorptionCoefficient(w, spec[n].wave, k, j, i);
       }
       tau_cell(n,k,j,i) *= dx;
 
@@ -205,10 +205,9 @@ void RadiationBand::SetSpectralProperties(AthenaArray<Real> const& w, int k, int
       else {
         tau(n,k,j,i) = tau_cell(n,k,j,i) + tau(n,k,j,i+1);
       }
+      // band values are integrated along wavelength dimension
+      band_tau_cell(k,j,i) += tau_cell(n,k,j,i) * spec[n].wgt;
     }
-
-    // band values are integrated along wavelength dimension
-    band_tau_cell(k,j,i) += tau_cell(n,k,j,i) * spec[n].wgt;
 
     if (i == iu) {
       band_tau(k,j,i) = band_tau_cell(k,j,i);
@@ -225,7 +224,9 @@ void RadiationBand::RadiativeTransfer(Real radiation_scaling, int k, int j, int 
   for (int n = 0; n < nspec; ++n) {
     spectral_flux_density(n,k,j,iu+1) = spec[n].flux*radiation_scaling;
     std::cout << "BREAK HERE" << std::endl;
-    ATHENA_ERROR("end of the road, bud");
+    std::stringstream msg;
+    msg << "end of the road, bud";
+    ATHENA_ERROR(msg);
 
     // fills in spectral_flux_density
     my_rtsolver.RadiativeTransfer(int n, int k, int j, int il, int iu);

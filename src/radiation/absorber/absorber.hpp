@@ -15,7 +15,7 @@ public:
   RadiationBand *pmy_band;
   PassiveScalars *ps;
 
-  Absorber(RadiationBand *pband): pmy_band(pband), ps(pmy_band->pmy_rad->pmy_block->pscalars) {};
+  Absorber(RadiationBand *pband): pmy_band(pband), ps(pband->pmy_rad->pmy_block->pscalars) {};
   ~Absorber() {}
 
   void SetScalar(int n) {scalar_num = n;};
