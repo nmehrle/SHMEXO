@@ -69,6 +69,9 @@ public:
 
   void SetSpectralProperties(AthenaArray<Real> const& w, int k, int j, int il, int iu);
   void RadiativeTransfer(Real radiation_scaling, int k, int j, int il, int iu);
+
+  void CalculateEnergyAbsorption(const Real dt);
+  void AddRadiationSourceTerm(const Real dt, AthenaArray<Real> &du_hydro);
 protected:
   std::string my_id;
   int nspec;
