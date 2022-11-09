@@ -5,6 +5,9 @@
 #include "../../athena.hpp"
 
 class RadiationBand;
+class Radiation;
+class MeshBlock;
+class PassiveScalars;
 
 class Absorber {
 public:

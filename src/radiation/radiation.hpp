@@ -18,6 +18,8 @@ struct Spectrum {
   Real flux, wav, wgt;
 };
 
+struct float_triplet;
+
 class Radiation {
   friend class RadiationBand;
 public:

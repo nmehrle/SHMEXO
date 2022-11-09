@@ -1,5 +1,6 @@
 // C/C++ headers
 #include <vector>
+#include <cstring>
 #include <sstream>
 #include <stdexcept>
 #include <type_traits>
@@ -126,7 +127,7 @@ RadiationBand::~RadiationBand() {
   delete[] spec;
 }
 
-void LoadInputSpectrum(std::string file) {
+void RadiationBand::LoadInputSpectrum(std::string file) {
   AthenaArray<Real> file_data;
   ReadDataTable(file_data, file);
 
@@ -151,7 +152,7 @@ void LoadInputSpectrum(std::string file) {
   }
 }
 
-void ConstructRTSolver(std::string name, ParameterInput *pin) {
+void RadiationBand::ConstructRTSolver(std::string name, ParameterInput *pin) {
   if (strcmp(name, "SIMPLE") == 0) {
     my_rtsolver = new SimpleRTSolver(this, pin);
   }
@@ -172,7 +173,7 @@ void ConstructRTSolver(std::string name, ParameterInput *pin) {
 Absorber* __attribute__((weak)) RadiationBand::GetAbsorberByName(
   std::string name, ParameterInput *pin) {}
 
-void SetSpectralProperties(AthenaArray<Real> const& w, int k, int j, int il, int iu) {
+void RadiationBand::SetSpectralProperties(AthenaArray<Real> const& w, int k, int j, int il, int iu) {
   Coordinates *pcoord = pmy_rad->pmy_block->pcoord;
 
   tau.ZeroClear();
@@ -220,7 +221,7 @@ void SetSpectralProperties(AthenaArray<Real> const& w, int k, int j, int il, int
 
 // sets spectral_flux_density at the top
 // calls my_rtsolver to compute it through the collumn
-void RadiativeTransfer(Real radiation_scaling, int k, int j, int il, int iu) {
+void RadiationBand::RadiativeTransfer(Real radiation_scaling, int k, int j, int il, int iu) {
   for (int n = 0; n < nspec; ++n) {
     spectral_flux_density(n,k,j,iu+1) = spec[n].flux*radiation_scaling;
     std::cout << "BREAK HERE" << std::endl;
