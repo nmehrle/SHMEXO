@@ -261,10 +261,10 @@ Absorber* RadiationBand::GetAbsorberByName(std::string name, ParameterInput *pin
 { 
   std::stringstream msg;
   if (name == "HYDROGEN_IONIZATION") {
-    UserDefinedAbsorber hydrogen_ionization(this);
+    UserDefinedAbsorber *hydrogen_ionization = new UserDefinedAbsorber(this);
 
-    hydrogen_ionization.EnrollUserAbsorptionCoefficientFunc(AbsorptionCoefficient);
-    hydrogen_ionization.EnrollUserEnergyAbsorptionFunc(EnergyAbsorption);
+    hydrogen_ionization->EnrollUserAbsorptionCoefficientFunc(AbsorptionCoefficient);
+    hydrogen_ionization->EnrollUserEnergyAbsorptionFunc(EnergyAbsorption);
     return hydrogen_ionization;
   } else {
     msg << "### FATAL ERROR in RadiationBand::AddAbsorber"
