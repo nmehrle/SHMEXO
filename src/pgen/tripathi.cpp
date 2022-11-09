@@ -1,6 +1,7 @@
 // C/C++ header
 #include <ctime>
 #include <cmath>
+#include <string>
 
 // Athena++ headers
 #include "../athena.hpp"

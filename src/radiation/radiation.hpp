@@ -65,7 +65,7 @@ public:
   void LoadInputSpectrum(std::string file);
   void ConstructRTSolver(std::string name, ParameterInput *pin);
 
-  Absorber* GetAbsorberByName(std::string name, ParameterInput pin);
+  Absorber* GetAbsorberByName(std::string name, ParameterInput *pin);
 
   void SetSpectralProperties(AthenaArray<Real> const& w, int k, int j, int il, int iu);
   void RadiativeTransfer(Real radiation_scaling, int k, int j, int il, int iu);
