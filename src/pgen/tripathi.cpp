@@ -256,7 +256,7 @@ Real EnergyAbsorption(Absorber *pabs, Real wave, Real flux, int k, int j, int i)
   }
 }
 
-void RadiationBand::AddAbsorber(std::string name, std::string file, ParameterInput *pin)
+Absorber* RadiationBand::GetAbsorberByName(std::string name, ParameterInput *pin)
 { 
   std::stringstream msg;
   if (name == "HYDROGEN_IONIZATION") {
@@ -264,7 +264,7 @@ void RadiationBand::AddAbsorber(std::string name, std::string file, ParameterInp
 
     hydrogen_ionization.EnrollUserAbsorptionCoefficientFunc(AbsorptionCoefficient);
     hydrogen_ionization.EnrollUserEnergyAbsorptionFunc(EnergyAbsorption);
-    pabs->AddAbsorber(hydrogen_ionization);
+    return hydrogen_ionization;
   } else {
     msg << "### FATAL ERROR in RadiationBand::AddAbsorber"
         << std::endl << "unknown absorber: '" << name <<"' ";
@@ -343,7 +343,7 @@ void SourceTerms(MeshBlock *pmb, const Real time, const Real dt,
 
         // Outputs
         // 1 -- radiation energy absorbed prad->du
-        pmb->ruser_meshblock_data[1](k,j,i) = pmb->prad->du(k,j,i);
+        pmb->ruser_meshblock_data[1](k,j,i) = pmb->prad->dE(k,j,i);
         // 2 -- ionization rate
         pmb->ruser_meshblock_data[2](k,j,i) = n_ion_gain/dt;
         // 3 -- recombination rate
