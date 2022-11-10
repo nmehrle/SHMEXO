@@ -13,9 +13,6 @@ Absorber::Absorber(RadiationBand *pband) {
   ps = pmy_band->pmy_rad->pmy_block->pscalars;
 }
 
-Absorber::~Absorber() {
-}
-
 void Absorber::SetScalar(int n) {
   scalar_num = n;
   // check n is valid value
