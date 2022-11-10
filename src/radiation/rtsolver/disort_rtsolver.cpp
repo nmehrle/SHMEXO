@@ -1,3 +1,6 @@
+// C/C++ headers
+#include <sstream>
+
 // Athena++ header
 #include "rtsolver.hpp"
 #include "disort_rtsolver.hpp"

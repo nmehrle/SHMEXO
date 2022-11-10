@@ -1,5 +1,9 @@
+// C/C++ headers
+#include <sstream>
+
 // Athena++ header
 #include "rtsolver.hpp"
+#include "simple_rtsolver.hpp"
 
 SimpleRTSolver::SimpleRTSolver(RadiationBand *pband, ParameterInput *pin):
   RTSolver(pband, pin)
