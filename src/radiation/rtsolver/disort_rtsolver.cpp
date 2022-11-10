@@ -9,7 +9,7 @@ DisortRTSolver::DisortRTSolver(RadiationBand *pband, ParameterInput *pin):
 }
 
 // computes F = e^-tau
-DisortRTSolver::RadiativeTransfer(int n, int k, int j, int il, int iu)
+void DisortRTSolver::RadiativeTransfer(int n, int k, int j, int il, int iu)
 {
   std::stringstream msg;
   msg << "##### FATAL ERROR in DisortRTSolver Constructor" << std::endl

@@ -9,7 +9,7 @@ SimpleRTSolver::SimpleRTSolver(RadiationBand *pband, ParameterInput *pin):
 
 
 // computes F = e^-tau
-SimpleRTSolver::RadiativeTransfer(int n, int k, int j, int il, int iu)
+void SimpleRTSolver::RadiativeTransfer(int n, int k, int j, int il, int iu)
 {
   
 }
