@@ -11,8 +11,7 @@ class SimpleRTSolver: public RTSolver {
 public:
   RadiationBand *pmy_band;
 
-  SimpleRTSolver(RadiationBand *pband, ParameterInput *pin):
-    RTSolver(pband, pin) {};
+  SimpleRTSolver(RadiationBand *pband, ParameterInput *pin);
   ~SimpleRTSolver();
 
   void RadiativeTransfer(int n, int k, int j, int il, int iu);
