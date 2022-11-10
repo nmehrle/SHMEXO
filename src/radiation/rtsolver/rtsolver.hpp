@@ -12,7 +12,7 @@ public:
   RadiationBand *pmy_band;
 
   RTSolver(RadiationBand *pband, ParameterInput *pin): pmy_band(pband) {};
-  ~RTSolver();
+  ~RTSolver() {};
 
   void RadiativeTransfer(int n, int k, int j, int il, int iu);
 protected:

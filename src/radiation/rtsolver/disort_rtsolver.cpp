@@ -11,6 +11,10 @@ DisortRTSolver::DisortRTSolver(RadiationBand *pband, ParameterInput *pin):
   return;
 }
 
+DisortRTSolver::~DisortRTSolver() {
+  
+}
+
 // computes F = e^-tau
 void DisortRTSolver::RadiativeTransfer(int n, int k, int j, int il, int iu)
 {
