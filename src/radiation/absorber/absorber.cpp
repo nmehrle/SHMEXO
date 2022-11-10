@@ -35,7 +35,7 @@ void Absorber::SetScalar(int n) {
   else {
     std::stringstream msg;
     msg << "##### Fatal Error in Absorber Constructor." << std::endl
-        << "Scalar number value ("<<n<<") must be either -1 (to use complete density)" <<
+        << "Scalar number value ("<<n<<") must be either -1 (to use complete density)"
         << std::endl
         << " or between 0 and NSCALARS ("<<NSCALARS<<").";
     ATHENA_ERROR(msg);
