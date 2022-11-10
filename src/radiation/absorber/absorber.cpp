@@ -1,6 +1,12 @@
+// C/C++ headers
+#include <sstream>
+
 // Athena++ headers
 #include "../../athena.hpp"
 #include "absorber.hpp"
+#include "../radiation.hpp"
+#include "../../mesh/mesh.hpp"
+#include "../../scalars/scalars.hpp"
 
 Absorber::Absorber(RadiationBand *pband) {
   pmy_band = pband;
