@@ -1,8 +1,8 @@
 // Athena++ header
 #include "rtsolver.hpp"
 
-DisortRTSolver::DisortRTSolver(RadiationBand *pband):
-  pmy_band(pband)
+DisortRTSolver::DisortRTSolver(RadiationBand *pband, ParameterInput *pin):
+  RTSolver(pband, pin)
 {
   return;
 }

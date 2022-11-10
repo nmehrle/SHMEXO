@@ -16,6 +16,6 @@ public:
 
   void RadiativeTransfer(int n, int k, int j, int il, int iu);
 protected:
-}
+};
 
 #endif
