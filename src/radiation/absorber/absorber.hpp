@@ -16,10 +16,10 @@ public:
   PassiveScalars *ps;
 
   Absorber(RadiationBand *pband);
-  virtual ~Absorber() {};
+  virtual ~Absorber();
 
   void SetScalar(int n);
-  virtual Real AbsorptionCoefficient(AthenaArray<Real> const& prim, Real wave, int k, int j, int i) {};
+  virtual Real AbsorptionCoefficient(AthenaArray<Real> const& prim, Real wave, int k, int j, int i);
 
 protected:
   int scalar_num;
