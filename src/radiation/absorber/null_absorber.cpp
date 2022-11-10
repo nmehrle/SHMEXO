@@ -10,7 +10,7 @@
 #include "absorber.hpp"
 #include "null_absorber.hpp"
 
-Real NullAbsorber::AbsorptionCoefficient(Real wave, Real const prim[]) const
+Real NullAbsorber::AbsorptionCoefficient(AthenaArray<Real> const& prim, Real wave, int k, int j, int i)
 {
   return 0;
 }
