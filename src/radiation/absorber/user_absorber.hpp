@@ -12,7 +12,7 @@ using EnergyAbsorptionFunc = Real (*)(Absorber *me, Real wave, Real const flux, 
 class UserDefinedAbsorber: public Absorber {
 public:
   UserDefinedAbsorber(RadiationBand *pband);
-  virtual ~UserDefinedAbsorber() {};
+  ~UserDefinedAbsorber() {};
 
   Real AbsorptionCoefficient(AthenaArray<Real> const& prim, Real wave, int k, int j, int i);
   Real EnergyAbsorption(Real wave, Real const flux, int k, int j, int i);
