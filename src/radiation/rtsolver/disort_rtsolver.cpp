@@ -1,12 +1,12 @@
 // Athena++ header
 #include "rtsolver.hpp"
+#include "disort_rtsolver.hpp"
 
 DisortRTSolver::DisortRTSolver(RadiationBand *pband, ParameterInput *pin):
   RTSolver(pband, pin)
 {
   return;
 }
-
 
 // computes F = e^-tau
 DisortRTSolver::RadiativeTransfer(int n, int k, int j, int il, int iu)
