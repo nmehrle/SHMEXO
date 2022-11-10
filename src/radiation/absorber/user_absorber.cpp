@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <stdexcept>
 #include <cstring>
+#include <sstream>    // stringstream
 #include <cmath>
 #include <cassert>  // assert
 
