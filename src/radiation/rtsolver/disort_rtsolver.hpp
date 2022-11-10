@@ -11,7 +11,8 @@ class DisortRTSolver: public RTSolver {
 public:
   RadiationBand *pmy_band;
 
-  DisortRTSolver(RadiationBand *pband, ParameterInput *pin) {};
+  DisortRTSolver(RadiationBand *pband, ParameterInput *pin):
+    RTSolver(pband, pin) {};
   ~DisortRTSolver();
 
   void RadiativeTransfer(int n, int k, int j, int il, int iu);

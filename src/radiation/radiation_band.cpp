@@ -32,7 +32,7 @@ RadiationBand::RadiationBand(Radiation *prad, std::string band_id, ParameterInpu
   // Gather wavelength details
   sprintf(key, "%s.wavelength", my_id);
   value = pin->GetString("radiation", key);
-  std::vector<Real> v = Vectorize(value.c_str());
+  std::vector<Real> v = Vectorize<Real>(value.c_str());
   if (v.size() != 3) {
     msg << "### FATAL ERROR in RadiationBand::RadiationBand" << std::endl
         << "Length of input file value" << std::endl
