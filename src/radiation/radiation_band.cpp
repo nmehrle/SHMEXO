@@ -50,6 +50,10 @@ RadiationBand::RadiationBand(Radiation *prad, std::string band_id, ParameterInpu
   }
   if (nspec == 1) spec[0].wgt = 1.;
 
+  // Gather wavelength unit
+  sprintf(key, "%s.wavelength_coefficient", my_id);
+  wavelength_coefficient = pin->GetReal("radiation", key);
+
   // Gather input spectrum details
   sprintf(key, "%s.spec_file", my_id);
   value = pin->GetOrAddString("radiation", key, "");
@@ -104,11 +108,10 @@ RadiationBand::RadiationBand(Radiation *prad, std::string band_id, ParameterInpu
   {
     sprintf(key, "%s.abs%d", my_id, abs_num);
     abs_name = pin->GetString("radiation", key);
-    sprintf(scalar_key, "%s.scalar", key);
-    abs_scalar_num = pin->GetOrAddInteger("radiation", scalar_key, -1);
+    // sprintf(scalar_key, "%s.scalar", key);
+    // abs_scalar_num = pin->GetOrAddInteger("radiation", scalar_key, -1);
 
     Absorber* pabs = GetAbsorberByName(abs_name, pin);
-    pabs->SetScalar(abs_scalar_num);
 
     absorbers(i) = pabs;
   }
@@ -178,16 +181,18 @@ void RadiationBand::ConstructRTSolver(std::string name, ParameterInput *pin) {
 Absorber* __attribute__((weak)) RadiationBand::GetAbsorberByName(
   std::string name, ParameterInput *pin) {}
 
-void RadiationBand::SetSpectralProperties(AthenaArray<Real> const& w, int k, int j, int il, int iu) {
+void RadiationBand::SetSpectralProperties(MeshBlock *pmb, AthenaArray<Real> const& w, AthenaArray<Real> const& cons_scalar, int k, int j) {
   Coordinates *pcoord = pmy_rad->pmy_block->pcoord;
 
   tau.ZeroClear();
   tau_cell.ZeroClear();
   band_tau.ZeroClear();
   band_tau_cell.ZeroClear();
+
+  int is = pmb->is; int ie = pmb->ie;
   
   // loop collumn
-  for (int i = iu; i >= il; --i)
+  for (int i = ie; i >= is; --i)
   {
     Real dx = pcoord->dx1f(i);
 
@@ -199,12 +204,14 @@ void RadiationBand::SetSpectralProperties(AthenaArray<Real> const& w, int k, int
       for (int a = 0; i < nabs; ++a)
       {
         Absorber *pabs = absorbers(a);
-        tau_cell(n,k,j,i) += pabs->AbsorptionCoefficient(w, spec[n].wave, k, j, i);
+        pabs->CalculateAbsorptionCoefficient(w, cons_scalar, n, k, j, i);
+        tau_cell(n,k,j,i) += pabs->absorptionCoefficient(n, k, j, i);
+        // tau_cell(n,k,j,i) += pabs->AbsorptionCoefficient(w, spec[n].wave, k, j, i);
       }
       tau_cell(n,k,j,i) *= dx;
 
       // calculate tau as sum of tau_cell for this cell and above
-      if (i == iu) {
+      if (i == ie) {
         tau(n,k,j,i) = tau_cell(n,k,j,i);
       }
       else {
@@ -214,7 +221,7 @@ void RadiationBand::SetSpectralProperties(AthenaArray<Real> const& w, int k, int
       band_tau_cell(k,j,i) += tau_cell(n,k,j,i) * spec[n].wgt;
     }
 
-    if (i == iu) {
+    if (i == ie) {
       band_tau(k,j,i) = band_tau_cell(k,j,i);
     }
     else {
@@ -225,15 +232,13 @@ void RadiationBand::SetSpectralProperties(AthenaArray<Real> const& w, int k, int
 
 // sets spectral_flux_density at the top
 // calls my_rtsolver to compute it through the collumn
-void RadiationBand::RadiativeTransfer(Real radiation_scaling, int k, int j, int il, int iu) {
+void RadiationBand::RadiativeTransfer(MeshBlock *pmb, Real radiation_scaling, int k, int j) {
+  int ie = pmb->ie;
   for (int n = 0; n < nspec; ++n) {
-    spectral_flux_density(n,k,j,iu+1) = spec[n].flux*radiation_scaling;
-    std::cout << "BREAK HERE" << std::endl;
-    std::stringstream msg;
-    msg << "end of the road, bud";
-    ATHENA_ERROR(msg);
+    spectral_flux_density(n,k,j,ie+1) = spec[n].flux*radiation_scaling;
 
     // fills in spectral_flux_density
-    my_rtsolver->RadiativeTransfer(n, k, j, il, iu);
+    // computes which absorber absorbs the radiation
+    my_rtsolver->RadiativeTransfer(pmb, n, k, j);
   }
 }

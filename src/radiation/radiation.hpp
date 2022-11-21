@@ -36,11 +36,7 @@ public:
   Radiation(MeshBlock *pmb, ParameterInput *pin);
   ~Radiation();
 
-  RadiationBand* GetBand(int n);
-  int GetNumBands();
-
-  void CalculateRadiativeTransfer(AthenaArray<Real> const& prim, Real time,
-    int k, int j, int il, int iu);
+  void CalculateRadiativeTransfer(AthenaArray<Real> const& prim, AthenaArray<Real> const& cons_scalar, Real time, int k, int j);
   void CalculateFluxDifference();
   void CalculateEnergyAbsorption(const Real dt);
   void AddRadiationSourceTerm(const Real dt, AthenaArray<Real> &du_hydro);
@@ -53,11 +49,15 @@ protected:
 };
 
 class RadiationBand {
+  friend class Absorber;
 public:
   std::string my_name;
   Radiation *pmy_rad;
   AthenaArray<Absorber*> absorbers;
   int nabs;
+
+  int nspec;
+  Spectrum *spec;
 
   // band-integrated quantities
   AthenaArray<Real> band_flux;
@@ -71,13 +71,12 @@ public:
 
   Absorber* GetAbsorberByName(std::string name, ParameterInput *pin);
 
-  void SetSpectralProperties(AthenaArray<Real> const& w, int k, int j, int il, int iu);
-  void RadiativeTransfer(Real radiation_scaling, int k, int j, int il, int iu);
+  void SetSpectralProperties(MeshBlock *pmb, AthenaArray<Real> const& w, AthenaArray<Real> const& cons_scalar, int k, int j);
+  void RadiativeTransfer(MeshBlock *pmb, Real radiation_scaling, int k, int j);
 
 protected:
   std::string my_id;
-  int nspec;
-  Spectrum *spec;
+  Real wavelength_coefficient;
   RTSolver *my_rtsolver;
 
   // spectral flux density at bottom of cells

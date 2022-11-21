@@ -14,7 +14,7 @@ public:
   SimpleRTSolver(RadiationBand *pband, ParameterInput *pin);
   ~SimpleRTSolver() {};
 
-  void RadiativeTransfer(int n, int k, int j, int il, int iu);
+  void RadiativeTransfer(MeshBlock *pmb, int n, int k, int j);
 protected:
 };
 

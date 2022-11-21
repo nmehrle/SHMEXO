@@ -48,15 +48,15 @@ Radiation::~Radiation() {
   }
 }
 
-void Radiation::CalculateRadiativeTransfer(AthenaArray<Real> const& prim, Real time, int k, int j, int il, int iu)
+void Radiation::CalculateRadiativeTransfer(AthenaArray<Real> const& prim, AthenaArray<Real> const& cons_scalar, Real time, int k, int j)
 {
-  Real radiation_scaling = UserRadiationScalingFunc(prim, time, k, j, il, iu);
+  Real radiation_scaling = UserRadiationScalingFunc(prim, time, k, j);
 
   for (int i = 0; i < nbands; ++i)
   {
     RadiationBand *p = my_bands(i);
-    p->SetSpectralProperties(prim, k, j, il-NGHOST, iu+NGHOST-1);
+    p->SetSpectralProperties(pmy_block, prim, cons_scalar, k, j);
 
-    p->RadiativeTransfer(radiation_scaling, k, j, il, iu);
+    p->RadiativeTransfer(pmy_block, radiation_scaling, k, j);
   }
 }

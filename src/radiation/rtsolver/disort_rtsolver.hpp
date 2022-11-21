@@ -14,7 +14,7 @@ public:
   DisortRTSolver(RadiationBand *pband, ParameterInput *pin);
   ~DisortRTSolver();
 
-  void RadiativeTransfer(int n, int k, int j, int il, int iu);
+  void RadiativeTransfer(MeshBlock *pmb, int n, int k, int j);
 
 protected:
   disort_state *ds;
