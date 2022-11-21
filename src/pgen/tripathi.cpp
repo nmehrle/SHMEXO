@@ -17,7 +17,7 @@
 #include "../utils/utils.hpp"
 #include "../thermodynamics/thermodynamics.hpp"
 #include "../radiation/radiation.hpp"
-#include "../radiation/absorber/user_absorber.hpp"
+#include "../reaction/reaction_network.hpp"
 #include "../scalars/scalars.hpp"
 #include "../mesh_generator.hpp"
 
@@ -54,7 +54,7 @@
     const AthenaArray<Real> &w, const AthenaArray<Real> &r,
     const AthenaArray<Real> &bcc,
     AthenaArray<Real> &du, AthenaArray<Real> &ds);
-  Real RadiationTime(AthenaArray<Real> const &prim, Real time, int k, int j, int il, int iu);
+  Real RadiationTime(AthenaArray<Real> const &prim, Real time, int k, int j);
 
   // mesh generators
   MeshGenerator meshgen_x1, meshgen_x2, meshgen_x3;
@@ -208,65 +208,81 @@ void MeshBlock::UserWorkBeforeOutput(ParameterInput *pin)
 // Absorber Info
 //----------------------------------------------------------------------------------------
 // oddly expensive calculation!
-Real AbsorptionCoefficient(Absorber const *pabs, AthenaArray<Real> const& prim, Real wave, int k, int j, int i)
-{
-  // convert microns to meters
-  Real freq = c / (wave * wave_to_meters_conversion);
+// Real AbsorptionCoefficient(Absorber const *pabs, AthenaArray<Real> const& prim, Real wave, int k, int j, int i)
+// {
+//   // convert microns to meters
+//   Real freq = c / (wave * wave_to_meters_conversion);
 
-  PassiveScalars *ps = pabs->pmy_band->pmy_rad->pmy_block->pscalars;
-  Real n_neutral = ps->s(0,k,j,i)/mh;
+//   PassiveScalars *ps = pabs->pmy_band->pmy_rad->pmy_block->pscalars;
+//   Real n_neutral = ps->s(0,k,j,i)/mh;
 
-  // cover low energy and edge case
-  if (freq < nu_0)
-    return 0.;
-  else if (freq == nu_0)
-    return A0*n_neutral;
+//   // cover low energy and edge case
+//   if (freq < nu_0)
+//     return 0.;
+//   else if (freq == nu_0)
+//     return A0*n_neutral;
 
-  // Real eps   = sqrt(freq/nu_0 - 1.);
-  // Real term1 = A0 * pow(nu_0/freq,4.);
+//   // Real eps   = sqrt(freq/nu_0 - 1.);
+//   // Real term1 = A0 * pow(nu_0/freq,4.);
   
-  // Real numerator   = exp(4. - 4.*(atan2(eps,1)/eps));
-  // Real denominator = 1. - exp(-(2*M_PI)/eps);
+//   // Real numerator   = exp(4. - 4.*(atan2(eps,1)/eps));
+//   // Real denominator = 1. - exp(-(2*M_PI)/eps);
 
-  // Real sigma = term1 * numerator/denominator; // cross-section m^2
+//   // Real sigma = term1 * numerator/denominator; // cross-section m^2
 
-  // return sigma * n_neutral; // 1/m
+//   // return sigma * n_neutral; // 1/m
 
-  return A0 * n_neutral; // 1/m
-}
+//   return A0 * n_neutral; // 1/m
+// }
 
-// makes shit slow!
-Real EnergyAbsorption(Absorber *pabs, Real wave, Real const flux, int k, int j, int i)
-{
-  Real wave_nm = (wave * wave_to_meters_conversion) * 1e9;
-  if (wave_nm > nm_0) {
-    // energy not absorbed
-    // should also be reflected in tau_lambda = 0
-    return flux;
-  }
-  else {
-    // fraction of energy turned into heat
-    // removes ionizatoin energy cost
+// // makes shit slow!
+// Real EnergyAbsorption(Absorber *pabs, Real wave, Real const flux, int k, int j, int i)
+// {
+//   Real wave_nm = (wave * wave_to_meters_conversion) * 1e9;
+//   if (wave_nm > nm_0) {
+//     // energy not absorbed
+//     // should also be reflected in tau_lambda = 0
+//     return flux;
+//   }
+//   else {
+//     // fraction of energy turned into heat
+//     // removes ionizatoin energy cost
 
-    // Real energy_fraction = 1 - (wave_nm/nm_0);
-    Real energy_fraction = 0.15;
+//     // Real energy_fraction = 1 - (wave_nm/nm_0);
+//     Real energy_fraction = 0.15;
 
-    pabs->pmy_band->pmy_rad->pmy_block->ruser_meshblock_data[0](k,j,i) += (1-energy_fraction) * flux;
+//     pabs->pmy_band->pmy_rad->pmy_block->ruser_meshblock_data[0](k,j,i) += (1-energy_fraction) * flux;
 
-    return flux*energy_fraction;
-  }
+//     return flux*energy_fraction;
+//   }
+// }
+
+void ReactionNetwork::InitUserReactions(ParameterInput *pin) {
+  // Reaction *rxn = new REACTION();
+  // AddReaction();
+  return;
 }
 
 Absorber* RadiationBand::GetAbsorberByName(std::string name, ParameterInput *pin)
 { 
   std::stringstream msg;
   if (name == "HYDROGEN_IONIZATION") {
-    UserDefinedAbsorber *hydrogen_ionization = new UserDefinedAbsorber(this);
+    int scalar_num = 0;
+    int ion_scalar_num = 1;
+    HydrogenIonization *a = new HydrogenIonization(this, scalar_num);
+    ReactionNetwork *pnetwork = pmy_rad->pmy_block->pnetwork;
+    std::string rxn_name = "Hydrogen Ionization"
+    Reaction *rxn = new Photoionization(pnetwork, rxn_name, a, scalar_num, ion_scalar_num, a->ionization_energy);
+    // a->AssociateReaction(rxn);
+  }
+  // if (name == "HYDROGEN_IONIZATION") {
+  //   UserDefinedAbsorber *hydrogen_ionization = new UserDefinedAbsorber(this);
 
-    hydrogen_ionization->EnrollUserAbsorptionCoefficientFunc(AbsorptionCoefficient);
-    hydrogen_ionization->EnrollUserEnergyAbsorptionFunc(EnergyAbsorption);
-    return hydrogen_ionization;
-  } else {
+  //   hydrogen_ionization->EnrollUserAbsorptionCoefficientFunc(AbsorptionCoefficient);
+  //   hydrogen_ionization->EnrollUserEnergyAbsorptionFunc(EnergyAbsorption);
+  //   return hydrogen_ionization;
+  // }
+  else {
     msg << "### FATAL ERROR in RadiationBand::AddAbsorber"
         << std::endl << "unknown absorber: '" << name <<"' ";
     ATHENA_ERROR(msg);
@@ -301,22 +317,22 @@ void SourceTerms(MeshBlock *pmb, const Real time, const Real dt,
         Real n_ion = ps->s(1,k,j,i)/mh;
         Real n_neu = ps->s(0,k,j,i)/mh;
 
-        //ionization
-        // negative sign bc downward energy transfer
-        Real energy_ion = -dt * pmb->ruser_meshblock_data[0](k,j,i);
-        Real n_ion_gain = energy_ion/Ry/vol(i);
+        // //ionization
+        // // negative sign bc downward energy transfer
+        // Real energy_ion = -dt * pmb->ruser_meshblock_data[0](k,j,i);
+        // Real n_ion_gain = energy_ion/Ry/vol(i);
 
-        // Real n = ps->s(0,k,j,i)/mh;
-        // Real Fx = pmb->prad->pband->bflxdn(k,j,i)/2.563e-18;// Divide by 16eV per photon to get photon number flux
-        // Real I = Fx * (n_neu * A0);
-        // Real n_ion_gain = dt * I;
+        // // Real n = ps->s(0,k,j,i)/mh;
+        // // Real Fx = pmb->prad->pband->bflxdn(k,j,i)/2.563e-18;// Divide by 16eV per photon to get photon number flux
+        // // Real I = Fx * (n_neu * A0);
+        // // Real n_ion_gain = dt * I;
 
-        if (n_ion_gain > n_neu) {
-          std::stringstream msg;
-          msg << "### FATAL ERROR in SourceTerms" << std::endl
-              << "    n_ion_gain ("<< n_ion_gain <<") is greater than n_neutral ("<< n_neu <<")." << std::endl
-              << "    Re-run with lower timestep." << std::endl;
-        }
+        // if (n_ion_gain > n_neu) {
+        //   std::stringstream msg;
+        //   msg << "### FATAL ERROR in SourceTerms" << std::endl
+        //       << "    n_ion_gain ("<< n_ion_gain <<") is greater than n_neutral ("<< n_neu <<")." << std::endl
+        //       << "    Re-run with lower timestep." << std::endl;
+        // }
 
         // recombination
         Real R = pmb->pthermo->GetRd();
@@ -339,16 +355,16 @@ void SourceTerms(MeshBlock *pmb, const Real time, const Real dt,
         Real lya_cooling_rate = lya_cooling_const * n_ion * n_neu; // J m-3 s-1
 
         du(IEN,k,j,i) -= (recomb_cooling_rate + lya_cooling_rate) * dt; // J m-3
-        ds(0,k,j,i) += ( n_recomb - n_ion_gain) * mh;
-        ds(1,k,j,i) += (-n_recomb + n_ion_gain) * mh;
+        // ds(0,k,j,i) += ( n_recomb - n_ion_gain) * mh;
+        // ds(1,k,j,i) += (-n_recomb + n_ion_gain) * mh;
 
         // Outputs
         // 1 -- radiation energy absorbed prad->du
         pmb->ruser_meshblock_data[1](k,j,i) = pmb->prad->dE(k,j,i);
         // 2 -- ionization rate
-        pmb->ruser_meshblock_data[2](k,j,i) = n_ion_gain/dt;
+        // pmb->ruser_meshblock_data[2](k,j,i) = n_ion_gain/dt;
         // 3 -- recombination rate
-        pmb->ruser_meshblock_data[3](k,j,i) = n_recomb/dt;
+        // pmb->ruser_meshblock_data[3](k,j,i) = n_recomb/dt;
         // 4 -- recombinative cooling rate
         pmb->ruser_meshblock_data[4](k,j,i) = recomb_cooling_rate;
         // 5 -- lyman alpha cooling rate
@@ -430,7 +446,7 @@ void gravity_func(MeshBlock *pmb, AthenaArray<Real> &g1, AthenaArray<Real> &g2, 
   }
 }
 
-Real RadiationTime(AthenaArray<Real> const &prim, Real time, int k, int j, int il, int iu) {
+Real RadiationTime(AthenaArray<Real> const &prim, Real time, int k, int j) {
   Real rad_scaling = (ref_dist_*ref_dist_)/(dist_*dist_);
 
   // tripathi
@@ -509,6 +525,8 @@ void MeshBlock::ProblemGenerator(ParameterInput *pin)
       prad->CalculateRadiativeTransfer(phydro->w, pmy_mesh->time, k, j, is, ie+1);
 
   peos->PrimitiveToConserved(phydro->w, pfield->bcc, phydro->u, pcoord, is, ie, js, je, ks, ke);
+
+  pnetwork->Initialize();
 }
 
 // resets things inside r_replenish
