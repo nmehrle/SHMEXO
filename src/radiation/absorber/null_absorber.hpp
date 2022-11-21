@@ -9,7 +9,7 @@ public:
   NullAbsorber(RadiationBand *pband):
     Absorber(pband){};
   virtual ~NullAbsorber() {};
-  Real AbsorptionCoefficient(AthenaArray<Real> const& prim, Real wave, int k, int j, int i)
+  void CalculateAsorptionCoefficient(AthenaArray<Real> const& prim, int n, int k, int j, int i)
     {return 0;};
 };
 

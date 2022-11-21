@@ -7,17 +7,41 @@
 #include "../radiation.hpp"
 #include "../../mesh/mesh.hpp"
 #include "../../scalars/scalars.hpp"
+#include "../../reaction/reaction_network.hpp"
 
-Absorber::Absorber(RadiationBand *pband) {
+Absorber::Absorber(RadiationBand *pband, int my_scalar_number) {
   pmy_band = pband;
-  ps = pmy_band->pmy_rad->pmy_block->pscalars;
+  MeshBlock *pmb = pmy_band->pmy_rad->pmy_block;
+  ps = pmb->pscalars;
+
+  // associate a scalar to get number densities
+  SetScalar(my_scalar_number);
+
+  // initialize absorber data
+  crossSection.NewAthenaArray(pband->nspec);
+
+  // assign default h, q values
+  h.NewAthenaArray(pband->nspec);
+  q.NewAthenaArray(pband->nspec);
+
+  for (int n = 0; n < pband->nspec; ++n)
+  {
+    crossSection(n) = 0.0;
+    h(n) = 0.0;
+    q(n) = 1.0;
+  }
+
+  absorptionCoefficient.NewAthenaArray(pband->nspec, pmb->ncells3, pmb->ncells2, pmb->ncells1);
+  energyAbsorbed.NewAthenaArray(pband->nspec, pmb->ncells3, pmb->ncells2, pmb->ncells1);
 }
 
 Absorber::~Absorber() {
 }
 
-Real Absorber::AbsorptionCoefficient(AthenaArray<Real> const& prim, Real wave, int k, int j, int i) {
-}
+// void Absorber::AssociateReaction(Reaction *prxn) {
+//   pmy_rxn = prxn;
+//   pmy_rxn->pabs = this;
+// }
 
 void Absorber::SetScalar(int n) {
   scalar_num = n;
@@ -45,5 +69,31 @@ void Absorber::SetScalar(int n) {
         << std::endl
         << " or between 0 and NSCALARS ("<<NSCALARS<<").";
     ATHENA_ERROR(msg);
+  }
+}
+
+void Absorber::CalculateAbsorptionCoefficient(AthenaArray<Real> const& prim, AthenaArray<Real> const& cons_scalar, int n, int k, int j, int i) {
+  Spectrum *spec = pmy_band->spec;
+  Real number_density;
+
+  if (scalar_num == -1) {
+    if (mass <= 0.0) {
+      std::stringstream msg;
+      msg << "##### Fatal Error in Absorber::CalculateAbsorptionCoefficient." << std::endl
+          << "Default absorption coefficient calculation requires number density, which requires a particle mass." << std::endl
+          << " No valid mass has been assigned. Consider using scalars to assign a mass or using a non-default CalculateAbsorptionCoefficient function.";
+      ATHENA_ERROR(msg);
+    }
+    else {
+      number_density = prim(IDN,k,j,i)/mass;
+    }
+  }
+  else {
+    number_density = cons_scalar(scalar_num,k,j,i)/mass;
+  }
+
+  for (int n = 0; n < nspec; ++n)
+  {
+    absorptionCoefficient(n,k,j,i) = number_density * crossSection(n);
   }
 }

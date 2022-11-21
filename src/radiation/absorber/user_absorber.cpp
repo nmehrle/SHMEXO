@@ -21,11 +21,12 @@ UserDefinedAbsorber::UserDefinedAbsorber(RadiationBand *pband):
   return;
 }
 
-Real UserDefinedAbsorber::AbsorptionCoefficient(AthenaArray<Real> const& prim,
-  Real wave, int k, int j, int i)
+void UserDefinedAbsorber::CalculateAsorptionCoefficient(AthenaArray<Real> const& prim, int n, int k, int j, int i)
 {
+  wave = pabs->spec[n].wave;
+
   if (UserAbsorptionCoeffFunc_ != nullptr) {
-    return UserAbsorptionCoeffFunc_(this, prim, wave, k, j, i);
+    absorptionCoefficient(n,k,j,i) = UserAbsorptionCoeffFunc_(this, prim, wave, k, j, i);
   }
   else {
     std::stringstream msg;

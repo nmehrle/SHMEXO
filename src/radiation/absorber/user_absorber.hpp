@@ -14,7 +14,7 @@ public:
   UserDefinedAbsorber(RadiationBand *pband);
   virtual ~UserDefinedAbsorber() {};
 
-  Real AbsorptionCoefficient(AthenaArray<Real> const& prim, Real wave, int k, int j, int i);
+  void CalculateAsorptionCoefficient(AthenaArray<Real> const& prim, int n, int k, int j, int i);
   Real EnergyAbsorption(Real wave, Real const flux, int k, int j, int i);
 
   void EnrollUserAbsorptionCoefficientFunc(AbsorptionCoefficientFunc my_func);
