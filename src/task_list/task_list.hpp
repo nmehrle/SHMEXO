@@ -145,7 +145,7 @@ class TimeIntegratorTaskList : public TaskList {
   TaskStatus IntegrateHydro(MeshBlock *pmb, int stage);
   TaskStatus IntegrateField(MeshBlock *pmb, int stage);
   TaskStatus IntegrateChemistry(MeshBlock *pmb, int stage);
-  TaskStatus IntegrateReactions(Meshblock *pmb, int stage);
+  TaskStatus IntegrateReactions(MeshBlock *pmb, int stage);
 
   TaskStatus AddSourceTerms(MeshBlock *pmb, int stage);
   // TaskStatus AddSourceTermsRadiation(MeshBlock *pmb, int stage);
