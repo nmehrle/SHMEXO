@@ -7,6 +7,7 @@
 #include "../thermodynamics/thermodynamics.hpp"
 #include "../chemistry/chemistry.hpp"
 #include "../radiation/radiation.hpp"
+#include "../reaction/reaction_network.hpp"
 #include "../scalars/scalars.hpp"
 #include "task_list.hpp"
 
@@ -80,8 +81,8 @@ TaskStatus TimeIntegratorTaskList::CalculateRadiationFlux(MeshBlock *pmb, int st
     int js = pmb->js; int ks = pmb->ks;
     int je = pmb->je; int ke = pmb->ke;
 
-    for (int k = kl; k <= ku; ++k) {
-      for (int j = jl; j <= ju; ++j) {
+    for (int k = ks; k <= ke; ++k) {
+      for (int j = js; j <= je; ++j) {
         Real t_start_stage = pmb->pmy_mesh->time + pmb->stage_abscissae[stage-1][0];
 
         prad->CalculateRadiativeTransfer(phydro->w, pscalars->s, t_start_stage, k, j);
@@ -103,7 +104,7 @@ TaskStatus TimeIntegratorTaskList::IntegrateReactions(MeshBlock *pmb, int stage)
     // Clears and updates both
     // pnetwork->dn and pnetwork->de
     Real dt = (stage_wghts[(stage-1)].beta)*(pmb->pmy_mesh->dt);
-    pnetwork->ComputeReactionForcing(dt, ph->du, ph->ds);
+    pnetwork->ComputeReactionForcing(dt, phydro->du, pscalars->ds);
 
     return TaskStatus::next;
   }
