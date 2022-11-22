@@ -10,9 +10,9 @@
 // Athena++ headers
 #include "../../athena_arrays.hpp"
 #include "../../globals.hpp"
+#include "../radiation.hpp"
 #include "absorber.hpp"
 #include "hydrogen_ionization.hpp"
-#include "../radiation.hpp"
 
 HydrogenIonization::HydrogenIonization(RadiationBand *pband, int my_scalar_number):
   Absorber(pband, my_scalar_number),
