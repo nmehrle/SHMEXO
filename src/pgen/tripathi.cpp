@@ -18,6 +18,7 @@
 #include "../thermodynamics/thermodynamics.hpp"
 #include "../radiation/radiation.hpp"
 #include "../reaction/reaction_network.hpp"
+#include "../radiation/absorber/hydrogen_ionization.hpp"
 #include "../scalars/scalars.hpp"
 #include "../mesh_generator.hpp"
 
@@ -271,7 +272,7 @@ Absorber* RadiationBand::GetAbsorberByName(std::string name, ParameterInput *pin
     int ion_scalar_num = 1;
     HydrogenIonization *a = new HydrogenIonization(this, scalar_num);
     ReactionNetwork *pnetwork = pmy_rad->pmy_block->pnetwork;
-    std::string rxn_name = "Hydrogen Ionization"
+    std::string rxn_name = "Hydrogen Ionization";
     Reaction *rxn = new Photoionization(pnetwork, rxn_name, a, scalar_num, ion_scalar_num, a->ionization_energy);
     // a->AssociateReaction(rxn);
   }
@@ -522,7 +523,7 @@ void MeshBlock::ProblemGenerator(ParameterInput *pin)
   // set spectral properties
   for (int k = kl; k <= ku; ++k)
     for (int j = jl; j <= ju; ++j)
-      prad->CalculateRadiativeTransfer(phydro->w, pmy_mesh->time, k, j, is, ie+1);
+      CalculateRadiativeTransfer(phydro->w, pscalars->s, pmy_mesh->time, k, j);
 
   peos->PrimitiveToConserved(phydro->w, pfield->bcc, phydro->u, pcoord, is, ie, js, je, ks, ke);
 
