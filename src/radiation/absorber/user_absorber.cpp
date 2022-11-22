@@ -10,6 +10,7 @@
 // Athena++ headers
 #include "../../athena_arrays.hpp"
 #include "../../globals.hpp"
+#include "../radiation.hpp"
 #include "absorber.hpp"
 #include "user_absorber.hpp"
 
