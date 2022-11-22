@@ -92,7 +92,7 @@ void Absorber::CalculateAbsorptionCoefficient(AthenaArray<Real> const& prim, Ath
     number_density = cons_scalar(scalar_num,k,j,i)/mass;
   }
 
-  for (int n = 0; n < nspec; ++n)
+  for (int n = 0; n < pmy_band->nspec; ++n)
   {
     absorptionCoefficient(n,k,j,i) = number_density * crossSection(n);
   }
