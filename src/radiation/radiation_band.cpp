@@ -84,6 +84,7 @@ RadiationBand::RadiationBand(Radiation *prad, std::string band_id, ParameterInpu
     value = pmy_rad->default_rt_solver;
   }
 
+  my_rtsolver = new RTSolver(this, pin);
   ConstructRTSolver(value, pin);
 
   // Gather Absorber Info
@@ -162,9 +163,11 @@ void RadiationBand::LoadInputSpectrum(std::string file) {
 
 void RadiationBand::ConstructRTSolver(std::string name, ParameterInput *pin) {
   if (strcmp(name.c_str(), "SIMPLE") == 0) {
+    delete my_rtsolver;
     my_rtsolver = new SimpleRTSolver(this, pin);
   }
   else if (strcmp(name.c_str(), "DISORT") == 0) {
+    delete my_rtsolver;
     my_rtsolver = new DisortRTSolver(this, pin);
   }
   else {
