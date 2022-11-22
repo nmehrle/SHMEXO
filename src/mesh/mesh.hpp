@@ -54,6 +54,7 @@ class TurbulenceDriver;
 class Thermodynamics;
 class Chemistry;
 class Radiation;
+class ReactionNetwork;
 class Diagnostics;
 
 FluidFormulation GetFluidFormulation(const std::string& input_string);
