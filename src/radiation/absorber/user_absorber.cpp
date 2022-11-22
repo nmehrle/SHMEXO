@@ -23,7 +23,7 @@ UserDefinedAbsorber::UserDefinedAbsorber(RadiationBand *pband):
 
 void UserDefinedAbsorber::CalculateAsorptionCoefficient(AthenaArray<Real> const& prim, int n, int k, int j, int i)
 {
-  wave = pabs->spec[n].wave;
+  Real wave = pmy_band->spec[n].wave;
 
   if (UserAbsorptionCoeffFunc_ != nullptr) {
     absorptionCoefficient(n,k,j,i) = UserAbsorptionCoeffFunc_(this, prim, wave, k, j, i);
