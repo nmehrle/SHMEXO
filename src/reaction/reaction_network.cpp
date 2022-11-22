@@ -18,7 +18,7 @@ ReactionNetwork::ReactionNetwork(MeshBlock *pmb, ParameterInput *pin){
   plast = nullptr;
   num_reactions = 0;
 
-  InitUserReactions();
+  InitUserReactions(pin);
 }
 
 ReactionNetwork::~ReactionNetwork() {
@@ -36,7 +36,7 @@ Reaction* ReactionNetwork::GetReaction(int n) {
   int count = 0;
   while (prxn != nullptr) {
     if (count == n) {
-      return prxn
+      return prxn;
     }
 
     prxn = prxn->next;
@@ -66,13 +66,12 @@ void ReactionNetwork::AddReaction(Reaction *prxn) {
   plast = prxn;
 }
 
-void Initialize() {
-  int nrxn = GetNumReactions();
-  de.NewAthenaArray(nrxn, pmy_block->ncells3, pmy_block->ncells2, pmy_block->ncells1);
-  dn.NewAthenaArray(NSCALARS, pmy_block->ncells3, pmy_block->ncells2, pmy_block->ncells1);
+void ReactionNetwork::Initialize() {
+  de_rate.NewAthenaArray(num_reactions, pmy_block->ncells3, pmy_block->ncells2, pmy_block->ncells1);
+  dn_rate.NewAthenaArray(NSCALARS, pmy_block->ncells3, pmy_block->ncells2, pmy_block->ncells1);
 }
 
-void ComputeReactionForcing(const Real dt, AthenaArray<Real> &du, AthenaArray<Real> &ds) {
+void ReactionNetwork::ComputeReactionForcing(const Real dt, AthenaArray<Real> &du, AthenaArray<Real> &ds) {
   MeshBlock *pmb = pmy_block;
   Reaction *p = pfirst;
   PassiveScalars *pscalars = pmb->pscalars;
@@ -95,7 +94,7 @@ void ComputeReactionForcing(const Real dt, AthenaArray<Real> &du, AthenaArray<Re
           p = p->next;
         } // p while loop
 
-        du(IEN, k, j, i) += de(k,j,i) * dt;
+        du(IEN, k, j, i) += de_rate(k,j,i) * dt;
 
         for (int n = 0; n < NSCALARS; ++n)
         {

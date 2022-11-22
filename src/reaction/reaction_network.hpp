@@ -41,7 +41,7 @@ public:
 
   Reaction* GetReaction(int n);
   int num_reactions;
-protected:  
+protected:
 };
 
 // general type to be overridden by individual reactions
