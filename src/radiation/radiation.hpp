@@ -54,6 +54,7 @@ public:
   std::string my_name;
   Radiation *pmy_rad;
   AthenaArray<Absorber*> absorbers;
+  Real wavelength_coefficient;
   int nabs;
 
   int nspec;
@@ -76,7 +77,6 @@ public:
 
 protected:
   std::string my_id;
-  Real wavelength_coefficient;
   RTSolver *my_rtsolver;
 
   // spectral flux density at bottom of cells

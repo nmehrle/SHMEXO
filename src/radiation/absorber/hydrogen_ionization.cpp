@@ -15,7 +15,7 @@
 #include "hydrogen_ionization.hpp"
 
 HydrogenIonization::HydrogenIonization(RadiationBand *pband, int my_scalar_number):
-  Absorber(pband, my_scalar_number),
+  Absorber(pband, my_scalar_number)
 {
   Spectrum *spec = pband->spec;
   int nspec = pband->nspec;
@@ -23,7 +23,7 @@ HydrogenIonization::HydrogenIonization(RadiationBand *pband, int my_scalar_numbe
   CalculateEnergyFunctions(spec, nspec);
 }
 
-void HydrogenIonization::CalculateCrossSections(Spectrum const& spec, int nspec) {
+void HydrogenIonization::CalculateCrossSections(Spectrum const *spec, int nspec) {
   Real wave, freq;
   Real eps, term1, numerator, denominator;
   for (int n = 0; n < nspec; ++n)
@@ -47,7 +47,7 @@ void HydrogenIonization::CalculateCrossSections(Spectrum const& spec, int nspec)
   }
 }
 
-void HydrogenIonization::CalculateEnergyFunctions(Spectrum const& spec, int nspec) {
+void HydrogenIonization::CalculateEnergyFunctions(Spectrum const *spec, int nspec) {
   Real wave;
   Real lambda_0 = c/nu_0;
   for (int n = 0; n < nspec; ++n) {
@@ -61,7 +61,7 @@ void HydrogenIonization::CalculateEnergyFunctions(Spectrum const& spec, int nspe
     }
     else {
       h(n) = wave/lambda_0;
-      q(n) = 1.0 - h[n];
+      q(n) = 1.0 - h(n);
     }
   }
 }
