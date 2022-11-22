@@ -41,6 +41,7 @@
 #include "../thermodynamics/thermodynamics.hpp"
 #include "../chemistry/chemistry.hpp"
 #include "../radiation/radiation.hpp"
+#include "../reaction/reaction_network.hpp"
 #include "../diagnostics/diagnostics.hpp"
 
 //----------------------------------------------------------------------------------------
