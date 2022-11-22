@@ -9,6 +9,7 @@
 
 class MeshBlock;
 class ParameterInput;
+class PassiveScalars;
 class Absorber;
 class ReactionNetwork;
 class Reaction;
