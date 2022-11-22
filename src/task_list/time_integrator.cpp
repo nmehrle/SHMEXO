@@ -271,7 +271,7 @@ TimeIntegratorTaskList::TimeIntegratorTaskList(ParameterInput *pin, Mesh *pm) {
       AddTask(SRC_TERM,INT_HYD);
     }
     // ADD RADIATION HERE?
-    if (REACTIONS_ENABLED) {
+    if (REACTION_ENABLED) {
       AddTask(INT_RXN, CALC_RADFLX);
       AddTask(UPDATE_HYD, INT_RXN|SRC_TERM); //bitwise or means both are deps
     } else {
