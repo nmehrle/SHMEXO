@@ -50,10 +50,11 @@ protected:
 
 class RadiationBand {
   friend class Absorber;
-  friend class RTSolver;
 public:
   std::string my_name;
   Radiation *pmy_rad;
+  RTSolver *my_rtsolver;
+
   AthenaArray<Absorber*> absorbers;
   Real wavelength_coefficient;
   int nabs;
@@ -64,6 +65,20 @@ public:
   // band-integrated quantities
   AthenaArray<Real> band_flux;
   AthenaArray<Real> band_tau, band_tau_cell;
+
+  // spectral flux density at bottom of cells
+  // units -- [energy / time * area * wavelength]
+  // length -- nspec, ncells3, ncells2, ncells1+1
+  AthenaArray<Real> spectral_flux_density;
+
+  // tau_cell -- optical depth inside one cell
+  // tau -- optical depth of all cells above this cell including this cell
+  //        such that F(i) = F_input * exp[-tau(i)]
+  //        note F(i) is flux at bottom of cell (i)
+  //        F(iu+1) = F_input
+  //        F(iu) = F_input * exp[-tau(iu)]
+  AthenaArray<Real> tau, tau_cell;
+
 
   RadiationBand(Radiation *prad, std::string name, ParameterInput *pin);
   ~RadiationBand();
@@ -78,20 +93,6 @@ public:
 
 protected:
   std::string my_id;
-  RTSolver *my_rtsolver;
-
-  // spectral flux density at bottom of cells
-  // units -- [energy / time * area * wavelength]
-  // length -- nspec, ncells3, ncells2, ncells1+1
-  AthenaArray<Real> spectral_flux_density;
-
-  // tau_cell -- optical depth inside one cell
-  // tau -- optical depth of all cells above this cell including this cell
-  //        such that F(i) = F_input * exp[-tau(i)]
-  //        note F(i) is flux at bottom of cell (i)
-  //        F(iu+1) = F_input
-  //        F(iu) = F_input * exp[-tau(iu)]
-  AthenaArray<Real> tau, tau_cell;
 };
 
 #endif
