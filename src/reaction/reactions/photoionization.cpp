@@ -26,15 +26,15 @@ void Photoionization::react(AthenaArray<Real> &dn_rate, AthenaArray<Real> &de_ra
   Real dn_ion     = 0;
   Real dn_neutral = 0;
   Real d_energy   = 0;
-  Spectrum *spec = pabs->pmy_band->spec;
-  for (int n = 0; n < pabs->pmy_band->nspec; ++n)
+  Spectrum *spec = pmy_abs->pmy_band->spec;
+  for (int n = 0; n < pmy_abs->pmy_band->nspec; ++n)
   {
-    reaction_energy = pabs->energyAbsorbed(n, k, j, i);
-    d_number = reaction_energy * pabs->h(n) / ionization_energy;
+    reaction_energy = pmy_abs->energyAbsorbed(n, k, j, i);
+    d_number = reaction_energy * pmy_abs->h(n) / ionization_energy;
 
     dn_neutral -= d_number * spec[n].wgt;
     dn_ion     += d_number * spec[n].wgt;
-    d_energy   += reaction_energy * pabs->q(n) * spec[n].wgt;
+    d_energy   += reaction_energy * pmy_abs->q(n) * spec[n].wgt;
   }
 
   dn_rate(scalar_num, k, j, i) += dn_neutral;
