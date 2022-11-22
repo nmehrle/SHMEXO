@@ -19,6 +19,7 @@
 #include "../radiation/radiation.hpp"
 #include "../reaction/reaction_network.hpp"
 #include "../radiation/absorber/hydrogen_ionization.hpp"
+#include "../reaction/reactions/photoionization.hpp"
 #include "../scalars/scalars.hpp"
 #include "../mesh_generator.hpp"
 
@@ -523,7 +524,7 @@ void MeshBlock::ProblemGenerator(ParameterInput *pin)
   // set spectral properties
   for (int k = kl; k <= ku; ++k)
     for (int j = jl; j <= ju; ++j)
-      CalculateRadiativeTransfer(phydro->w, pscalars->s, pmy_mesh->time, k, j);
+      prad->CalculateRadiativeTransfer(phydro->w, pscalars->s, pmy_mesh->time, k, j);
 
   peos->PrimitiveToConserved(phydro->w, pfield->bcc, phydro->u, pcoord, is, ie, js, je, ks, ke);
 

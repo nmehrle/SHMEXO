@@ -32,7 +32,7 @@ public:
   AthenaArray<Real> energyAbsorbed;
 
   Absorber(RadiationBand *pband, int my_scalar_number);
-  Absorber(RadiationBand *pband): Absorber(pband, -1);
+  Absorber(RadiationBand *pband): Absorber(pband, -1) {};
   virtual ~Absorber();
 
   // void AssociateReaction(Reaction *prxn);
