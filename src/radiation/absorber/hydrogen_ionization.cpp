@@ -28,7 +28,7 @@ void HydrogenIonization::CalculateCrossSections(Spectrum const *spec, int nspec)
   Real eps, term1, numerator, denominator;
   for (int n = 0; n < nspec; ++n)
   {
-    wave = spec[n]->wave;
+    wave = spec[n].wave;
     freq = c/(wave * pmy_band->wavelength_coefficient);
 
     if (freq<nu_0) {
@@ -51,7 +51,7 @@ void HydrogenIonization::CalculateEnergyFunctions(Spectrum const *spec, int nspe
   Real wave;
   Real lambda_0 = c/nu_0;
   for (int n = 0; n < nspec; ++n) {
-    wave = spec[n]->wave * pmy_band->wavelength_coefficient;
+    wave = spec[n].wave * pmy_band->wavelength_coefficient;
     if (wave > lambda_0) {
       // what do we do!!
       // region where cross section is zero so should never be relevant
