@@ -7,7 +7,7 @@
 #include "../mesh/mesh.hpp"
 #include "../utils/utils.hpp"
 #include "../radiation/radiation.hpp"
-#include "../../scalars/scalars.hpp"
+#include "../scalars/scalars.hpp"
 #include "reaction_network.hpp"
 
 ReactionNetwork::ReactionNetwork(MeshBlock *pmb, ParameterInput *pin){
