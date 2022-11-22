@@ -50,6 +50,7 @@ protected:
 
 class RadiationBand {
   friend class Absorber;
+  friend class RTSolver;
 public:
   std::string my_name;
   Radiation *pmy_rad;

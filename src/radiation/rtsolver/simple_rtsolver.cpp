@@ -33,7 +33,7 @@ void SimpleRTSolver::RadiativeTransfer(MeshBlock *pmb, int n, int k, int j)
 
   Real Fbot, attenuation, tau_cell;
   Real delta_F, fraction_absorbed, J_i;
-  for (int i = ie; i>=il; --i) {
+  for (int i = ie; i>=is; --i) {
     tau_cell = pmy_band->tau_cell(n,k,j,i);
     attenuation = exp(-tau_cell);
     Fbot = Ftop * attenuation;
