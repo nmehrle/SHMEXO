@@ -14,7 +14,7 @@ public:
   RTSolver(RadiationBand *pband, ParameterInput *pin): pmy_band(pband) {};
   ~RTSolver() {};
 
-  void RadiativeTransfer(MeshBlock *pmb, int n, int k, int j);
+  virtual void RadiativeTransfer(MeshBlock *pmb, int n, int k, int j);
 protected:
 };
 
