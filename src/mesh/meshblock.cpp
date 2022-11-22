@@ -179,7 +179,7 @@ MeshBlock::MeshBlock(int igid, int ilid, LogicalLocation iloc, RegionSize input_
   pchem = new CHEMISTRY(this, pin);
   if (RADIATION_ENABLED)
     prad = new Radiation(this, pin);
-  if (REACTIONS_ENABLED)
+  if (REACTION_ENABLED)
     pnetwork = new ReactionNetwork(this, pin);
   pdiag = new Diagnostics(this, pin);
 
@@ -301,7 +301,7 @@ MeshBlock::MeshBlock(int igid, int ilid, Mesh *pm, ParameterInput *pin,
   pchem = new CHEMISTRY(this, pin);
   if (RADIATION_ENABLED)
     prad = new Radiation(this, pin);
-  if (REACTIONS_ENABLED)
+  if (REACTION_ENABLED)
     pnetwork = new ReactionNetwork(this, pin);
   pdiag = new Diagnostics(this, pin);
 
@@ -398,7 +398,7 @@ MeshBlock::~MeshBlock() {
   delete pchem;
   if (RADIATION_ENABLED)
     delete prad;
-  if (REACTIONS_ENABLED)
+  if (REACTION_ENABLED)
     delete pnetwork;
   delete pdiag;
 }
