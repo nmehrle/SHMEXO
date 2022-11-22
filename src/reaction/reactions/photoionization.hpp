@@ -19,4 +19,4 @@ protected:
   int scalar_num, ion_scalar_num;
   Real ionization_energy;
   Absorber *pmy_abs;
-}
+};
