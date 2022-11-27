@@ -37,7 +37,8 @@ Radiation::Radiation(MeshBlock *pmb, ParameterInput *pin):
   for (int i = 0; i<nbands; ++i)
   {
     sprintf(band_id, "b%d", i);
-    my_bands(i) = new RadiationBand(this, band_id, pin);
+    RadiationBand *p = new RadiationBand(this, band_id, pin);
+    my_bands(i) = p;
   }
 }
 
