@@ -3,9 +3,11 @@
 
 // Athena++ headers
 #include "../../athena.hpp"
+#include "rtsolver.hpp"
 
 class RadiationBand;
 class Radiation;
+class RTSolver;
 
 class SimpleRTSolver: public RTSolver {
 public:
