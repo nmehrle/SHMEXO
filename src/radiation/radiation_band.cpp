@@ -107,7 +107,7 @@ RadiationBand::RadiationBand(Radiation *prad, std::string band_id, ParameterInpu
   std::string abs_name;
   for (int i = 0; i < nabs; ++i)
   {
-    sprintf(key, "%s.abs%d", my_id.c_str(), abs_num);
+    sprintf(key, "%s.abs%d", my_id.c_str(), i);
     abs_name = pin->GetString("radiation", key);
     // sprintf(scalar_key, "%s.scalar", key);
     // abs_scalar_num = pin->GetOrAddInteger("radiation", scalar_key, -1);
