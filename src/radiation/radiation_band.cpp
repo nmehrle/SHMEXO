@@ -30,7 +30,7 @@ RadiationBand::RadiationBand(Radiation *prad, std::string band_id, ParameterInpu
   std::stringstream msg;
 
   // Gather wavelength details
-  sprintf(key, "%s.wavelength", my_id);
+  sprintf(key, "%s.wavelength", my_id.c_str());
   value = pin->GetString("radiation", key);
   std::vector<Real> v = Vectorize<Real>(value.c_str());
   if (v.size() != 3) {
@@ -51,11 +51,11 @@ RadiationBand::RadiationBand(Radiation *prad, std::string band_id, ParameterInpu
   if (nspec == 1) spec[0].wgt = 1.;
 
   // Gather wavelength unit
-  sprintf(key, "%s.wavelength_coefficient", my_id);
+  sprintf(key, "%s.wavelength_coefficient", my_id.c_str());
   wavelength_coefficient = pin->GetReal("radiation", key);
 
   // Gather input spectrum details
-  sprintf(key, "%s.spec_file", my_id);
+  sprintf(key, "%s.spec_file", my_id.c_str());
   value = pin->GetOrAddString("radiation", key, "");
   if (value.empty()) {
     if (pmy_rad->default_spec_file.empty()) {
@@ -71,7 +71,7 @@ RadiationBand::RadiationBand(Radiation *prad, std::string band_id, ParameterInpu
   LoadInputSpectrum(value);
 
   // Gather RT Solver Info
-  sprintf(key, "%s.rtsolver", my_id);
+  sprintf(key, "%s.rtsolver", my_id.c_str());
   value = pin->GetOrAddString("radiation", key, "");
   if (value.empty()) {
     if (pmy_rad->default_rt_solver.empty()) {
@@ -90,7 +90,7 @@ RadiationBand::RadiationBand(Radiation *prad, std::string band_id, ParameterInpu
   // Gather Absorber Info
   int abs_num = 0;
   while(true) {
-    sprintf(key, "%s.abs%d", my_id, abs_num);
+    sprintf(key, "%s.abs%d", my_id.c_str(), abs_num);
     try {
       pin->GetString("radiation", key);
     } catch (const std::runtime_error& e) {
@@ -107,7 +107,7 @@ RadiationBand::RadiationBand(Radiation *prad, std::string band_id, ParameterInpu
   std::string abs_name;
   for (int i = 0; i < nabs; ++i)
   {
-    sprintf(key, "%s.abs%d", my_id, abs_num);
+    sprintf(key, "%s.abs%d", my_id.c_str(), abs_num);
     abs_name = pin->GetString("radiation", key);
     // sprintf(scalar_key, "%s.scalar", key);
     // abs_scalar_num = pin->GetOrAddInteger("radiation", scalar_key, -1);
