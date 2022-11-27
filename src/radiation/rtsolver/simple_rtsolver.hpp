@@ -9,8 +9,6 @@ class Radiation;
 
 class SimpleRTSolver: public RTSolver {
 public:
-  RadiationBand *pmy_band;
-
   SimpleRTSolver(RadiationBand *pband, ParameterInput *pin);
   ~SimpleRTSolver() {};
 
