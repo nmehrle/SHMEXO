@@ -11,7 +11,7 @@ class RTSolver {
 public:
   RadiationBand *pmy_band;
 
-  RTSolver(RadiationBand *pband, ParameterInput *pin): pmy_band(pband) {};
+  RTSolver(RadiationBand *pband, ParameterInput *pin) {pmy_band = pband;};
   ~RTSolver() {};
 
   virtual void RadiativeTransfer(MeshBlock *pmb, int n, int k, int j){};
