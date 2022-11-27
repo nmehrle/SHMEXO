@@ -128,7 +128,7 @@ PassiveScalars::PassiveScalars(MeshBlock *pmb, ParameterInput *pin)  :
   char key[80];
   for (int n=0; n<NSCALARS; ++n)
   {
-    sprintf(key,"s%d", n);
+    sprintf(key,"s%d.mass", n);
     Real mass_i = pin->GetOrAddReal("scalar", key, 0.);
     m(n) = mass_i;
   }
