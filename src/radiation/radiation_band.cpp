@@ -204,7 +204,7 @@ void RadiationBand::SetSpectralProperties(MeshBlock *pmb, AthenaArray<Real> cons
     {
 
       // loop absorbers
-      for (int a = 0; i < nabs; ++a)
+      for (int a = 0; a < nabs; ++a)
       {
         Absorber *pabs = absorbers(a);
         pabs->CalculateAbsorptionCoefficient(w, cons_scalar, n, k, j, i);
