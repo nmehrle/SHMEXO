@@ -22,6 +22,8 @@ public:
   PassiveScalars *pscalars;
   Reaction *pfirst, *plast;
 
+  AthenaArray<*Reaction> my_reactions;
+
   // int stoichiometry_matrix;
   AthenaArray<Real> dn_rate, de_rate;
 
@@ -40,7 +42,6 @@ public:
 
   void ComputeReactionForcing(const Real dt, AthenaArray<Real> &du, AthenaArray<Real> &ds);
 
-  Reaction* GetReaction(int n);
   int num_reactions;
 protected:
 };

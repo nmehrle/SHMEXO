@@ -31,24 +31,6 @@ ReactionNetwork::~ReactionNetwork() {
   }
 }
 
-Reaction* ReactionNetwork::GetReaction(int n) {
-  Reaction *prxn = pfirst;
-  int count = 0;
-  while (prxn != nullptr) {
-    if (count == n) {
-      return prxn;
-    }
-
-    prxn = prxn->next;
-    ++count;
-  }
-
-  std::stringstream msg;
-  msg << "##### FATAL ERROR in ReactionNetwork::GetReaction" << std::endl
-      << "Reaction number " << n << " requested, but only " << count << "Reactions found.";
-  ATHENA_ERROR(msg);
-}
-
 void ReactionNetwork::AddReaction(Reaction *prxn) {
   Reaction *p = plast;
 
@@ -69,11 +51,19 @@ void ReactionNetwork::AddReaction(Reaction *prxn) {
 void ReactionNetwork::Initialize() {
   de_rate.NewAthenaArray(num_reactions, pmy_block->ncells3, pmy_block->ncells2, pmy_block->ncells1);
   dn_rate.NewAthenaArray(NSCALARS, pmy_block->ncells3, pmy_block->ncells2, pmy_block->ncells1);
+
+  my_reactions.NewAthenaArray(num_reactions);
+
+  Reaction *p = pfirst;
+  for (int r = 0; i < num_reactions; ++r)
+  {
+    my_reactions(r) = p;
+    p=p->next;
+  }
 }
 
 void ReactionNetwork::ComputeReactionForcing(const Real dt, AthenaArray<Real> &du, AthenaArray<Real> &ds) {
   MeshBlock *pmb = pmy_block;
-  Reaction *p = pfirst;
   PassiveScalars *pscalars = pmb->pscalars;
   dn_rate.ZeroClear();
   de_rate.ZeroClear();
@@ -88,11 +78,13 @@ void ReactionNetwork::ComputeReactionForcing(const Real dt, AthenaArray<Real> &d
     for (int j=js; j<=je; ++j) {
       for (int i=is; i<=ie; ++i) {
 
-        // loop over reactions
-        while (p != nullptr) {
+        // populates de_rate(k,j,i), dn_rate(k,j,i)
+        // by summing contributions from reacations
+        for (int r = 0; r < num_reactions; ++r)
+        {
+          Reaction *p = my_reactions(r);
           p->react(dn_rate, de_rate, k, j, i);
-          p = p->next;
-        } // p while loop
+        }
 
         du(IEN, k, j, i) += de_rate(k,j,i) * dt;
 
