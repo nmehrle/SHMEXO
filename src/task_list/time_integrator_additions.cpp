@@ -48,10 +48,6 @@ TaskStatus TimeIntegratorTaskList::UpdateScalars(MeshBlock *pmb, int stage) {
     wghts[2] = 0.;
     pmb->WeightedAve(ps->s, ps->ds, ps->s1, wghts);
   }
-  std::cout << "upd" << std::endl;
-  std::stringstream msg;
-  msg << "blah";
-  ATHENA_ERROR(msg);
 
   return TaskStatus::next;
 }
@@ -108,7 +104,6 @@ TaskStatus TimeIntegratorTaskList::IntegrateReactions(MeshBlock *pmb, int stage)
   if (stage <= nstages) {
     // Clears and updates both
     // pnetwork->dn and pnetwork->de
-    std::cout << "int rxn" << std::endl;
     Real dt = (stage_wghts[(stage-1)].beta)*(pmb->pmy_mesh->dt);
     pnetwork->ComputeReactionForcing(dt, phydro->du, pscalars->ds);
 
