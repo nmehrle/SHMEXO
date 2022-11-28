@@ -1258,6 +1258,7 @@ TaskStatus TimeIntegratorTaskList::IntegrateScalars(MeshBlock *pmb, int stage) {
       pmb->WeightedAve(ps->s, ps->s1, ps->s2, ave_wghts);
 
     const Real wght = stage_wghts[stage-1].beta*pmb->pmy_mesh->dt;
+    std::cout << "clear" << std::endl;
     ps->ds.ZeroClear();
     ps->AddFluxDivergence(wght, ps->ds);
 

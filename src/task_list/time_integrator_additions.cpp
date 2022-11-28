@@ -13,7 +13,7 @@
 
 //----------------------------------------------------------------------------------------
 // Functions for implicit correction
-enum TaskStatus TimeIntegratorTaskList::UpdateHydro(MeshBlock *pmb, int stage) {
+TaskStatus TimeIntegratorTaskList::UpdateHydro(MeshBlock *pmb, int stage) {
   Hydro *ph = pmb->phydro;
   Real dt = pmb->pmy_mesh->dt;
 
@@ -32,7 +32,7 @@ enum TaskStatus TimeIntegratorTaskList::UpdateHydro(MeshBlock *pmb, int stage) {
   return TaskStatus::next;
 }
 
-enum TaskStatus TimeIntegratorTaskList::UpdateScalars(MeshBlock *pmb, int stage) {
+TaskStatus TimeIntegratorTaskList::UpdateScalars(MeshBlock *pmb, int stage) {
   PassiveScalars *ps = pmb->pscalars;
   Hydro *ph = pmb->phydro;
 
@@ -47,6 +47,10 @@ enum TaskStatus TimeIntegratorTaskList::UpdateScalars(MeshBlock *pmb, int stage)
     wghts[2] = 0.;
     pmb->WeightedAve(ps->s, ps->ds, ps->s1, wghts);
   }
+  std::cout << "upd" << std::endl;
+  std::stringstream msg;
+  msg << "blah";
+  ATHENA_ERROR(msg);
 
   return TaskStatus::next;
 }
@@ -103,6 +107,7 @@ TaskStatus TimeIntegratorTaskList::IntegrateReactions(MeshBlock *pmb, int stage)
   if (stage <= nstages) {
     // Clears and updates both
     // pnetwork->dn and pnetwork->de
+    std::cout << "int rxn" << std::endl;
     Real dt = (stage_wghts[(stage-1)].beta)*(pmb->pmy_mesh->dt);
     pnetwork->ComputeReactionForcing(dt, phydro->du, pscalars->ds);
 
