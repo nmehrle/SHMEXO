@@ -90,7 +90,9 @@ void ReactionNetwork::ComputeReactionForcing(const Real dt, AthenaArray<Real> &d
 
         for (int n = 0; n < NSCALARS; ++n)
         {
-          ds(n,k,j,i) += dn_rate(n,k,j,i) * dt;
+          // convert number density to mass density
+          // convert density rate to density
+          ds(n,k,j,i) += dn_rate(n,k,j,i) * pscalars->m(n) * dt;
         }
 
       } // i
