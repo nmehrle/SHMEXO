@@ -272,8 +272,8 @@ TimeIntegratorTaskList::TimeIntegratorTaskList(ParameterInput *pin, Mesh *pm) {
     }
     // ADD RADIATION HERE?
     if (REACTION_ENABLED) {
-      AddTask(INT_RXN, CALC_RADFLX);
-      AddTask(UPDATE_HYD, INT_RXN|SRC_TERM); //bitwise or means both are deps
+      AddTask(INT_RXN, CALC_RADFLX|SRC_TERM);
+      AddTask(UPDATE_HYD, INT_RXN); //bitwise or means both are deps
     } else {
       AddTask(UPDATE_HYD,SRC_TERM);
     }
@@ -297,7 +297,12 @@ TimeIntegratorTaskList::TimeIntegratorTaskList(ParameterInput *pin, Mesh *pm) {
         AddTask(INT_SCLR,CALC_SCLRFLX);
       }
       // there is no SRCTERM_SCLR task
-      AddTask(UPDATE_SCLR,INT_SCLR|SRC_TERM);
+      if (REACTION_ENABLED) {
+        AddTask(UPDATE_SCLR,INT_SCLR|INT_RXN);  
+      }
+      else {
+        AddTask(UPDATE_SCLR,INT_SCLR|SRC_TERM);
+      }
       AddTask(SEND_SCLR,UPDATE_SCLR);
       AddTask(RECV_SCLR,NONE);
       AddTask(SETB_SCLR,(RECV_SCLR|UPDATE_SCLR));
