@@ -25,8 +25,8 @@ void SimpleRTSolver::RadiativeTransfer(MeshBlock *pmb, int n, int k, int j)
   RadiationBand *pband = pmy_band;
 
   // Collect 
-  AthenaArray<Real> farea(ie+1);
-  pmb->pcoord->Face1Area(k, j, is, ie+1, farea);
+  // AthenaArray<Real> farea(ie+1);
+  // pmb->pcoord->Face1Area(k, j, is, ie+1, farea);
 
   int nabs = pband->nabs;
   Real Ftop = pband->spectral_flux_density(n,k,j,ie+1);
