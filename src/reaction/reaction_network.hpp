@@ -22,7 +22,7 @@ public:
   PassiveScalars *pscalars;
   Reaction *pfirst, *plast;
 
-  AthenaArray<*Reaction> my_reactions;
+  AthenaArray<Reaction*> my_reactions;
 
   // int stoichiometry_matrix;
   AthenaArray<Real> dn_rate, de_rate;

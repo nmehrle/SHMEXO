@@ -55,7 +55,7 @@ void ReactionNetwork::Initialize() {
   my_reactions.NewAthenaArray(num_reactions);
 
   Reaction *p = pfirst;
-  for (int r = 0; i < num_reactions; ++r)
+  for (int r = 0; r < num_reactions; ++r)
   {
     my_reactions(r) = p;
     p=p->next;
