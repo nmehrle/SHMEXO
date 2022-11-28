@@ -340,6 +340,8 @@ void SourceTerms(MeshBlock *pmb, const Real time, const Real dt,
         //       << "    Re-run with lower timestep." << std::endl;
         // }
 
+        Real n_ion_gain = 0.0;
+
         // recombination
         Real R = pmb->pthermo->GetRd();
         Real T = w(IPR,k,j,i)/(R * w(IDN,k,j,i));
@@ -361,8 +363,8 @@ void SourceTerms(MeshBlock *pmb, const Real time, const Real dt,
         Real lya_cooling_rate = lya_cooling_const * n_ion * n_neu; // J m-3 s-1
 
         du(IEN,k,j,i) -= (recomb_cooling_rate + lya_cooling_rate) * dt; // J m-3
-        // ds(0,k,j,i) += ( n_recomb - n_ion_gain) * mh;
-        // ds(1,k,j,i) += (-n_recomb + n_ion_gain) * mh;
+        ds(0,k,j,i) += ( n_recomb - n_ion_gain) * mh;
+        ds(1,k,j,i) += (-n_recomb + n_ion_gain) * mh;
 
         // Outputs
         // 1 -- radiation energy absorbed prad->du
