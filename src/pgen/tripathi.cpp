@@ -23,6 +23,7 @@
 #include "../scalars/scalars.hpp"
 #include "../mesh_generator.hpp"
 
+namespace {
   // user set variables
   Real G, Mp, Ms, Rp, period, a;
   Real dfloor, pfloor, sfloor;
@@ -44,6 +45,7 @@
   Real mh=1.674E-27; // kg
   Real nm_0=91.126705058; // Hydrogen ionization wavelength in nm
   Real Ry=2.1798723611E-18;// J (joules)
+} //namespace
 
   // Function declarations
   Real getRad(Coordinates *pcoord, int i, int j, int k);

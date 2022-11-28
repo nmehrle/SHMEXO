@@ -3,6 +3,7 @@
 
 // Athena++ headers
 #include "../../athena.hpp"
+#include "../reaction_network.hpp"
 
 class MeshBlock;
 class ReactionNetwork;
