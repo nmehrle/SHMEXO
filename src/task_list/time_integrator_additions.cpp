@@ -1,5 +1,6 @@
 // C/C++ headers
 #include <iostream>
+#include <sstream>
 
 // Athena++ headers
 #include "../athena.hpp"
