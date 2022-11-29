@@ -11,13 +11,14 @@
 #include "photoionization.hpp"
 
 Photoionization::Photoionization(ReactionNetwork *pnetwork, std::string name, Absorber *pabs,
-  int num, int ion_num):
+  int ion_num, Real ion_eng):
     Reaction(pnetwork, name)
 {
   pmy_abs = pabs;
-  scalar_num = num;
+  scalar_num = pabs->scalar_num;
   ion_scalar_num = ion_num;
-  ionization_energy = pabs->ionization_energy;
+  ionization_energy = ion_eng;
+  my_name = name;
 }
 
 void Photoionization::react(AthenaArray<Real> &dn_rate, AthenaArray<Real> &de_rate, int k, int j, int i) {

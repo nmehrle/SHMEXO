@@ -275,7 +275,7 @@ Absorber* RadiationBand::GetAbsorberByName(std::string name, ParameterInput *pin
 
     ReactionNetwork *pnetwork = pmy_rad->pmy_block->pnetwork;
     std::string rxn_name = "Hydrogen Ionization";
-    Reaction *rxn = new Photoionization(pnetwork, rxn_name, a, scalar_num, ion_scalar_num);
+    Reaction *rxn = new Photoionization(pnetwork, rxn_name, a, ion_scalar_num, a->ionization_energy);
 
     return a;
   }

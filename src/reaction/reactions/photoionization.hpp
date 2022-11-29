@@ -13,9 +13,11 @@ class PassiveScalars;
 
 class Photoionization: public Reaction {
 public:
-  Photoionization(ReactionNetwork *pnetwork, std::string name, Absorber *pabs,
-    int num, int ion_num);
+  Photoionization(ReactionNetwork *pnetwork, std::string name, Absorber *pabs, 
+    int ion_num, Real ion_eng);
   void react(AthenaArray<Real> &dn_rate, AthenaArray<Real> &de_rate, int k, int j, int i);
+
+  std::string my_name;
 protected:
   int scalar_num, ion_scalar_num;
   Real ionization_energy;
