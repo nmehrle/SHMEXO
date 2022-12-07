@@ -55,7 +55,7 @@ namespace {
   void gravity_func(MeshBlock *pmb, AthenaArray<Real> &g1, AthenaArray<Real> &g2, AthenaArray<Real> &g3);
 
   void SourceTerms(MeshBlock *pmb, const Real time, const Real dt,
-    const AthenaArray<Real> &w, const AthenaArray<Real> &r,
+    const AthenaArray<Real> &w, const Athen aArray<Real> &r,
     const AthenaArray<Real> &bcc,
     AthenaArray<Real> &du, AthenaArray<Real> &ds);
   Real RadiationTime(AthenaArray<Real> const &prim, Real time, int k, int j);
@@ -150,7 +150,8 @@ void MeshBlock::InitUserMeshBlockData(ParameterInput *pin)
   // User outputs
   AllocateUserOutputVariables(2);
   SetUserOutputVariableName(0, "temp");
-  SetUserOutputVariableName(1, "flux");
+  SetUserOutputVariableName(1, "t2");
+  SetUserOutputVariableName(2, "flux");
   // SetUserOutputVariableName(2, "ionization_rate");
   // SetUserOutputVariableName(3, "recombination_rate");
   // SetUserOutputVariableName(4, "recombinative_cooling");
@@ -192,11 +193,15 @@ void MeshBlock::UserWorkBeforeOutput(ParameterInput *pin)
         Real ion_f = pscalars->r(1,k,j,i);
         T = T * (1.-ion_f/2.);
 
+        Real t2;
+        peos->Temperature(phydro->w, pscalars->s, pscalars->m, t2, k, j, i);
+
         user_out_var(0,k,j,i) = T;
+        user_out_var(1,k,j,i) = t2;
         // user_out_var(1,k,j,i) = phydro->hsrc.g1(k,j,i);
         // user_out_var(2,k,j,i) = phydro->hsrc.g2(k,j,i);
         // user_out_var(3,k,j,i) = phydro->hsrc.g3(k,j,i);
-        user_out_var(1,k,j,i) = ruser_meshblock_data[0](k,j,i);
+        user_out_var(2,k,j,i) = ruser_meshblock_data[0](k,j,i);
 
         // for (int o=0; o<6; ++o) {
         //   user_out_var(o+4,k,j,i) = ruser_meshblock_data[o+1](k,j,i);
