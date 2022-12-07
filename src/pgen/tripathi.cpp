@@ -45,6 +45,8 @@ namespace {
   Real mh=1.674E-27; // kg
   Real nm_0=91.126705058; // Hydrogen ionization wavelength in nm
   Real Ry=2.1798723611E-18;// J (joules)
+
+  enum species {ELEC = 0, HYD = 1, HPLUS = 2};
 } //namespace
 
   // Function declarations
@@ -190,7 +192,7 @@ void MeshBlock::UserWorkBeforeOutput(ParameterInput *pin)
       for (int i = il; i <= iu; ++i) {
         Real R = pthermo->GetRd();
         Real T = phydro->w(IPR,k,j,i)/(R * phydro->w(IDN,k,j,i));
-        Real ion_f = pscalars->r(1,k,j,i);
+        Real ion_f = pscalars->r(HPLUS,k,j,i);
         T = T * (1.-ion_f/2.);
 
         Real t2;
@@ -211,59 +213,6 @@ void MeshBlock::UserWorkBeforeOutput(ParameterInput *pin)
   }
 }
 
-//----------------------------------------------------------------------------------------
-// Absorber Info
-//----------------------------------------------------------------------------------------
-// oddly expensive calculation!
-// Real AbsorptionCoefficient(Absorber const *pabs, AthenaArray<Real> const& prim, Real wave, int k, int j, int i)
-// {
-//   // convert microns to meters
-//   Real freq = c / (wave * wave_to_meters_conversion);
-
-//   PassiveScalars *ps = pabs->pmy_band->pmy_rad->pmy_block->pscalars;
-//   Real n_neutral = ps->s(0,k,j,i)/mh;
-
-//   // cover low energy and edge case
-//   if (freq < nu_0)
-//     return 0.;
-//   else if (freq == nu_0)
-//     return A0*n_neutral;
-
-//   // Real eps   = sqrt(freq/nu_0 - 1.);
-//   // Real term1 = A0 * pow(nu_0/freq,4.);
-  
-//   // Real numerator   = exp(4. - 4.*(atan2(eps,1)/eps));
-//   // Real denominator = 1. - exp(-(2*M_PI)/eps);
-
-//   // Real sigma = term1 * numerator/denominator; // cross-section m^2
-
-//   // return sigma * n_neutral; // 1/m
-
-//   return A0 * n_neutral; // 1/m
-// }
-
-// // makes shit slow!
-// Real EnergyAbsorption(Absorber *pabs, Real wave, Real const flux, int k, int j, int i)
-// {
-//   Real wave_nm = (wave * wave_to_meters_conversion) * 1e9;
-//   if (wave_nm > nm_0) {
-//     // energy not absorbed
-//     // should also be reflected in tau_lambda = 0
-//     return flux;
-//   }
-//   else {
-//     // fraction of energy turned into heat
-//     // removes ionizatoin energy cost
-
-//     // Real energy_fraction = 1 - (wave_nm/nm_0);
-//     Real energy_fraction = 0.15;
-
-//     pabs->pmy_band->pmy_rad->pmy_block->ruser_meshblock_data[0](k,j,i) += (1-energy_fraction) * flux;
-
-//     return flux*energy_fraction;
-//   }
-// }
-
 void ReactionNetwork::InitUserReactions(ParameterInput *pin) {
   // Reaction *rxn = new REACTION();
   // AddReaction();
@@ -274,8 +223,8 @@ Absorber* RadiationBand::GetAbsorberByName(std::string name, ParameterInput *pin
 { 
   std::stringstream msg;
   if (name == "HYDROGEN_IONIZATION") {
-    int scalar_num = 0;
-    int ion_scalar_num = 1;
+    int scalar_num = HYD;
+    int ion_scalar_num = HPLUS;
     HydrogenIonization *a = new HydrogenIonization(this, scalar_num);
 
     ReactionNetwork *pnetwork = pmy_rad->pmy_block->pnetwork;
@@ -284,13 +233,6 @@ Absorber* RadiationBand::GetAbsorberByName(std::string name, ParameterInput *pin
 
     return a;
   }
-  // if (name == "HYDROGEN_IONIZATION") {
-  //   UserDefinedAbsorber *hydrogen_ionization = new UserDefinedAbsorber(this);
-
-  //   hydrogen_ionization->EnrollUserAbsorptionCoefficientFunc(AbsorptionCoefficient);
-  //   hydrogen_ionization->EnrollUserEnergyAbsorptionFunc(EnergyAbsorption);
-  //   return hydrogen_ionization;
-  // }
   else {
     msg << "### FATAL ERROR in RadiationBand::AddAbsorber"
         << std::endl << "unknown absorber: '" << name <<"' ";
@@ -323,8 +265,8 @@ void SourceTerms(MeshBlock *pmb, const Real time, const Real dt,
 
       for (int i = is; i <= ie; ++i) {
         // number densities
-        Real n_ion = ps->s(1,k,j,i)/mh;
-        Real n_neu = ps->s(0,k,j,i)/mh;
+        Real n_ion = ps->s(HPLUS,k,j,i)/mh;
+        Real n_neu = ps->s(HYD,k,j,i)/mh;
 
         // //ionization
         // // negative sign bc downward energy transfer
@@ -348,7 +290,7 @@ void SourceTerms(MeshBlock *pmb, const Real time, const Real dt,
         // recombination
         Real R = pmb->pthermo->GetRd();
         Real T = w(IPR,k,j,i)/(R * w(IDN,k,j,i));
-        Real ion_f = ps->r(1,k,j,i);
+        Real ion_f = ps->r(HPLUS,k,j,i);
         T = T * (1.- ion_f/2.);
 
         // Real T = pmb->pthermo->Temp(pmb->phydro->w.at(k,j,i));
@@ -366,8 +308,9 @@ void SourceTerms(MeshBlock *pmb, const Real time, const Real dt,
         Real lya_cooling_rate = lya_cooling_const * n_ion * n_neu; // J m-3 s-1
 
         du(IEN,k,j,i) -= (recomb_cooling_rate + lya_cooling_rate) * dt; // J m-3
-        ds(0,k,j,i) += ( n_recomb - n_ion_gain) * mh;
-        ds(1,k,j,i) += (-n_recomb + n_ion_gain) * mh;
+        ds(HYD,k,j,i) += ( n_recomb - n_ion_gain) * mh;
+        ds(HPLUS,k,j,i) += (-n_recomb + n_ion_gain) * mh;
+        ds(ELEC,k,j,i) += (-n_recomb + n_ion_gain) * mh;
 
         pmb->ruser_meshblock_data[0](k,j,i) = pmb->prad->my_bands(0)->spectral_flux_density(0,k,j,i);
 
@@ -494,10 +437,10 @@ void SetInitialConditions(Real rad, Real &dens, Real &press, Real &ion_f, Real &
 
 void MeshBlock::ProblemGenerator(ParameterInput *pin)
 {
-  if (NSCALARS != 2) {
+  if (NSCALARS != 3) {
     std::stringstream msg;
     msg << "### FATAL ERROR in Problem Generator" << std::endl
-        << "    NSCALARS ("<< NSCALARS <<") must be exactly 2." << std::endl;
+        << "    NSCALARS ("<< NSCALARS <<") must be exactly 3." << std::endl;
     ATHENA_ERROR(msg);
   }
 
@@ -524,9 +467,10 @@ void MeshBlock::ProblemGenerator(ParameterInput *pin)
         phydro->w(IV3,k,j,i) = v3;
 
         // s0 -- neutral hydrogen
-        pscalars->s(0,k,j,i) = (1-ion_f) * dens;
+        pscalars->s(HYD,k,j,i) = (1-ion_f) * dens;
         // s1 -- ionized hydrogen
-        pscalars->s(1,k,j,i) = ion_f * dens;
+        pscalars->s(HPLUS,k,j,i) = ion_f * dens;
+        pscalars->s(ELEC, k,j,i) = ion_f * dens;
       }
     }
   }
@@ -609,11 +553,15 @@ void MeshBlock::UserWorkInLoop() {
 
           // scalars
           // s0 -- neutral hydrogen
-          pscalars->s(0,k,j,i) = (1.0-ion_f) * dens;
-          pscalars->r(0,k,j,i) = (1.0-ion_f);
+          pscalars->s(HYD,k,j,i) = (1.0-ion_f) * dens;
+          pscalars->r(HYD,k,j,i) = (1.0-ion_f);
           // s1 -- ionized hydrogen
-          pscalars->s(1,k,j,i) = ion_f * dens;
-          pscalars->r(1,k,j,i) = ion_f;
+          pscalars->s(HPLUS,k,j,i) = ion_f * dens;
+          pscalars->r(HPLUS,k,j,i) = ion_f;
+
+          // s1 -- ionized hydrogen
+          pscalars->s(ELEC,k,j,i) = ion_f * dens;
+          pscalars->r(ELEC,k,j,i) = ion_f;
         }
       } // i
     } // j
