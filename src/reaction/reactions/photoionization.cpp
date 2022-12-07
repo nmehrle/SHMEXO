@@ -39,6 +39,6 @@ void Photoionization::react(AthenaArray<Real> &dn_rate, AthenaArray<Real> &de_ra
 
   dn_rate(scalar_num, k, j, i) -= dn;
   dn_rate(ion_scalar_num, k, j, i) += dn;
-  dn_rate(elec_num, k, j, i) += dn;
+  dn_rate(electron_scalar_num, k, j, i) += dn;
   de_rate(my_rxn_num, k, j, i) += d_energy;
 }
