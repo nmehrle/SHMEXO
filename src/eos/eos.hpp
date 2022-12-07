@@ -45,7 +45,7 @@ class EquationOfState {
       AthenaArray<Real> &prim, AthenaArray<Real> &bcc,
       Coordinates *pco, int il, int iu, int jl, int ju, int kl, int ku);
 
-  void Temperature(const AthenaArray<Real> &w, const AthenaArray<Real> &s, const AthenaArray<Real> &m, Real &T, int k, int j, int i) {};
+  void Temperature(const AthenaArray<Real> &w, const AthenaArray<Real> &s, const AthenaArray<Real> &m, Real &T, int k, int j, int i);
 
   // void PrimitiveToConservedCellAverage(const AthenaArray<Real> &prim,
   //   const AthenaArray<Real> &bc, AthenaArray<Real> &cons, Coordinates *pco, int il,
