@@ -148,7 +148,7 @@ Real MeshSpacingX3(Real x, RegionSize rs) {
 void MeshBlock::InitUserMeshBlockData(ParameterInput *pin)
 {
   // User outputs
-  AllocateUserOutputVariables(2);
+  AllocateUserOutputVariables(3);
   SetUserOutputVariableName(0, "temp");
   SetUserOutputVariableName(1, "t2");
   SetUserOutputVariableName(2, "flux");
