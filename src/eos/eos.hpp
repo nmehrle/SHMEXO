@@ -45,6 +45,8 @@ class EquationOfState {
       AthenaArray<Real> &prim, AthenaArray<Real> &bcc,
       Coordinates *pco, int il, int iu, int jl, int ju, int kl, int ku);
 
+  void Temperature(const AthenaArray<Real> &w, const AthenaArray<Real> &s, const AthenaArray<Real> &m, Real &T, int k, int j, int i) {};
+
   // void PrimitiveToConservedCellAverage(const AthenaArray<Real> &prim,
   //   const AthenaArray<Real> &bc, AthenaArray<Real> &cons, Coordinates *pco, int il,
   //   int iu, int jl, int ju, int kl, int ku);
@@ -176,6 +178,7 @@ class EquationOfState {
   const Real float_min{std::numeric_limits<float>::min()};
   MeshBlock *pmy_block_;                 // ptr to MeshBlock containing this EOS
   Real iso_sound_speed_, gamma_;         // isothermal Cs, ratio of specific heats
+  Real boltzmann_;
   Real density_floor_, pressure_floor_;  // density and pressure floors
   Real energy_floor_;                    // energy floor
   Real scalar_floor_; // dimensionless concentration floor
