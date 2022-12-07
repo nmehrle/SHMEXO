@@ -193,7 +193,7 @@ void EquationOfState::Temperature(const AthenaArray<Real> &w, const AthenaArray<
   if ( kb <= 0 ) {
     std::stringstream msg;
     msg << "### FATAL ERROR in EOS::Temperature" << std::endl
-        << "    Boltzmann constant (<hydro> boltzmann) not defined in problem file" << std::endl;
+        << "    Boltzmann constant (<hydro> boltzmann) not defined in problem file" << std::endl
         << "    Or defined as negative." << std::endl;
     ATHENA_ERROR(msg);   
   }
