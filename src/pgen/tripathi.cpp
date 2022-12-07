@@ -55,7 +55,7 @@ namespace {
   void gravity_func(MeshBlock *pmb, AthenaArray<Real> &g1, AthenaArray<Real> &g2, AthenaArray<Real> &g3);
 
   void SourceTerms(MeshBlock *pmb, const Real time, const Real dt,
-    const AthenaArray<Real> &w, const Athen aArray<Real> &r,
+    const AthenaArray<Real> &w, const AthenaArray<Real> &r,
     const AthenaArray<Real> &bcc,
     AthenaArray<Real> &du, AthenaArray<Real> &ds);
   Real RadiationTime(AthenaArray<Real> const &prim, Real time, int k, int j);
