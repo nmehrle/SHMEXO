@@ -205,6 +205,15 @@ void EquationOfState::Temperature(const AthenaArray<Real> &w, const AthenaArray<
   {
     dens = s(n, k, j, i);
     mass = m(n);
+
+    if (mass <= 0) {
+      std::stringstream msg;
+      msg << "##### Fatal Error in EOS::Temperature." << std::endl
+          << "Particle mass for scalar number " << n << " was not defined, or defined as 0" << std::endl
+          << "Input a valid particle mass.";
+      ATHENA_ERROR(msg);
+    }
+
     number_density += dens/mass;
   }
 

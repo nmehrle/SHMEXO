@@ -306,9 +306,10 @@ void SourceTerms(MeshBlock *pmb, const Real time, const Real dt,
         Real lya_cooling_rate = lya_cooling_const * n_ion * n_neu; // J m-3 s-1
 
         du(IEN,k,j,i) -= (recomb_cooling_rate + lya_cooling_rate) * dt; // J m-3
+        
         ds(HYD,k,j,i) += ( n_recomb - n_ion_gain) * mh;
         ds(HPLUS,k,j,i) += (-n_recomb + n_ion_gain) * mh;
-        ds(ELEC,k,j,i) += (-n_recomb + n_ion_gain) * mh;
+        ds(ELEC,k,j,i) += (-n_recomb + n_ion_gain) * ps->m[0];
 
         pmb->ruser_meshblock_data[0](k,j,i) = pmb->prad->my_bands(0)->spectral_flux_density(0,k,j,i);
 
