@@ -309,7 +309,7 @@ void SourceTerms(MeshBlock *pmb, const Real time, const Real dt,
         
         ds(HYD,k,j,i) += ( n_recomb - n_ion_gain) * mh;
         ds(HPLUS,k,j,i) += (-n_recomb + n_ion_gain) * mh;
-        ds(ELEC,k,j,i) += (-n_recomb + n_ion_gain) * ps->m[0];
+        ds(ELEC,k,j,i) += (-n_recomb + n_ion_gain) * ps->m(0);
 
         pmb->ruser_meshblock_data[0](k,j,i) = pmb->prad->my_bands(0)->spectral_flux_density(0,k,j,i);
 
