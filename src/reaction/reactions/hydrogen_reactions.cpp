@@ -14,7 +14,7 @@ H_recombination::H_recombination(ReactionNetwork *pnetwork, std::string name,
   int neu_num, int ion_num, int elec_num):
     Reaction(pnetwork, name)
 {
-  scalar_num = pabs->scalar_num;
+  scalar_num = neu_num;
   ion_scalar_num = ion_num;
   electron_scalar_num = elec_num;
   my_name = name;  
@@ -32,7 +32,7 @@ void H_recombination::react(AthenaArray<Real> &dn_rate, AthenaArray<Real> &de_ra
   Real n_recomb = alpha_B * n_ion * n_elec;
 
   Real recomb_cooling_const = -6.11E-16 * pow(T,-0.89); // m3 s-1
-  Real recomb_cooling_rate = recomb_cooling_const * (pnetwork->boltzmann * T) * (n_ion * n_elec); //J s-1 m-3
+  Real recomb_cooling_rate = recomb_cooling_const * (pmy_network->boltzmann * T) * (n_ion * n_elec); //J s-1 m-3
 
   dn_rate(scalar_num, k, j, i) += n_recomb;
   dn_rate(ion_scalar_num, k, j, i) -= n_recomb;
