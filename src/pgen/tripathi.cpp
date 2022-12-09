@@ -16,12 +16,16 @@
 #include "../math/interpolation.h"
 #include "../utils/utils.hpp"
 #include "../thermodynamics/thermodynamics.hpp"
+#include "../scalars/scalars.hpp"
+#include "../mesh_generator.hpp"
+
 #include "../radiation/radiation.hpp"
 #include "../reaction/reaction_network.hpp"
 #include "../radiation/absorber/hydrogen_ionization.hpp"
 #include "../reaction/reactions/photoionization.hpp"
-#include "../scalars/scalars.hpp"
-#include "../mesh_generator.hpp"
+#include "../reaction/reactions/hydrogen_reactions.hpp"
+
+
 
 namespace {
   // user set variables
