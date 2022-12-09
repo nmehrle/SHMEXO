@@ -14,7 +14,6 @@ H_recombination::H_recombination(ReactionNetwork *pnetwork, std::string name,
   int neu_num, int ion_num, int elec_num):
     Reaction(pnetwork, name)
 {
-  pmy_abs = pabs;
   scalar_num = pabs->scalar_num;
   ion_scalar_num = ion_num;
   electron_scalar_num = elec_num;
@@ -23,9 +22,9 @@ H_recombination::H_recombination(ReactionNetwork *pnetwork, std::string name,
 
 void H_recombination::react(AthenaArray<Real> &dn_rate, AthenaArray<Real> &de_rate, int k, int j, int i) {
 
-  PassiveScalars *ps = pnetwork->pscalars;
+  PassiveScalars *ps = pmy_network->pscalars;
 
-  Real T = temperature(k,j,i);
+  Real T = pmy_network->temperature(k,j,i);
   Real alpha_B  = 2.59E-19 * pow(T/1.E4,-0.7); // m3 s-1
   Real n_ion = ps->s(ion_scalar_num, k, j, i) / ps->m(ion_scalar_num);
   Real n_elec = ps->s(electron_scalar_num, k, j, i)/ ps->m(electron_scalar_num);
