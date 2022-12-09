@@ -31,6 +31,8 @@ public:
   ReactionNetwork(MeshBlock *pmb, ParameterInput *pin);
   ~ReactionNetwork();
 
+  Real boltzmann;
+
   // To be included in problem generator
   // Adds user reactions
   void __attribute__((weak)) InitUserReactions(ParameterInput *pin);
@@ -54,6 +56,8 @@ public:
 
   Reaction *next;
   Reaction *prev;
+
+  AthenaArray<Real> temperature;
 
   Reaction(ReactionNetwork *pnetwork, std::string name);
   virtual ~Reaction() {};
