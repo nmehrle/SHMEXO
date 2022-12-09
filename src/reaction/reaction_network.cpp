@@ -5,6 +5,8 @@
 #include "../parameter_input.hpp"
 #include "../coordinates/coordinates.hpp"
 #include "../mesh/mesh.hpp"
+#include "../hydro/hydro.hpp"
+#include "../eos/eos.hpp"
 #include "../utils/utils.hpp"
 #include "../radiation/radiation.hpp"
 #include "../scalars/scalars.hpp"

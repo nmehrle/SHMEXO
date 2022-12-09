@@ -32,6 +32,7 @@ public:
   ~ReactionNetwork();
 
   Real boltzmann;
+  AthenaArray<Real> temperature;
 
   // To be included in problem generator
   // Adds user reactions
@@ -56,8 +57,6 @@ public:
 
   Reaction *next;
   Reaction *prev;
-
-  AthenaArray<Real> temperature;
 
   Reaction(ReactionNetwork *pnetwork, std::string name);
   virtual ~Reaction() {};
