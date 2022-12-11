@@ -21,7 +21,7 @@ ReactionNetwork::ReactionNetwork(MeshBlock *pmb, ParameterInput *pin){
   num_reactions = 0;
 
   boltzmann = pin->GetReal("hydro", "boltzmann");
-  temperature.NewAthenaArray(pmb->ncells3, pmb->ncells2, pmb->ncells1);
+  temperature_.NewAthenaArray(pmb->ncells3, pmb->ncells2, pmb->ncells1);
 
   InitUserReactions(pin);
 }
@@ -86,7 +86,7 @@ void ReactionNetwork::ComputeReactionForcing(const Real dt, AthenaArray<Real> &d
       for (int i=is; i<=ie; ++i) {
 
         pmb->peos->Temperature(phydro->w, pscalars->s, pscalars->m, temp, k, j, i);
-        temperature(k,j,i) = temp;
+        temperature_(k,j,i) = temp;
 
         // populates de_rate(k,j,i), dn_rate(k,j,i)
         // by summing contributions from reacations
