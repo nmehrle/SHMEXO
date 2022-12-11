@@ -24,7 +24,7 @@ void H_recombination::react(AthenaArray<Real> &dn_rate, AthenaArray<Real> &de_ra
 
   PassiveScalars *ps = pmy_network->pscalars;
 
-  Real T = pmy_network->temperature(k,j,i);
+  Real T = pmy_network->temperature_(k,j,i);
   Real alpha_B  = 2.59E-19 * pow(T/1.E4,-0.7); // m3 s-1
   Real n_ion = ps->s(ion_scalar_num, k, j, i) / ps->m(ion_scalar_num);
   Real n_elec = ps->s(electron_scalar_num, k, j, i)/ ps->m(electron_scalar_num);

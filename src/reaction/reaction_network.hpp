@@ -32,7 +32,7 @@ public:
   ~ReactionNetwork();
 
   Real boltzmann;
-  AthenaArray<Real> temperature;
+  AthenaArray<Real> temperature_;
 
   // To be included in problem generator
   // Adds user reactions
