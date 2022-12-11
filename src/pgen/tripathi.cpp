@@ -219,7 +219,7 @@ void MeshBlock::UserWorkBeforeOutput(ParameterInput *pin)
 
 void ReactionNetwork::InitUserReactions(ParameterInput *pin) {
   Reaction *rxn = new H_recombination(this, "H Recombination", HYD, HPLUS, ELEC);
-  AddReaction(rxn);
+  // AddReaction(rxn);
   return;
 }
 
