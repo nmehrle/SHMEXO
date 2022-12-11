@@ -426,12 +426,12 @@ void SetInitialConditions(Real rad, Real &dens, Real &press, Real &ion_f, Real &
   if (rad <= r_0) {
     dens  = rho_0;
     press = P_0;
-    ion_f = sfloor;
+    ion_f = sfloor*1e5;
   }
   else if (rad <= r_e) {
     dens  = rho_func(rad);
     press = press_func(dens);
-    ion_f = sfloor;
+    ion_f = sfloor*1e5;
   }
   else {
     dens  = rho_e * space_density_factor;
