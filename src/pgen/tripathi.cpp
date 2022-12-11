@@ -475,7 +475,7 @@ void MeshBlock::ProblemGenerator(ParameterInput *pin)
         pscalars->s(HYD,k,j,i) = (1-ion_f) * dens;
         // s1 -- ionized hydrogen
         pscalars->s(HPLUS,k,j,i) = ion_f * dens;
-        pscalars->s(ELEC, k,j,i) = ion_f * dens;
+        pscalars->s(ELEC, k,j,i) = ion_f * dens * pscalars->m(ELEC)/pscalars->m(HPLUS);
       }
     }
   }
@@ -565,8 +565,8 @@ void MeshBlock::UserWorkInLoop() {
           pscalars->r(HPLUS,k,j,i) = ion_f;
 
           // s1 -- ionized hydrogen
-          pscalars->s(ELEC,k,j,i) = ion_f * dens;
-          pscalars->r(ELEC,k,j,i) = ion_f;
+          pscalars->s(ELEC, k,j,i) = ion_f * dens * pscalars->m(ELEC)/pscalars->m(HPLUS);
+          pscalars->r(ELEC,k,j,i) = ion_f  * pscalars->m(ELEC)/pscalars->m(HPLUS);
         }
       } // i
     } // j
