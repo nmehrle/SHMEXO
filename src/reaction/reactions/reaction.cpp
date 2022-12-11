@@ -8,7 +8,7 @@
 Reaction::Reaction(ReactionNetwork *pnetwork, std::string name):
   pmy_network(pnetwork), my_name(name)
 {
-  pnetwork->AddReaction(this);
   next = nullptr;
   prev = nullptr;
+  pnetwork->AddReaction(this);
 }
