@@ -111,8 +111,6 @@ void Mesh::InitUserMeshData(ParameterInput *pin)
   space_density_factor = pin->GetOrAddReal("problem", "space_density_factor", 1.e-4);
   r_replenish = pin->GetOrAddReal("problem", "r_replenish_Rp", 0.75)*Rp;
 
-  initial_abundances.NewAthenaArray(NSCALARS, ncells3, ncells2, ncells1);
-
   // Tripathi initial conditions variables
   r_0 = 0.5*Rp;
   r_e = 1.02*Rp;
@@ -443,17 +441,17 @@ void SetInitialConditions(Real rad, Real &dens, Real &press, Real &v1, Real &v2,
 void SetInitialAbundances(MeshBlock *pmb, PassiveScalars *ps) {
   int il, iu, jl, ju, kl, ku;
   Real rad;
-  Real minval = sfloor / initial_abundances(ELEC,k,j,i);
+  Real minval = sfloor / ps->m(ELEC);
 
-  getMBBounds(this, il, iu, jl, ju, kl, ku);
+  getMBBounds(pmb, il, iu, jl, ju, kl, ku);
 
   // set number densities, fill in mass later
   for (int k = kl; k <= ku; ++k) {
     for (int j = jl; j <= ju; ++j) {
       for (int i = il; i <= iu; ++i) {
-        rad = getRad(pcoord, i, j, k);
+        rad = getRad(pmb->pcoord, i, j, k);
         
-        if (rad <= re) {
+        if (rad <= r_e) {
           initial_abundances(HYD,k,j,i)   = 1 - minval;
           initial_abundances(ELEC,k,j,i)  = minval;
           initial_abundances(HPLUS,k,j,i) = minval;
@@ -481,6 +479,9 @@ void MeshBlock::ProblemGenerator(ParameterInput *pin)
         << "    NSCALARS ("<< NSCALARS <<") must be exactly 3." << std::endl;
     ATHENA_ERROR(msg);
   }
+
+
+  initial_abundances.NewAthenaArray(NSCALARS, ncells3, ncells2, ncells1);
   SetInitialAbundances(this, pscalars);
 
   // setup initial condition
@@ -574,7 +575,7 @@ void MeshBlock::UserWorkInLoop() {
         // reset conditions interior to r_replenish
         // probably best to do both cons and prim
         if (rad <= r_replenish) {
-          SetInitialConditions(rad, dens, press, ion_f, v1, v2, v3);
+          SetInitialConditions(rad, dens, press, v1, v2, v3);
 
           // prim
           phydro->w(IPR,k,j,i) = press;
