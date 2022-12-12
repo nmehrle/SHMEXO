@@ -51,6 +51,8 @@ namespace {
   Real Ry=2.1798723611E-18;// J (joules)
 
   enum species {ELEC = 0, HYD = 1, HPLUS = 2};
+
+  AthenaArray<Real> initial_abundances;
 } //namespace
 
   // Function declarations
@@ -71,7 +73,7 @@ namespace {
   Real MeshSpacingX1(Real x, RegionSize rs);
   Real MeshSpacingX2(Real x, RegionSize rs);
   Real MeshSpacingX3(Real x, RegionSize rs);
-
+  void SetInitialAbundances(MeshBlock *pmb, PassiveScalars *ps);
 
 //----------------------------------------------------------------------------------------
 // User Setup
@@ -109,6 +111,7 @@ void Mesh::InitUserMeshData(ParameterInput *pin)
   space_density_factor = pin->GetOrAddReal("problem", "space_density_factor", 1.e-4);
   r_replenish = pin->GetOrAddReal("problem", "r_replenish_Rp", 0.75)*Rp;
 
+  initial_abundances.NewAthenaArray(NSCALARS, ncells3, ncells2, ncells1);
 
   // Tripathi initial conditions variables
   r_0 = 0.5*Rp;
@@ -420,23 +423,53 @@ Real RadiationTime(AthenaArray<Real> const &prim, Real time, int k, int j) {
 //----------------------------------------------------------------------------------------
 // Initial Conditions
 //----------------------------------------------------------------------------------------
-void SetInitialConditions(Real rad, Real &dens, Real &press, Real &ion_f, Real &v1, Real &v2, Real &v3) {
+void SetInitialConditions(Real rad, Real &dens, Real &press, Real &v1, Real &v2, Real &v3) {
   v1 = v2 = v3 = 0;
   
   if (rad <= r_0) {
     dens  = rho_0;
     press = P_0;
-    ion_f = sfloor*1e5;
   }
   else if (rad <= r_e) {
     dens  = rho_func(rad);
     press = press_func(dens);
-    ion_f = sfloor*1e5;
   }
   else {
     dens  = rho_e * space_density_factor;
     press = P_e;
-    ion_f = 1-sfloor;
+  }
+}
+
+void SetInitialAbundances(MeshBlock *pmb, PassiveScalars *ps) {
+  int il, iu, jl, ju, kl, ku;
+  Real rad;
+  Real minval = sfloor / initial_abundances(ELEC,k,j,i);
+
+  getMBBounds(this, il, iu, jl, ju, kl, ku);
+
+  // set number densities, fill in mass later
+  for (int k = kl; k <= ku; ++k) {
+    for (int j = jl; j <= ju; ++j) {
+      for (int i = il; i <= iu; ++i) {
+        rad = getRad(pcoord, i, j, k);
+        
+        if (rad <= re) {
+          initial_abundances(HYD,k,j,i)   = 1 - minval;
+          initial_abundances(ELEC,k,j,i)  = minval;
+          initial_abundances(HPLUS,k,j,i) = minval;
+        }
+        else {
+          initial_abundances(HYD,k,j,i)   = minval;
+          initial_abundances(ELEC,k,j,i)  = 1 - minval;
+          initial_abundances(HPLUS,k,j,i) = 1 - minval;
+        }
+
+        for (int n = 0; n < NSCALARS; ++n)
+        {
+          initial_abundances(n,k,j,i) *= ps->m(n);
+        }
+      }
+    }
   }
 }
 
@@ -448,13 +481,14 @@ void MeshBlock::ProblemGenerator(ParameterInput *pin)
         << "    NSCALARS ("<< NSCALARS <<") must be exactly 3." << std::endl;
     ATHENA_ERROR(msg);
   }
+  SetInitialAbundances(this, pscalars);
 
   // setup initial condition
   int il, iu, jl, ju, kl, ku;
   getMBBounds(this, il, iu, jl, ju, kl, ku);
 
   Real rad;
-  Real dens, press, ion_f, v1, v2, v3;
+  Real dens, press, v1, v2, v3;
 
   v1 = v2 = v3 = 0;
 
@@ -463,7 +497,7 @@ void MeshBlock::ProblemGenerator(ParameterInput *pin)
       for (int k = kl; k <= ku; ++k) {
         rad = getRad(pcoord, i, j, k);
 
-        SetInitialConditions(rad, dens, press, ion_f, v1, v2, v3);
+        SetInitialConditions(rad, dens, press, v1, v2, v3);
 
         phydro->w(IPR,k,j,i) = press;
         phydro->w(IDN,k,j,i) = dens;
@@ -472,10 +506,10 @@ void MeshBlock::ProblemGenerator(ParameterInput *pin)
         phydro->w(IV3,k,j,i) = v3;
 
         // s0 -- neutral hydrogen
-        pscalars->s(HYD,k,j,i) = (1-ion_f) * dens;
+        pscalars->s(HYD,k,j,i) = initial_abundances(HYD,k,j,i) * dens;
         // s1 -- ionized hydrogen
-        pscalars->s(HPLUS,k,j,i) = ion_f * dens;
-        pscalars->s(ELEC, k,j,i) = ion_f * dens * pscalars->m(ELEC)/pscalars->m(HPLUS);
+        pscalars->s(HPLUS,k,j,i) = initial_abundances(HPLUS,k,j,i) * dens;
+        pscalars->s(ELEC, k,j,i) = initial_abundances(ELEC,k,j,i) * dens;
       }
     }
   }
@@ -557,16 +591,13 @@ void MeshBlock::UserWorkInLoop() {
           phydro->u(IM3,k,j,i) = v3*dens;
 
           // scalars
-          // s0 -- neutral hydrogen
-          pscalars->s(HYD,k,j,i) = (1.0-ion_f) * dens;
-          pscalars->r(HYD,k,j,i) = (1.0-ion_f);
-          // s1 -- ionized hydrogen
-          pscalars->s(HPLUS,k,j,i) = ion_f * dens;
-          pscalars->r(HPLUS,k,j,i) = ion_f;
+          pscalars->s(HYD,k,j,i) = initial_abundances(HYD,k,j,i) * dens;
+          pscalars->s(HPLUS,k,j,i) = initial_abundances(HPLUS,k,j,i) * dens;
+          pscalars->s(ELEC, k,j,i) = initial_abundances(ELEC,k,j,i) * dens;
 
-          // s1 -- ionized hydrogen
-          pscalars->s(ELEC, k,j,i) = ion_f * dens * pscalars->m(ELEC)/pscalars->m(HPLUS);
-          pscalars->r(ELEC,k,j,i) = ion_f  * pscalars->m(ELEC)/pscalars->m(HPLUS);
+          pscalars->r(HYD,k,j,i) = initial_abundances(HYD,k,j,i);
+          pscalars->r(HPLUS,k,j,i) = initial_abundances(HPLUS,k,j,i);
+          pscalars->r(ELEC, k,j,i) = initial_abundances(ELEC,k,j,i);
         }
       } // i
     } // j
@@ -623,3 +654,4 @@ void getMBBounds(MeshBlock *pmb, int &il, int &iu, int &jl, int &ju, int &kl, in
   kl = pmb->block_size.nx3 == 1 ? pmb->ks : pmb->ks-NGHOST;
   ku = pmb->block_size.nx3 == 1 ? pmb->ke : pmb->ke+NGHOST;
 }
+
