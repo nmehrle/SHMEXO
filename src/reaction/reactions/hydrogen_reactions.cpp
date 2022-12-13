@@ -29,8 +29,8 @@ void H_recombination::react(AthenaArray<Real> &dn_rate, AthenaArray<Real> &de_ra
   Real n_ion = ps->s(ion_scalar_num, k, j, i) / ps->m(ion_scalar_num);
   Real n_elec = ps->s(electron_scalar_num, k, j, i)/ ps->m(electron_scalar_num);
 
-  Real n_ion = ps->s(scalar_num, k,j,i) / ps->m(scalar_num);
-  Real n_elec = n_ion;
+  n_ion = ps->s(scalar_num, k,j,i) / ps->m(scalar_num);
+  n_elec = n_ion;
 
   Real n_recomb = alpha_B * n_ion * n_elec;
 
