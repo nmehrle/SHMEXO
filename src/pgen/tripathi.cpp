@@ -219,7 +219,7 @@ void MeshBlock::UserWorkBeforeOutput(ParameterInput *pin)
 }
 
 void ReactionNetwork::InitUserReactions(ParameterInput *pin) {
-  // Reaction *rxn = new H_recombination(this, "H Recombination", HYD, HPLUS, ELEC);
+  Reaction *rxn = new H_recombination(this, "H Recombination", HYD, HPLUS, ELEC);
   // AddReaction(rxn);
   return;
 }
@@ -313,10 +313,11 @@ void SourceTerms(MeshBlock *pmb, const Real time, const Real dt,
         Real lya_cooling_const = 7.5E-32 * exp(-118348./T); // J m3 s-1
         Real lya_cooling_rate = lya_cooling_const * n_ion * n_neu; // J m-3 s-1
 
+        recomb_cooling_rate = 0;
         du(IEN,k,j,i) -= (recomb_cooling_rate + lya_cooling_rate) * dt; // J m-3
         // du(IEN,k,j,i) -= (lya_cooling_rate) * dt; // J m-3
         
-        // n_recomb = 0;
+        n_recomb = 0;
         ds(HYD,k,j,i) += ( n_recomb - n_ion_gain) * mh;
         ds(HPLUS,k,j,i) += (-n_recomb + n_ion_gain) * mh;
         ds(ELEC,k,j,i) += (-n_recomb + n_ion_gain) * ps->m(0);
