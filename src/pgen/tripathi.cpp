@@ -219,7 +219,7 @@ void MeshBlock::UserWorkBeforeOutput(ParameterInput *pin)
 }
 
 void ReactionNetwork::InitUserReactions(ParameterInput *pin) {
-  Reaction *rxn = new H_recombination(this, "H Recombination", HYD, HPLUS, ELEC);
+  // Reaction *rxn = new H_recombination(this, "H Recombination", HYD, HPLUS, ELEC);
   // AddReaction(rxn);
   return;
 }
@@ -296,6 +296,9 @@ void SourceTerms(MeshBlock *pmb, const Real time, const Real dt,
         Real ion_f = ps->r(HPLUS,k,j,i);
         T = T * (1.- ion_f/2.);
 
+        Real testval;
+        pmb->peos->Temperature(w, pmb->pscalars->s, pmb->pscalars->m, testval, k,j,i);
+
         // Real T = pmb->pthermo->Temp(pmb->phydro->w.at(k,j,i));
         Real alpha_B  = 2.59E-19 * pow(T/1.E4,-0.7); // m3 s-1
         Real n_recomb = dt * alpha_B * (n_ion * n_ion); //m-3
@@ -310,10 +313,10 @@ void SourceTerms(MeshBlock *pmb, const Real time, const Real dt,
         Real lya_cooling_const = 7.5E-32 * exp(-118348./T); // J m3 s-1
         Real lya_cooling_rate = lya_cooling_const * n_ion * n_neu; // J m-3 s-1
 
-        // du(IEN,k,j,i) -= (recomb_cooling_rate + lya_cooling_rate) * dt; // J m-3
-        du(IEN,k,j,i) -= (lya_cooling_rate) * dt; // J m-3
+        du(IEN,k,j,i) -= (recomb_cooling_rate + lya_cooling_rate) * dt; // J m-3
+        // du(IEN,k,j,i) -= (lya_cooling_rate) * dt; // J m-3
         
-        n_recomb = 0;
+        // n_recomb = 0;
         ds(HYD,k,j,i) += ( n_recomb - n_ion_gain) * mh;
         ds(HPLUS,k,j,i) += (-n_recomb + n_ion_gain) * mh;
         ds(ELEC,k,j,i) += (-n_recomb + n_ion_gain) * ps->m(0);
@@ -452,14 +455,14 @@ void SetInitialAbundances(MeshBlock *pmb, PassiveScalars *ps) {
         rad = getRad(pmb->pcoord, i, j, k);
         
         if (rad <= r_e) {
-          initial_abundances(HYD,k,j,i)   = 1 - minval;
+          initial_abundances(HYD,k,j,i)   = 1/ps->m(HYD) - minval;
           initial_abundances(ELEC,k,j,i)  = minval;
           initial_abundances(HPLUS,k,j,i) = minval;
         }
         else {
           initial_abundances(HYD,k,j,i)   = minval;
-          initial_abundances(ELEC,k,j,i)  = 1 - minval;
-          initial_abundances(HPLUS,k,j,i) = 1 - minval;
+          initial_abundances(ELEC,k,j,i)  = 1/ps->m(HYD) - minval;
+          initial_abundances(HPLUS,k,j,i) = 1/ps->m(HYD) - minval;
         }
 
         for (int n = 0; n < NSCALARS; ++n)
@@ -507,10 +510,10 @@ void MeshBlock::ProblemGenerator(ParameterInput *pin)
         phydro->w(IV3,k,j,i) = v3;
 
         // s0 -- neutral hydrogen
-        pscalars->s(HYD,k,j,i) = initial_abundances(HYD,k,j,i) * dens;
-        // s1 -- ionized hydrogen
-        pscalars->s(HPLUS,k,j,i) = initial_abundances(HPLUS,k,j,i) * dens;
-        pscalars->s(ELEC, k,j,i) = initial_abundances(ELEC,k,j,i) * dens;
+        for (int n = 0; n < NSCALARS; ++n)
+        {
+          pscalars->s(n,k,j,i) = initial_abundances(n,k,j,i) * dens;
+        }
       }
     }
   }
@@ -592,13 +595,11 @@ void MeshBlock::UserWorkInLoop() {
           phydro->u(IM3,k,j,i) = v3*dens;
 
           // scalars
-          pscalars->s(HYD,k,j,i) = initial_abundances(HYD,k,j,i) * dens;
-          pscalars->s(HPLUS,k,j,i) = initial_abundances(HPLUS,k,j,i) * dens;
-          pscalars->s(ELEC, k,j,i) = initial_abundances(ELEC,k,j,i) * dens;
-
-          pscalars->r(HYD,k,j,i) = initial_abundances(HYD,k,j,i);
-          pscalars->r(HPLUS,k,j,i) = initial_abundances(HPLUS,k,j,i);
-          pscalars->r(ELEC, k,j,i) = initial_abundances(ELEC,k,j,i);
+          for (int n = 0; n < NSCALARS; ++n)
+          {
+            pscalars->r(n,k,j,i) = initial_abundances(n,k,j,i);
+            pscalars->s(n,k,j,i) = initial_abundances(n,k,j,i) * dens;
+          }
         }
       } // i
     } // j
