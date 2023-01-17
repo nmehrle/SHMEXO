@@ -252,6 +252,12 @@ parser.add_argument('-disort',
                     default=False,
                     help='enable disort libraries')
 
+# -reaction
+parser.add_argument('-reaction',
+                    action='store_true',
+                    default=False,
+                    help='enable reactions (enabled by default if radiation enabled)')
+
 # --nvapor=[value] argument
 parser.add_argument('--nvapor',
                     default='0',
@@ -675,8 +681,15 @@ if args['cxx'] == 'clang++-apple':
 # --rt=[name] argument
 makefile_options['MAKE_DISORT'] = '0'
 definitions['RADIATION_ENABLED'] = '0'
+definitions['REACTION_ENABLED'] = '0'
+
 if args['radiation']:
   definitions['RADIATION_ENABLED'] = '1'
+  definitions['REACTION_ENABLED'] = '1'
+
+if args['reaction']:
+  definitions['REACTION_ENABLED'] = '1'
+
 if args['disort']:
   makefile_options['MAKE_DISORT'] = '1'
   if args['cxx'] == 'g++' or args['cxx'] == 'icpc' or args['cxx'] == 'cray':
@@ -943,6 +956,7 @@ print('  Ammonia vapor id:           ' + args['nh3'])
 print('  Water vapor id:             ' + args['h2o'])
 print('  Riemann solver:             ' + args['flux'])
 print('  Radiation:                  ' + ('ON' if args['radiation'] else 'OFF'))
+print('  Recation:                   ' + ('ON' if args['reaction'] else 'OFF'))
 print('  Chemistry:                  ' + args['chem'])
 print('  Magnetic fields:            ' + ('ON' if args['b'] else 'OFF'))
 print('  Number of vapors:           ' + args['nvapor'])

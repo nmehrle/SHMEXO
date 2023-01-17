@@ -41,6 +41,7 @@
 #include "../thermodynamics/thermodynamics.hpp"
 #include "../chemistry/chemistry.hpp"
 #include "../radiation/radiation.hpp"
+#include "../reaction/reaction_network.hpp"
 #include "../diagnostics/diagnostics.hpp"
 
 //----------------------------------------------------------------------------------------
@@ -177,6 +178,8 @@ MeshBlock::MeshBlock(int igid, int ilid, LogicalLocation iloc, RegionSize input_
   peos = new EquationOfState(this, pin);
   pthermo = new Thermodynamics(this, pin);
   pchem = new CHEMISTRY(this, pin);
+  if (REACTION_ENABLED)
+    pnetwork = new ReactionNetwork(this, pin);
   if (RADIATION_ENABLED)
     prad = new Radiation(this, pin);
   pdiag = new Diagnostics(this, pin);
@@ -297,6 +300,8 @@ MeshBlock::MeshBlock(int igid, int ilid, Mesh *pm, ParameterInput *pin,
   peos = new EquationOfState(this, pin);
   pthermo = new Thermodynamics(this, pin);
   pchem = new CHEMISTRY(this, pin);
+  if (REACTION_ENABLED)
+    pnetwork = new ReactionNetwork(this, pin);
   if (RADIATION_ENABLED)
     prad = new Radiation(this, pin);
   pdiag = new Diagnostics(this, pin);
@@ -394,6 +399,8 @@ MeshBlock::~MeshBlock() {
   delete pchem;
   if (RADIATION_ENABLED)
     delete prad;
+  if (REACTION_ENABLED)
+    delete pnetwork;
   delete pdiag;
 }
 

@@ -54,6 +54,7 @@ class TurbulenceDriver;
 class Thermodynamics;
 class Chemistry;
 class Radiation;
+class ReactionNetwork;
 class Diagnostics;
 
 FluidFormulation GetFluidFormulation(const std::string& input_string);
@@ -128,6 +129,7 @@ class MeshBlock {
   Thermodynamics *pthermo;
   Chemistry *pchem;
   Radiation *prad;
+  ReactionNetwork *pnetwork;
   Diagnostics *pdiag;
 
   MeshBlock *prev, *next;

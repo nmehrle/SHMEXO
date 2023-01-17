@@ -1,5 +1,6 @@
 // C/C++ headers
 #include <iostream>
+#include <sstream>
 
 // Athena++ headers
 #include "../athena.hpp"
@@ -7,12 +8,13 @@
 #include "../thermodynamics/thermodynamics.hpp"
 #include "../chemistry/chemistry.hpp"
 #include "../radiation/radiation.hpp"
+#include "../reaction/reaction_network.hpp"
 #include "../scalars/scalars.hpp"
 #include "task_list.hpp"
 
 //----------------------------------------------------------------------------------------
 // Functions for implicit correction
-enum TaskStatus TimeIntegratorTaskList::UpdateHydro(MeshBlock *pmb, int stage) {
+TaskStatus TimeIntegratorTaskList::UpdateHydro(MeshBlock *pmb, int stage) {
   Hydro *ph = pmb->phydro;
   Real dt = pmb->pmy_mesh->dt;
 
@@ -31,7 +33,7 @@ enum TaskStatus TimeIntegratorTaskList::UpdateHydro(MeshBlock *pmb, int stage) {
   return TaskStatus::next;
 }
 
-enum TaskStatus TimeIntegratorTaskList::UpdateScalars(MeshBlock *pmb, int stage) {
+TaskStatus TimeIntegratorTaskList::UpdateScalars(MeshBlock *pmb, int stage) {
   PassiveScalars *ps = pmb->pscalars;
   Hydro *ph = pmb->phydro;
 
@@ -94,17 +96,34 @@ TaskStatus TimeIntegratorTaskList::CalculateRadiationFlux(MeshBlock *pmb, int st
   return TaskStatus::fail;
 }
 
-// after integrate hydro
-// before update hydro
-TaskStatus TimeIntegratorTaskList::AddSourceTermsRadiation(MeshBlock *pmb, int stage) {
-  Radiation *prad = pmb->prad;
-  Hydro *ph       = pmb->phydro;
+TaskStatus TimeIntegratorTaskList::IntegrateReactions(MeshBlock *pmb, int stage) {
+  ReactionNetwork *pnetwork = pmb->pnetwork;
+  PassiveScalars *pscalars = pmb->pscalars;
+  Hydro *phydro = pmb->phydro;
 
   if (stage <= nstages) {
+    // Clears and updates both
+    // pnetwork->dn and pnetwork->de
     Real dt = (stage_wghts[(stage-1)].beta)*(pmb->pmy_mesh->dt);
-    prad->AddRadiationSourceTerm(dt, ph->du);
-  } else {
-    return TaskStatus::fail;
+    pnetwork->ComputeReactionForcing(dt, phydro->w, phydro->u, pscalars->s, phydro->du, pscalars->ds);
+
+    return TaskStatus::next;
   }
-  return TaskStatus::next;
+
+  return TaskStatus::fail;
 }
+
+// // after integrate hydro
+// // before update hydro
+// TaskStatus TimeIntegratorTaskList::AddSourceTermsRadiation(MeshBlock *pmb, int stage) {
+//   Radiation *prad = pmb->prad;
+//   Hydro *ph       = pmb->phydro;
+
+//   if (stage <= nstages) {
+//     Real dt = (stage_wghts[(stage-1)].beta)*(pmb->pmy_mesh->dt);
+//     prad->AddRadiationSourceTerm(dt, ph->du);
+//   } else {
+//     return TaskStatus::fail;
+//   }
+//   return TaskStatus::next;
+// }
