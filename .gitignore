@@ -1,4 +1,5 @@
 test/
+run/
 setup/
 sync_from_laptop
 merge.py
