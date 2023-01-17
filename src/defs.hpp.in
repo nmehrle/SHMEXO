@@ -51,11 +51,11 @@
 // include radiative transfer? default=0 (false)
 #define RADIATION_ENABLED @RADIATION_ENABLED@
 
+// include reactions?
+#define REACTION_ENABLED @REACTION_ENABLED@
+
 // chemistry
 #define CHEMISTRY @CHEMISTRY@
-
-// radiation
-#define @RT_SOLVER@
 
 // enable special or general relativity? default=0 (false)
 #define RELATIVISTIC_DYNAMICS @RELATIVISTIC_DYNAMICS@

@@ -321,7 +321,7 @@ class Mesh {
   ConductionCoeffFunc ConductionCoeff_;
   FieldDiffusionCoeffFunc FieldDiffusivity_;
   MGBoundaryFunc MGGravityBoundaryFunction_[6];
-  RadiationTimeFunc UserRadiationTimeFunc_ = nullptr;
+  RadiationScalingFunc UserRadiationScalingFunc_ = nullptr;
 
   void AllocateRealUserMeshDataField(int n);
   void AllocateIntUserMeshDataField(int n);
@@ -380,7 +380,7 @@ class Mesh {
   void SetGravityThreshold(Real eps) { grav_eps_=eps; }
   void SetMeanDensity(Real d0) { grav_mean_rho_=d0; }
 
-  void EnrollUserRadiationTimeFunc(RadiationTimeFunc my_func);
+  void EnrollUserRadiationScalingFunction(RadiationScalingFunc my_func);
 };
 
 

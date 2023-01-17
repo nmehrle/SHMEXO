@@ -73,46 +73,24 @@ TaskStatus TimeIntegratorTaskList::IntegrateChemistry(MeshBlock *pmb, int stage)
 // Functions to calculate radiation flux
 TaskStatus TimeIntegratorTaskList::CalculateRadiationFlux(MeshBlock *pmb, int stage) {
   Radiation *prad = pmb->prad;
+  PassiveScalars *pscalars = pmb->pscalars;
   Hydro *phydro=pmb->phydro;
-  
-  // only do radiation at first RK stage  -- quickening assumption for now
-  // dont think this cooldown thing is done correctly for this stage setup
-    // dt should consider stage_wghts.beta
-    // maybe do cooldown consideration outside of rk stages
-    // and radiation caculation inside?
+
   if (stage <= nstages) {
-    if (prad->current > 0.) {
-      prad->current -= pmb->pmy_mesh->dt;  // radiation is in cool-down
-    } else {
-      prad->current = prad->cooldown;
+    int js = pmb->js; int ks = pmb->ks;
+    int je = pmb->je; int ke = pmb->ke;
 
-      int is = pmb->is; int js = pmb->js; int ks = pmb->ks;
-      int ie = pmb->ie; int je = pmb->je; int ke = pmb->ke;
-      int jl, ju, kl, ku;
+    for (int k = ks; k <= ke; ++k) {
+      for (int j = js; j <= je; ++j) {
+        Real t_start_stage = pmb->pmy_mesh->time + pmb->stage_abscissae[stage-1][0];
 
-      jl = js, ju = je, kl = ks, ku = ke;
-
-      if (pmb->block_size.nx2 > 1) {
-        if (pmb->block_size.nx3 == 1) // 2D
-          jl = js-1, ju = je+1, kl = ks, ku = ke;
-        else // 3D
-          jl = js-1, ju = je+1, kl = ks-1, ku = ke+1;
+        prad->CalculateRadiativeTransfer(phydro->w, pscalars->s, t_start_stage, k, j);
       }
-
-      for (int k = kl; k <= ku; ++k)
-        for (int j = jl; j <= ju; ++j)
-          prad->CalculateRadiativeTransfer(phydro->w, pmb->pmy_mesh->time, k, j, is, ie+1);
     }
-  }
-  // Calculate energy deposition at every RK stage
-  // could be called "int_rad"
-  if (stage <= nstages) {
-    // Real t_start_stage = pmb->pmy_mesh->time + pmb->stage_abscissae[stage-1][0];
-    Real dt = (stage_wghts[(stage-1)].beta)*(pmb->pmy_mesh->dt);
-    prad->CalculateEnergyAbsorption(dt);
 
     return TaskStatus::next;
   }
+
   return TaskStatus::fail;
 }
 

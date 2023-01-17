@@ -734,45 +734,45 @@ void OutputType::LoadOutputData(MeshBlock *pmb) {
     }
   }
 
-  // radiation
-  if (ContainVariable(output_params.variable, "rad") ||
-      ContainVariable(output_params.variable, "radtau")) {
-    RadiationBand *p = prad->pband;
-    while (p != NULL) {
-      // tau
-      pod = new OutputData;
-      pod->type = "SCALARS";
-      pod->name = p->myname+"tau";
-      pod->data.InitWithShallowSlice(p->btau,4,0,1);
-      AppendOutputDataNode(pod);
-      num_vars_ += 1;
+  // // radiation
+  // if (ContainVariable(output_params.variable, "rad") ||
+  //     ContainVariable(output_params.variable, "radtau")) {
+  //   RadiationBand *p = prad->pband;
+  //   while (p != NULL) {
+  //     // tau
+  //     pod = new OutputData;
+  //     pod->type = "SCALARS";
+  //     pod->name = p->myname+"tau";
+  //     pod->data.InitWithShallowSlice(p->btau,4,0,1);
+  //     AppendOutputDataNode(pod);
+  //     num_vars_ += 1;
 
-      p = p->next;
-    }
-  }
+  //     p = p->next;
+  //   }
+  // }
 
-  if (ContainVariable(output_params.variable, "rad") ||
-      ContainVariable(output_params.variable, "radflux")) {
-    RadiationBand *p = prad->pband;
-    while (p != NULL) {
-      // flux up and down
-      pod = new OutputData;
-      pod->type = "SCALARS";
-      pod->name = p->myname+"flxup";
-      pod->data.InitWithShallowSlice(p->bflxup,4,0,1);
-      AppendOutputDataNode(pod);
-      num_vars_ += 1;
+  // if (ContainVariable(output_params.variable, "rad") ||
+  //     ContainVariable(output_params.variable, "radflux")) {
+  //   RadiationBand *p = prad->pband;
+  //   while (p != NULL) {
+  //     // flux up and down
+  //     pod = new OutputData;
+  //     pod->type = "SCALARS";
+  //     pod->name = p->myname+"flxup";
+  //     pod->data.InitWithShallowSlice(p->bflxup,4,0,1);
+  //     AppendOutputDataNode(pod);
+  //     num_vars_ += 1;
 
-      pod = new OutputData;
-      pod->type = "SCALARS";
-      pod->name = p->myname+"flxdn";
-      pod->data.InitWithShallowSlice(p->bflxdn,4,0,1);
-      AppendOutputDataNode(pod);
-      num_vars_ += 1;
+  //     pod = new OutputData;
+  //     pod->type = "SCALARS";
+  //     pod->name = p->myname+"flxdn";
+  //     pod->data.InitWithShallowSlice(p->bflxdn,4,0,1);
+  //     AppendOutputDataNode(pod);
+  //     num_vars_ += 1;
 
-      p = p->next;
-    }
-  }
+  //     p = p->next;
+  //   }
+  // }
 
   // // radiation
   // if (ContainVariable(output_params.variable, "rad") ||

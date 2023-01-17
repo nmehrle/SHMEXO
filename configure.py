@@ -241,11 +241,16 @@ parser.add_argument('--chem',
                     choices=['chemistry', 'kessler94'],
                     help='select chemistry')
 
-# --rt=[name] argument
-parser.add_argument('--rt',
-                    default='OFF',
-                    choices=['OFF','2sess','disort','lambert','simple'],
-                    help='select radiative transfer solver')
+# -radiation
+parser.add_argument('-radiation',
+                    action='store_true',
+                    default=False,
+                    help='enable radiation')
+
+parser.add_argument('-disort',
+                    action='store_true',
+                    default=False,
+                    help='enable disort libraries')
 
 # --nvapor=[value] argument
 parser.add_argument('--nvapor',
@@ -669,25 +674,14 @@ if args['cxx'] == 'clang++-apple':
 
 # --rt=[name] argument
 makefile_options['MAKE_DISORT'] = '0'
-if args['rt'] == 'OFF':
-  definitions['RT_SOLVER'] = 'RT_OFF'
-  definitions['RADIATION_ENABLED'] = '0'
-else:
+definitions['RADIATION_ENABLED'] = '0'
+if args['radiation']:
   definitions['RADIATION_ENABLED'] = '1'
-  if args['rt'] == '2sess':
-    definitions['RT_SOLVER'] = 'RT_2SESS'
-  elif args['rt'] == 'disort':
-    makefile_options['MAKE_DISORT'] = '1'
-    definitions['RT_SOLVER'] = 'RT_DISORT'
-    if args['cxx'] == 'g++' or args['cxx'] == 'icpc' or args['cxx'] == 'cray':
+if args['disort']:
+  makefile_options['MAKE_DISORT'] = '1'
+  if args['cxx'] == 'g++' or args['cxx'] == 'icpc' or args['cxx'] == 'cray':
       makefile_options['LINKER_FLAGS'] += ' -Lsrc/radiation/rtsolver/cdisort213'
       makefile_options['LIBRARY_FLAGS'] += ' -lcdisort'
-  elif args['rt'] == 'lambert':
-    definitions['RT_SOLVER'] = 'RT_LAMBERT'
-  elif args['rt'] == 'simple':
-    definitions['RT_SOLVER'] = 'RT_SIMPLE'
-  else:
-    definitions['RT_SOLVER'] = 'RT_UNKNOWN'
 
 # -float argument
 if args['float']:
@@ -948,7 +942,7 @@ print('  Equation of state:          ' + args['eos'])
 print('  Ammonia vapor id:           ' + args['nh3'])
 print('  Water vapor id:             ' + args['h2o'])
 print('  Riemann solver:             ' + args['flux'])
-print('  Radiation:                  ' + args['rt'])
+print('  Radiation:                  ' + ('ON' if args['radiation'] else 'OFF'))
 print('  Chemistry:                  ' + args['chem'])
 print('  Magnetic fields:            ' + ('ON' if args['b'] else 'OFF'))
 print('  Number of vapors:           ' + args['nvapor'])
