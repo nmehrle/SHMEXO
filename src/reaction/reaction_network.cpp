@@ -67,7 +67,7 @@ void ReactionNetwork::Initialize() {
   }
 }
 
-void ReactionNetwork::ComputeReactionForcing(const Real dt, AthenaArray<Real> &du, AthenaArray<Real> &ds) {
+void ReactionNetwork::ComputeReactionForcing(const Real dt, const AthenaArray<Real> prim, const AthenaArray<Real> cons, const AthenaArray<Real> cons_scalar, AthenaArray<Real> &du, AthenaArray<Real> &ds) {
   MeshBlock *pmb = pmy_block;
   PassiveScalars *pscalars = pmb->pscalars;
   Hydro *phydro = pmb->phydro;
@@ -85,7 +85,7 @@ void ReactionNetwork::ComputeReactionForcing(const Real dt, AthenaArray<Real> &d
     for (int j=js; j<=je; ++j) {
       for (int i=is; i<=ie; ++i) {
 
-        pmb->peos->Temperature(phydro->w, pscalars->s, pscalars->m, temp, k, j, i);
+        pmb->peos->Temperature(prim, cons_scalar, pscalars->m, temp, k, j, i);
         temperature_(k,j,i) = temp;
 
         // populates de_rate(k,j,i), dn_rate(k,j,i)
@@ -94,9 +94,9 @@ void ReactionNetwork::ComputeReactionForcing(const Real dt, AthenaArray<Real> &d
         {
           Reaction *p = my_reactions(r);
           p->react(dn_rate, de_rate, k, j, i);
-        }
 
-        du(IEN, k, j, i) += de_rate(k,j,i) * dt;
+          du(IEN, k, j, i) += de_rate(r, k,j,i) * dt;  
+        }
 
         for (int n = 0; n < NSCALARS; ++n)
         {

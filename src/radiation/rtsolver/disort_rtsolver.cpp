@@ -4,6 +4,7 @@
 // Athena++ header
 #include "rtsolver.hpp"
 #include "disort_rtsolver.hpp"
+#include "../../athena.hpp"
 
 DisortRTSolver::DisortRTSolver(RadiationBand *pband, ParameterInput *pin):
   RTSolver(pband, pin)

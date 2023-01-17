@@ -1,5 +1,8 @@
 // Athena++ headers
 #include "../../athena.hpp"
+#include "../../globals.hpp"
+#include "rtsolver.hpp"
+
 
 class RadiationBand;
 class Radiation;

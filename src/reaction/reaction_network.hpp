@@ -43,7 +43,7 @@ public:
   void Initialize();
   void AddReaction(Reaction *prxn);
 
-  void ComputeReactionForcing(const Real dt, AthenaArray<Real> &du, AthenaArray<Real> &ds);
+  void ComputeReactionForcing(const Real dt, const AthenaArray<Real> prim, const AthenaArray<Real> cons, const AthenaArray<Real> cons_scalar, AthenaArray<Real> &du, AthenaArray<Real> &ds);
 
   int num_reactions;
 protected:

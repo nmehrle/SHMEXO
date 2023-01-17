@@ -99,13 +99,13 @@ TaskStatus TimeIntegratorTaskList::CalculateRadiationFlux(MeshBlock *pmb, int st
 TaskStatus TimeIntegratorTaskList::IntegrateReactions(MeshBlock *pmb, int stage) {
   ReactionNetwork *pnetwork = pmb->pnetwork;
   PassiveScalars *pscalars = pmb->pscalars;
-  Hydro *phydro=pmb->phydro;
+  Hydro *phydro = pmb->phydro;
 
   if (stage <= nstages) {
     // Clears and updates both
     // pnetwork->dn and pnetwork->de
     Real dt = (stage_wghts[(stage-1)].beta)*(pmb->pmy_mesh->dt);
-    pnetwork->ComputeReactionForcing(dt, phydro->du, pscalars->ds);
+    pnetwork->ComputeReactionForcing(dt, phydro->w, phydro->u, pscalars->s, phydro->du, pscalars->ds);
 
     return TaskStatus::next;
   }
