@@ -1,23 +1,20 @@
 #ifndef USER_ABSORBER_HPP
 #define USER_ABSORBER_HPP
 
-// C/C++ header
-#include <vector>
-
 // Athena++ header
 #include "absorber.hpp"
 
 using AbsorptionCoefficientFunc = Real (*)(
-  Absorber const *me, Real wave, Real const prim[], int k, int j, int i);
+  Absorber const *me, AthenaArray<Real> const& prim, Real wave, int k, int j, int i);
 
 using EnergyAbsorptionFunc = Real (*)(Absorber *me, Real wave, Real const flux, int k, int j, int i);
 
 class UserDefinedAbsorber: public Absorber {
 public:
   UserDefinedAbsorber(RadiationBand *pband);
-  virtual ~UserDefinedAbsorber() {}
+  virtual ~UserDefinedAbsorber() {};
 
-  Real AbsorptionCoefficient(Real wave, Real const prim[], int k, int j, int i) const;
+  void CalculateAsorptionCoefficient(AthenaArray<Real> const& prim, int n, int k, int j, int i);
   Real EnergyAbsorption(Real wave, Real const flux, int k, int j, int i);
 
   void EnrollUserAbsorptionCoefficientFunc(AbsorptionCoefficientFunc my_func);

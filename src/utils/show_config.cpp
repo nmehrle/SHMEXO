@@ -28,22 +28,10 @@ void ShowConfig() {
   std::cout<<"  Riemann solver:             " << RIEMANN_SOLVER << std::endl;
 
   if (RADIATION_ENABLED) {
-#ifdef RT_DISORT
-      std::cout<<"  Radiation solver:           DISORT" << std::endl;
-#elif defined RT_2SESS
-      std::cout<<"  Radiation solver:           2sess" << std::endl;
-#elif defined RT_LAMBERT
-      std::cout<<"  Radiation solver:           LAMBERT" << std::endl;
-#elif defined RT_UNKOW
-      std::cout<<"  Radiation solver:           UNKOWN" << std::endl;
-#elif defined RT_SIMPLE
-      std::cout<<"  Radiation solver:           SIMPLE" << std::endl;
-#else
-      std::cout<<"  Radiation solver:           OTHER" << std::endl;
-#endif
+    std::cout<<"  Radiation       :           ON" << std::endl;
   }
   else {
-    std::cout<<"  Radiation solver:           OFF" << std::endl;
+    std::cout<<"  Radiation       :           OFF" << std::endl;
   }
 
   if (MAGNETIC_FIELDS_ENABLED) {

@@ -1,291 +1,247 @@
 // C/C++ headers
 #include <vector>
+#include <cstring>
 #include <sstream>
 #include <stdexcept>
 #include <type_traits>
 
 // Athena++ header
-#include "../parameter_input.hpp"
-#include "absorber.hpp"
-#include "radiation.hpp"
+#include "../math/core.h"
+#include "../math/interpolation.h"
+
 #include "../mesh/mesh.hpp"
-#include "../thermodynamics/thermodynamics.hpp"
+#include "../parameter_input.hpp"
 #include "../coordinates/coordinates.hpp"
-#include "../utils/utils.hpp" // Vectorize, ReadTabular, ReplaceChar
+#include "../utils/utils.hpp"
+#include "absorber/absorber.hpp"
+#include "rtsolver/rtsolver.hpp"
+#include "rtsolver/simple_rtsolver.hpp"
+#include "rtsolver/disort_rtsolver.hpp"
+#include "radiation.hpp"
 
-RadiationBand::RadiationBand(Radiation *prad):
-  myname(""), npmom(0), nspec(1),
-  pmy_rad(prad), prev(NULL), next(NULL), pabs(NULL)
+RadiationBand::RadiationBand(Radiation *prad, std::string band_id, ParameterInput *pin):
+  my_id(band_id), pmy_rad(prad)
 {
-  spec = new Spectrum [1];
-  tem_ = new Real [1];
-}
+  // Gather band name
+  my_name = pin->GetString("radiation", my_id);
 
-RadiationBand::RadiationBand(Radiation *prad, std::string name, ParameterInput *pin)
-{
+  char key[100];
+  std::string value;
   std::stringstream msg;
 
-  myname = name;
-  prev = NULL;
-  next = NULL;
-  pmy_rad = prad;
-
-  // number of Legendre moments
-  npmom = pin->GetOrAddInteger("radiation", "npmom", 0);
-
-  // name radiation band in the format of "min_wave max_wave dwave"
-  std::string str = pin->GetString("radiation", name);
-  char default_file[80];
-  sprintf(default_file, "kcoeff.%s.nc", str.c_str());
-  ReplaceChar(default_file, ' ', '-');
-
-  std::vector<Real> v = Vectorize<Real>(str.c_str());
+  // Gather wavelength details
+  sprintf(key, "%s.wavelength", my_id.c_str());
+  value = pin->GetString("radiation", key);
+  std::vector<Real> v = Vectorize<Real>(value.c_str());
   if (v.size() != 3) {
-    msg << "### FATAL ERROR in construction function RadiationBand"
-        << std::endl << "Length of '" << name << "' "
+    msg << "### FATAL ERROR in RadiationBand::RadiationBand" << std::endl
+        << "Length of input file value" << std::endl
+        << "<radiation>" << std::endl
+        << "'" << my_id << ".wavelength'" << std::endl
         << "must be 3.";
     ATHENA_ERROR(msg);
   }
 
-  // wave number and weights
   nspec = (int)((v[1] - v[0])/v[2]) + 1; // including the last one
   spec = new Spectrum [nspec];
   for (int i = 0; i < nspec; ++i) {
-    spec[i].wav = v[0] + v[2]*i;
+    spec[i].wave = v[0] + v[2]*i;
     spec[i].wgt = (i == 0) || (i == nspec - 1) ? 0.5*v[2] : v[2];
   }
   if (nspec == 1) spec[0].wgt = 1.;
 
-  // outgoing radiation direction (mu,phi) in degree
-  str = pin->GetOrAddString("radiation", "outdir", "(0.,0.)");
-  std::vector<std::string> dstr = Vectorize<std::string>(str.c_str());
-  Real nrout = dstr.size();
+  // Gather wavelength unit
+  sprintf(key, "%s.wavelength_coefficient", my_id.c_str());
+  wavelength_coefficient = pin->GetReal("radiation", key);
 
-  // allocate memory
-  MeshBlock *pmb = prad->pmy_block;
-  Mesh *pm = pmb->pmy_mesh;
-  int ncells1 = pmb->ncells1;
-  int ncells2 = pmb->ncells2;
-  int ncells3 = pmb->ncells3;
-
-  // spectral properties
-  tem_ = new Real [ncells1];
-  NewCArray(tau_, ncells1, nspec);
-  NewCArray(ssa_, ncells1, nspec);
-  NewCArray(pmom_, ncells1, nspec, npmom+1);
-  NewCArray(flxup_, ncells1+1, nspec);
-  NewCArray(flxdn_, ncells1+1, nspec);
-  NewCArray(toa_, nrout, nspec);
-
-  //
-  net_spectral_flux.NewAthenaArray(nspec, ncells3, ncells2, ncells1);
-  boundary_flux[X1DIR].NewAthenaArray(nspec, ncells3, ncells2, ncells1+1);
-  if (pm->f2) {
-    boundary_flux[X2DIR].NewAthenaArray(nspec, ncells3, ncells2+1, ncells1);
-  }
-  if (pm->f3) {
-    boundary_flux[X3DIR].NewAthenaArray(nspec, ncells3+3, ncells2, ncells1);
-  }
-
-  // band properties
-  btau.NewAthenaArray(ncells3, ncells2, ncells1);
-  bssa.NewAthenaArray(ncells3, ncells2, ncells1);
-  bpmom.NewAthenaArray(npmom+1, ncells3, ncells2, ncells1);
-  bflxup.NewAthenaArray(ncells3, ncells2, ncells1+1);
-  bflxdn.NewAthenaArray(ncells3, ncells2, ncells1+1);
-  btoa.NewAthenaArray(nrout, ncells3, ncells2);
-
-  // absorbers
-  char astr[1024];
-  sprintf(astr, "%s.absorbers", name.c_str());
-  str = pin->GetOrAddString("radiation", astr, "");
-  std::vector<std::string> aname = Vectorize<std::string>(str.c_str());
-
-  pabs = new Absorber(this);  // first one is empty
-
-  for (int i = 0; i < aname.size(); ++i) {
-    sprintf(astr, "%s.%s", name.c_str(), aname[i].c_str());
-    std::string afile = pin->GetOrAddString("radiation", astr, default_file);
-    AddAbsorber(aname[i], afile, pin);
-  }
-
-  if (pabs->next != NULL) {
-    pabs = pabs->next;
-    delete pabs->prev;  // remove first one
-  }
-
-  // band parameters
-  sprintf(astr, "%s.alpha", name.c_str());
-  alpha_ = pin->GetOrAddReal("radiation", astr, 0.);
-
-  // initialize radiative transfer solver
-#ifdef RT_DISORT
-  init_disort(pin);
-#endif
-}
-
-RadiationBand::~RadiationBand()
-{
-  if (prev != NULL) prev->next = next;
-  if (next != NULL) next->prev = prev;
-  if (pabs != NULL) {
-    while (pabs->prev != NULL)  // should not be true
-      delete pabs->prev;
-    while (pabs->next != NULL)
-      delete pabs->next;
-    delete pabs;
-  }
-
-  delete[] spec;
-  delete[] tem_;
-  FreeCArray(tau_);
-  FreeCArray(ssa_);
-  FreeCArray(pmom_);
-  FreeCArray(flxup_);
-  FreeCArray(flxdn_);
-  FreeCArray(toa_);
-
-  // destroy radiative transfer solver
-#ifdef RT_DISORT
-  free_disort();
-#endif
-}
-
-void RadiationBand::AddAbsorber(Absorber *pab) {
-  // detach the current one
-  if (pab->prev != NULL) {
-    pab->prev->next = NULL;
-    pab->prev = NULL;
-  }
-  
-  if (pabs == NULL) { // new absorber
-    pabs = pab;
-  } else {  // attach to tail
-    Absorber *p = pabs;
-    while (p->next != NULL) p = p->next;
-    p->next = pab;
-    p->next->prev = p;
-  }
-
-  pab->pmy_band = this;
-}
-
-// overide in the pgen file
-void __attribute__((weak)) RadiationBand::AddAbsorber(
-  std::string name, std::string file, ParameterInput *pin)
-{}
-
-// overide in rtsolver folder
-void __attribute__((weak)) RadiationBand::RadtranFlux(
-  Direction const rin, Real rad_scaling, int k, int j, int il, int iu)
-{}
-
-// overide in rtsolver folder
-void __attribute__((weak)) RadiationBand::RadtranRadiance(
-  Direction const rin, Direction const *rout, int nrout, Real dist, Real ref_dist,
-  int k, int j, int il, int iu)
-{}
-
-// setting optical properties
-void RadiationBand::SetSpectralProperties(AthenaArray<Real> const& w,
-  int k, int j, int il, int iu)
-{
-  MeshBlock *pmb = pmy_rad->pmy_block;
-  int is = pmb->is, ie = pmb->ie;
-
-  // set tau, ssalb, pmom, etc...
-  int ncells1 = pmy_rad->pmy_block->ncells1;
-  std::fill(*tau_, *tau_ + ncells1*nspec, 0.);
-  std::fill(*ssa_, *ssa_ + ncells1*nspec, 0.);
-  std::fill(**pmom_, **pmom_ + ncells1*nspec*(npmom+1), 0.);
-
-  Absorber *a = pabs;
-  Thermodynamics *pthermo = pmy_rad->pmy_block->pthermo;
-  Coordinates *pcoord = pmy_rad->pmy_block->pcoord;
-  Real q[NHYDRO];
-  Real *mypmom = new Real[1+npmom];
-
-  while (a != NULL) {
-    for (int i = il; i <= iu; ++i) {
-      pthermo->P2Q(q, w.at(k,j,i));
-      tem_[i] = q[IDN];
-      //std::cout << i << " " << tem_[i] << std::endl;
-      for (int m = 0; m < nspec; ++m) {
-        Real kcoeff = a->AbsorptionCoefficient(spec[m].wav, q, k, j, i);  // 1/m
-        Real dssalb = a->SingleScatteringAlbedo(spec[m].wav, q)*kcoeff;
-        // tau 
-        tau_[i][m] += kcoeff;
-        // ssalb
-        ssa_[i][m] += dssalb;
-        // pmom
-        a->PhaseMomentum(spec[m].wav, q, mypmom, npmom);
-        for (int p = 0; p <= npmom; ++p)
-          pmom_[i][m][p] += mypmom[p]*dssalb;
-      }
-    }
-    a = a->next;
-  }
-
-  delete [] mypmom; 
-
-  // absorption coefficiunts -> optical thickness
-  for (int i = il; i <= iu; ++i) {
-    for (int m = 0; m < nspec; ++m) {
-      if (tau_[i][m] > 1e-6 && ssa_[i][m] > 1e-6) {  // has scattering
-        for (int p = 0; p <= npmom; ++p)
-          pmom_[i][m][p] /= ssa_[i][m];
-        ssa_[i][m] /= tau_[i][m];
-      } else {
-        ssa_[i][m] = 0.;
-        pmom_[i][m][0] = 1.;
-        for (int p = 1; p <= npmom; ++p)
-          pmom_[i][m][p] = 0.;
-      }
-      tau_[i][m] *= pcoord->dx1f(i);
-    }
-
-    // aggregated band properties
-    btau(k,j,i) = 0; bssa(k,j,i) = 0;
-    for (int p = 0; p <= npmom; ++p) bpmom(p,k,j,i) = 0.;
-
-    for (int m = 0; m < nspec; ++m) {
-      btau(k,j,i) += tau_[i][m];
-      bssa(k,j,i) += ssa_[i][m]*tau_[i][m];
-      for (int p = 0; p <= npmom; ++p)
-        bpmom(p,k,j,i) += pmom_[i][m][p]*ssa_[i][m];
-    }
-
-    for (int p = 0; p <= npmom; ++p)
-      bpmom(p,k,j,i) /= bssa(k,j,i);
-    bssa(k,j,i) /= btau(k,j,i);
-    btau(k,j,i) /= nspec;
-  }
-}
-
-void RadiationBand::CalculateEnergyAbsorption(AthenaArray<Real> &dflx, int k, int j, int il, int iu) {
-  Radiation *prad = pmy_rad;
-  MeshBlock *pmb = pmy_rad->pmy_block;
-
-  Absorber *a = pabs;
-  bool second_absorber=false; // tracks if second absorber in this band
-  while (a != NULL) {
-    // raise error if two or more absorbers in this band
-    if (second_absorber) {
-      std::stringstream msg;
-      msg << "### FATAL ERROR in RadiationBand::CalculateEnergyDeposition: ";
-      msg << "    Currently only one absorber is supported per band. Re-make the problem with exactly one absorber per band, or edit this funciton." << std::endl;
+  // Gather input spectrum details
+  sprintf(key, "%s.spec_file", my_id.c_str());
+  value = pin->GetOrAddString("radiation", key, "");
+  if (value.empty()) {
+    if (pmy_rad->default_spec_file.empty()) {
+      msg << "### FATAL ERROR in RadiationBand::RadiationBand" << std::endl
+          << "No input spectrum found for band " << my_id << "." << std::endl
+          << "Must specify either <radiation> spec_file "
+          << "or <radiation> " << my_id << ".spec_file.";
       ATHENA_ERROR(msg);
     }
+    value = pmy_rad->default_spec_file;
+  }
 
-    for (int i=il; i<=iu; ++i) {
-      dflx(i) = 0;
-      for (int n = 0; n<nspec; ++n) {
-        // energydeposition -- reflects how much energy goes to thermal
-        dflx(i) += a->EnergyAbsorption(spec[n].wav, net_spectral_flux(n,k,j,i), k, j, i);
+  LoadInputSpectrum(value);
+
+  // Gather RT Solver Info
+  sprintf(key, "%s.rtsolver", my_id.c_str());
+  value = pin->GetOrAddString("radiation", key, "");
+  if (value.empty()) {
+    if (pmy_rad->default_rt_solver.empty()) {
+      msg << "### FATAL ERROR in RadiationBand::RadiationBand" << std::endl
+          << "No input spectrum found for band " << my_id << "." << std::endl
+          << "Must specify either <radiation> rtsolver "
+          << "or <radiation> " << my_id << ".rtsolver.";
+      ATHENA_ERROR(msg);
+    }
+    value = pmy_rad->default_rt_solver;
+  }
+
+  my_rtsolver = new RTSolver(this, pin);
+  ConstructRTSolver(value, pin);
+
+  // Gather Absorber Info
+  int abs_num = 0;
+  while(true) {
+    sprintf(key, "%s.abs%d", my_id.c_str(), abs_num);
+    try {
+      pin->GetString("radiation", key);
+    } catch (const std::runtime_error& e) {
+      break;
+    }
+    abs_num++;
+  } // while
+
+  nabs = abs_num;
+  absorbers.NewAthenaArray(nabs);
+
+  char scalar_key[100];
+  int abs_scalar_num = 0;
+  std::string abs_name;
+  for (int i = 0; i < nabs; ++i)
+  {
+    sprintf(key, "%s.abs%d", my_id.c_str(), i);
+    abs_name = pin->GetString("radiation", key);
+    // sprintf(scalar_key, "%s.scalar", key);
+    // abs_scalar_num = pin->GetOrAddInteger("radiation", scalar_key, -1);
+
+    Absorber* pabs = GetAbsorberByName(abs_name, pin);
+
+    absorbers(i) = pabs;
+  }
+
+  MeshBlock *pmb = pmy_rad->pmy_block;
+  band_flux.NewAthenaArray(pmb->ncells3, pmb->ncells2, pmb->ncells1+1);
+  band_tau.NewAthenaArray(pmb->ncells3, pmb->ncells2, pmb->ncells1);
+  band_tau_cell.NewAthenaArray(pmb->ncells3, pmb->ncells2, pmb->ncells1);
+
+  spectral_flux_density.NewAthenaArray(nspec, pmb->ncells3, pmb->ncells2, pmb->ncells1+1);
+  tau.NewAthenaArray(nspec, pmb->ncells3, pmb->ncells2, pmb->ncells1);
+  tau_cell.NewAthenaArray(nspec, pmb->ncells3, pmb->ncells2, pmb->ncells1);
+}
+
+RadiationBand::~RadiationBand() {
+  for (int i = 0; i < nabs; ++i)
+  {
+    delete absorbers(i);
+  }
+  delete my_rtsolver;
+  delete[] spec;
+}
+
+void RadiationBand::LoadInputSpectrum(std::string file) {
+  AthenaArray<Real> file_data;
+  ReadDataTable(file_data, file);
+
+  int n_file = file_data.GetDim2();
+  float_triplet *file_spec = new float_triplet[n_file];
+  for (int i = 0; i < n_file; ++i)
+  {
+    file_spec[i].x = file_data(i,0);
+    file_spec[i].y = file_data(i,1);
+  }
+
+  spline(n_file, file_spec, 0., 0.);
+
+  int ii = -1;
+  Real dx;
+
+  for (int n = 0; n < nspec; ++n)
+  {
+    Real wave = spec[n].wave;
+    ii = find_place_in_table(n_file, file_spec, wave, &dx, ii);
+    spec[n].flux = splint(wave, file_spec+ii, dx);
+  }
+}
+
+void RadiationBand::ConstructRTSolver(std::string name, ParameterInput *pin) {
+  if (strcmp(name.c_str(), "SIMPLE") == 0) {
+    delete my_rtsolver;
+    my_rtsolver = new SimpleRTSolver(this, pin);
+  }
+  else if (strcmp(name.c_str(), "DISORT") == 0) {
+    delete my_rtsolver;
+    my_rtsolver = new DisortRTSolver(this, pin);
+  }
+  else {
+    std::stringstream msg;
+    msg << "### FATAL ERROR in RadiationBand::ConstructRTSolver" << std::endl
+        << "Radiation Band " << my_id << " found unknown rtsolver " << name
+        << std::endl;
+    ATHENA_ERROR(msg);
+  }
+}
+
+// To be overridden in pgen file
+// Constructs an absorber object based on the name from the problem file
+Absorber* __attribute__((weak)) RadiationBand::GetAbsorberByName(
+  std::string name, ParameterInput *pin) {}
+
+void RadiationBand::SetSpectralProperties(MeshBlock *pmb, AthenaArray<Real> const& w, AthenaArray<Real> const& cons_scalar, int k, int j) {
+  Coordinates *pcoord = pmy_rad->pmy_block->pcoord;
+
+  tau.ZeroClear();
+  tau_cell.ZeroClear();
+  band_tau.ZeroClear();
+  band_tau_cell.ZeroClear();
+
+  int is = pmb->is; int ie = pmb->ie;
+  
+  // loop collumn
+  for (int i = ie; i >= is; --i)
+  {
+    Real dx = pcoord->dx1f(i);
+
+    // loop wavelength
+    for (int n = 0; n < nspec; ++n)
+    {
+
+      // loop absorbers
+      for (int a = 0; a < nabs; ++a)
+      {
+        Absorber *pabs = absorbers(a);
+        pabs->CalculateAbsorptionCoefficient(w, cons_scalar, n, k, j, i);
+        tau_cell(n,k,j,i) += pabs->absorptionCoefficient(n, k, j, i);
+        // tau_cell(n,k,j,i) += pabs->AbsorptionCoefficient(w, spec[n].wave, k, j, i);
       }
+      tau_cell(n,k,j,i) *= dx;
+
+      // calculate tau as sum of tau_cell for this cell and above
+      if (i == ie) {
+        tau(n,k,j,i) = tau_cell(n,k,j,i);
+      }
+      else {
+        tau(n,k,j,i) = tau_cell(n,k,j,i) + tau(n,k,j,i+1);
+      }
+      // band values are integrated along wavelength dimension
+      band_tau_cell(k,j,i) += tau_cell(n,k,j,i) * spec[n].wgt;
     }
 
-    a = a->next;
-    second_absorber=true;
+    if (i == ie) {
+      band_tau(k,j,i) = band_tau_cell(k,j,i);
+    }
+    else {
+      band_tau(k,j,i) = band_tau_cell(k,j,i) + band_tau(k,j,i+1);
+    }
+  }
+}
+
+// sets spectral_flux_density at the top
+// calls my_rtsolver to compute it through the collumn
+void RadiationBand::RadiativeTransfer(MeshBlock *pmb, Real radiation_scaling, int k, int j) {
+  int ie = pmb->ie;
+  for (int n = 0; n < nspec; ++n) {
+    spectral_flux_density(n,k,j,ie+1) = spec[n].flux*radiation_scaling;
+
+    // fills in spectral_flux_density
+    // computes which absorber absorbs the radiation
+    my_rtsolver->RadiativeTransfer(pmb, n, k, j);
   }
 }

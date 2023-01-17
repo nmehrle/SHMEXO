@@ -3,27 +3,31 @@
 #include <algorithm>
 #include <stdexcept>
 #include <cstring>
+#include <sstream>    // stringstream
 #include <cmath>
 #include <cassert>  // assert
 
 // Athena++ headers
-#include "../athena_arrays.hpp"
-#include "../globals.hpp"
+#include "../../athena_arrays.hpp"
+#include "../../globals.hpp"
+#include "../radiation.hpp"
 #include "absorber.hpp"
 #include "user_absorber.hpp"
 
 UserDefinedAbsorber::UserDefinedAbsorber(RadiationBand *pband):
   Absorber(pband),
-  UserAbsorptionCoeffFunc_{},
-  UserEnergyAbsorbFunc_{}
+  UserAbsorptionCoeffFunc_(nullptr),
+  UserEnergyAbsorbFunc_(nullptr)
 {
   return;
 }
 
-Real UserDefinedAbsorber::AbsorptionCoefficient(Real wave, Real const prim[], int k, int j, int i) const
+void UserDefinedAbsorber::CalculateAsorptionCoefficient(AthenaArray<Real> const& prim, int n, int k, int j, int i)
 {
+  Real wave = pmy_band->spec[n].wave;
+
   if (UserAbsorptionCoeffFunc_ != nullptr) {
-    return UserAbsorptionCoeffFunc_(this, wave, prim, k, j, i);
+    absorptionCoefficient(n,k,j,i) = UserAbsorptionCoeffFunc_(this, prim, wave, k, j, i);
   }
   else {
     std::stringstream msg;
@@ -34,7 +38,7 @@ Real UserDefinedAbsorber::AbsorptionCoefficient(Real wave, Real const prim[], in
   }
 }
 
-Real __attribute__((weak)) UserDefinedAbsorber::EnergyAbsorption(Real wave, Real flux, int k, int j, int i)
+Real UserDefinedAbsorber::EnergyAbsorption(Real wave, Real const flux, int k, int j, int i)
 {
   if (UserEnergyAbsorbFunc_ != nullptr) {
     return UserEnergyAbsorbFunc_(this, wave, flux, k, j, i);

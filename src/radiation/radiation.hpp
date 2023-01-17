@@ -6,120 +6,93 @@
 
 // Athena++ headers
 #include "../athena.hpp"
-#include "../astronomy/celestrial_body.hpp"
 
 class MeshBlock;
 class ParameterInput;
 class Absorber;
+class RTSolver;
 class Radiation;
-
-#ifdef RT_DISORT
-  struct disort_state;
-  struct disort_output;
-#endif
+class RadiationBand;
 
 struct Spectrum {
-  Real rad, wav, wgt;
+  Real flux, wave, wgt;
 };
 
-struct Direction {
-  Real mu, phi;
-};
-
-class RadiationBand {
-public:
-  // data
-  std::string myname;
-  Radiation *pmy_rad;
-  RadiationBand *prev, *next;
-  Absorber *pabs;
-
-  // spectra
-  Spectrum *spec;
-  int nspec, npmom;   // number of spectra and Legendre moments
-
-  // radiation results
-  AthenaArray<Real> net_spectral_flux; // energy/time/wavelength
-  AthenaArray<Real> boundary_flux[3]; // net flux on boundaries
-
-
-  // band radiation results
-  AthenaArray<Real> btau, bssa, bpmom;
-  AthenaArray<Real> bflxup, bflxdn;
-  AthenaArray<Real> btoa;
-
-  // functions
-  RadiationBand(Radiation *prad); // delayed initialization
-  RadiationBand(Radiation *prad, std::string name, ParameterInput *pin);
-  ~RadiationBand();
-  void AddAbsorber(std::string name, std::string file, ParameterInput *pin);
-  void AddAbsorber(Absorber *pab);
-  void SetSpectralProperties(AthenaArray<Real> const& w, int k, int j, int il, int iu);
-  void RadtranFlux(Direction const rin, Real rad_scaling,
-    int k, int j, int il, int iu);
-  void RadtranRadiance(Direction const rin, Direction const *rout, int nrout, Real dist, Real ref_dist,
-    int k, int j, int il, int iu);
-  void CalculateEnergyAbsorption(AthenaArray<Real> &dflx, int k, int j, int il, int iu);
-
-#ifdef RT_DISORT
-  void init_disort(ParameterInput *pin);
-  void free_disort();
-#endif
-
-protected:
-  Real **tau_, **ssa_, ***pmom_, *tem_;
-  Real **flxup_, **flxdn_;
-  Real **toa_;
-  Real alpha_;  // T ~ Ts*(\tau/\tau_s)^\alpha at lower boundary
-
-#ifdef RT_DISORT
-  disort_state *ds;
-  disort_output *ds_out;
-#endif
-};
+struct float_triplet;
 
 class Radiation {
   friend class RadiationBand;
 public:
   // data
   MeshBlock *pmy_block;
-  RadiationBand *pband;
-  Real cooldown, current;
-  CelestrialBody *planet;
+  AthenaArray<RadiationBand*> my_bands;
 
-  AthenaArray<Real> du;
+  int nbands;
+
+  // change in energy in a substep due to radiation absorption
+  AthenaArray<Real> dE;
 
   // functions
-  Radiation(MeshBlock *pmb); // delayed initialization
   Radiation(MeshBlock *pmb, ParameterInput *pin);
   ~Radiation();
-  RadiationBand* GetBand(int n);
-  int GetNumBands();
-  void CalculateRadiativeTransfer(AthenaArray<Real> const& w, Real time,
-    int k, int j, int il, int iu);
-  void CalculateRadiances(AthenaArray<Real> const& w, Real time,
-    int k, int j, int il, int iu);
+
+  void CalculateRadiativeTransfer(AthenaArray<Real> const& prim, AthenaArray<Real> const& cons_scalar, Real time, int k, int j);
+  void CalculateFluxDifference();
   void CalculateEnergyAbsorption(const Real dt);
   void AddRadiationSourceTerm(const Real dt, AthenaArray<Real> &du_hydro);
-  bool IsDynamic() { return dynamic_; }
-  Real GetBeam() { return beam_; }
 
 protected:
   // reserved incoming and outgoing rays
-  bool dynamic_;
-  Direction *rin_, *rout_;
-  int nrin_, nrout_;
-  Real dist_;
-  Real ref_dist_;
-  Real beam_;
+  std::string default_spec_file, default_rt_solver;
 
-  RadiationTimeFunc UserRadiationTimeFunc;
+  RadiationScalingFunc UserRadiationScalingFunc;
+};
 
-  // scratch space to compute change in radflux
-  AthenaArray<Real> x1face_area_, x2face_area_, x3face_area_;
-  AthenaArray<Real> x2face_area_p1_, x3face_area_p1_;
-  AthenaArray<Real> cell_volume_;
-  AthenaArray<Real> dflx_;
+class RadiationBand {
+  friend class Absorber;
+public:
+  std::string my_name;
+  Radiation *pmy_rad;
+  RTSolver *my_rtsolver;
+
+  AthenaArray<Absorber*> absorbers;
+  Real wavelength_coefficient;
+  int nabs;
+
+  int nspec;
+  Spectrum *spec;
+
+  // band-integrated quantities
+  AthenaArray<Real> band_flux;
+  AthenaArray<Real> band_tau, band_tau_cell;
+
+  // spectral flux density at bottom of cells
+  // units -- [energy / time * area * wavelength]
+  // length -- nspec, ncells3, ncells2, ncells1+1
+  AthenaArray<Real> spectral_flux_density;
+
+  // tau_cell -- optical depth inside one cell
+  // tau -- optical depth of all cells above this cell including this cell
+  //        such that F(i) = F_input * exp[-tau(i)]
+  //        note F(i) is flux at bottom of cell (i)
+  //        F(iu+1) = F_input
+  //        F(iu) = F_input * exp[-tau(iu)]
+  AthenaArray<Real> tau, tau_cell;
+
+
+  RadiationBand(Radiation *prad, std::string name, ParameterInput *pin);
+  ~RadiationBand();
+
+  void LoadInputSpectrum(std::string file);
+  void ConstructRTSolver(std::string name, ParameterInput *pin);
+
+  Absorber* GetAbsorberByName(std::string name, ParameterInput *pin);
+
+  void SetSpectralProperties(MeshBlock *pmb, AthenaArray<Real> const& w, AthenaArray<Real> const& cons_scalar, int k, int j);
+  void RadiativeTransfer(MeshBlock *pmb, Real radiation_scaling, int k, int j);
+
+protected:
+  std::string my_id;
 };
 
 #endif
