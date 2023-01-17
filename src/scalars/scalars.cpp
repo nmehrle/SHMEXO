@@ -29,6 +29,7 @@ PassiveScalars::PassiveScalars(MeshBlock *pmb, ParameterInput *pin)  :
     s1(NSCALARS, pmb->ncells3, pmb->ncells2, pmb->ncells1),
     r(NSCALARS, pmb->ncells3, pmb->ncells2, pmb->ncells1),
     ds(NSCALARS, pmb->ncells3, pmb->ncells2, pmb->ncells1),
+    m(NSCALARS),
     s_flux{ {NSCALARS, pmb->ncells3, pmb->ncells2, pmb->ncells1+1},
             {NSCALARS, pmb->ncells3, pmb->ncells2+1, pmb->ncells1,
              (pmb->pmy_mesh->f2 ? AthenaArray<Real>::DataStatus::allocated :
@@ -120,5 +121,15 @@ PassiveScalars::PassiveScalars(MeshBlock *pmb, ParameterInput *pin)  :
     dx2_.NewAthenaArray(nc1);
     dx3_.NewAthenaArray(nc1);
     // nu_scalar_tot_.NewAthenaArray(nc1);
+  }
+
+  // Assign mass of scalar particles from problem file
+  // Default to 0
+  char key[80];
+  for (int n=0; n<NSCALARS; ++n)
+  {
+    sprintf(key,"s%d.mass", n);
+    Real mass_i = pin->GetOrAddReal("scalar", key, 0.);
+    m(n) = mass_i;
   }
 }

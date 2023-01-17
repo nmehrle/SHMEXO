@@ -30,7 +30,8 @@ EquationOfState::EquationOfState(MeshBlock *pmb, ParameterInput *pin) :
     gamma_{pin->GetReal("hydro", "gamma")},
     density_floor_{pin->GetOrAddReal("hydro", "dfloor", std::sqrt(1024*float_min))},
     pressure_floor_{pin->GetOrAddReal("hydro", "pfloor", std::sqrt(1024*float_min))},
-    scalar_floor_{pin->GetOrAddReal("hydro", "sfloor", std::sqrt(1024*float_min))} {}
+    scalar_floor_{pin->GetOrAddReal("hydro", "sfloor", std::sqrt(1024*float_min))},
+    boltzmann_{pin->GetOrAddReal("hydro", "boltzmann", 0)} {}
 
 //----------------------------------------------------------------------------------------
 // \!fn void EquationOfState::ConservedToPrimitive(AthenaArray<Real> &cons,
@@ -182,4 +183,40 @@ void EquationOfState::ApplyPrimitiveConservedFloors(
         w_p : pressure_floor_;
 
   return;
+}
+
+
+void EquationOfState::Temperature(const AthenaArray<Real> &w, const AthenaArray<Real> &s, const AthenaArray<Real> &m,
+  Real &T, int k, int j, int i)
+{
+  Real kb = boltzmann_;
+  if ( kb <= 0 ) {
+    std::stringstream msg;
+    msg << "### FATAL ERROR in EOS::Temperature" << std::endl
+        << "    Boltzmann constant (<hydro> boltzmann) not defined in problem file" << std::endl
+        << "    Or defined as negative." << std::endl;
+    ATHENA_ERROR(msg);   
+  }
+
+  // Sum number densities of all species
+  Real number_density = 0;
+  Real dens, mass;
+  for (int n = 0; n < NSCALARS; ++n)
+  {
+    dens = s(n, k, j, i);
+    mass = m(n);
+
+    if (mass <= 0) {
+      std::stringstream msg;
+      msg << "##### Fatal Error in EOS::Temperature." << std::endl
+          << "Particle mass for scalar number " << n << " was not defined, or defined as 0" << std::endl
+          << "Input a valid particle mass.";
+      ATHENA_ERROR(msg);
+    }
+
+    number_density += dens/mass;
+  }
+
+  // P = n K T
+  T = w(IPR, k, j, i) / (number_density * kb);
 }
