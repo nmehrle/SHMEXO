@@ -95,7 +95,7 @@ void ReactionNetwork::ComputeReactionForcing(const Real dt, const AthenaArray<Re
           Reaction *p = my_reactions(r);
           p->react(dn_rate, de_rate, k, j, i);
 
-          du(IEN, k, j, i) += de_rate(r, k,j,i) * dt;  
+          du(IEN, k, j, i) += de_rate(r, k,j,i) * dt;
         }
 
         for (int n = 0; n < NSCALARS; ++n)

@@ -27,7 +27,7 @@ Lya_cooling::Lya_cooling(ReactionNetwork *pnetwork, std::string name,
   scalar_num = neu_num;
   ion_scalar_num = ion_num;
   electron_scalar_num = elec_num;
-  my_name = name;  
+  my_name = name;
 }
 
 void H_recombination::react(AthenaArray<Real> &dn_rate, AthenaArray<Real> &de_rate, int k, int j, int i) {

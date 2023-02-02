@@ -81,7 +81,7 @@ namespace {
 void Mesh::InitUserMeshData(ParameterInput *pin)
 {
   EnrollUserExplicitGravityFunction(gravity_func);
-  EnrollUserExplicitSourceFunction(SourceTerms);
+  // EnrollUserExplicitSourceFunction(SourceTerms);
 
   // Radiation parameters
   dist_ = pin->GetOrAddReal("radiation", "distance", 1.);
@@ -219,8 +219,7 @@ void MeshBlock::UserWorkBeforeOutput(ParameterInput *pin)
 }
 
 void ReactionNetwork::InitUserReactions(ParameterInput *pin) {
-  // Reaction *rxn = new H_recombination(this, "H Recombination", HYD, HPLUS, ELEC);
-  // AddReaction(rxn);
+  Reaction *rxn = new H_recombination(this, "H Recombination", HYD, HPLUS, ELEC);
   return;
 }
 
@@ -248,102 +247,28 @@ Absorber* RadiationBand::GetAbsorberByName(std::string name, ParameterInput *pin
 //----------------------------------------------------------------------------------------
 
 
-// sources in ghost cells?
-void SourceTerms(MeshBlock *pmb, const Real time, const Real dt,
-  const AthenaArray<Real> &w, const AthenaArray<Real> &r,
-  const AthenaArray<Real> &bcc,
-  AthenaArray<Real> &du, AthenaArray<Real> &ds)
-{
-  int is = pmb->is, js = pmb->js, ks = pmb->ks;
-  int ie = pmb->ie, je = pmb->je, ke = pmb->ke;
+// void SourceTerms(MeshBlock *pmb, const Real time, const Real dt,
+//   const AthenaArray<Real> &w, const AthenaArray<Real> &r,
+//   const AthenaArray<Real> &bcc,
+//   AthenaArray<Real> &du, AthenaArray<Real> &ds)
+// {
+//   int is = pmb->is, js = pmb->js, ks = pmb->ks;
+//   int ie = pmb->ie, je = pmb->je, ke = pmb->ke;
 
-  AthenaArray<Real> vol;
-  vol.NewAthenaArray(pmb->ncells1);
+//   AthenaArray<Real> vol;
+//   vol.NewAthenaArray(pmb->ncells1);
 
-  PassiveScalars *ps = pmb->pscalars;
+//   PassiveScalars *ps = pmb->pscalars;
 
-  for (int k = ks; k <= ke; ++k) {
-    for (int j = js; j <= je; ++j) {
-      pmb->pcoord->CellVolume(k,j,is,ie,vol);
+//   for (int k = ks; k <= ke; ++k) {
+//     for (int j = js; j <= je; ++j) {
+//       pmb->pcoord->CellVolume(k,j,is,ie,vol);
 
-      for (int i = is; i <= ie; ++i) {
-        // number densities
-        Real n_ion = ps->s(HPLUS,k,j,i)/mh;
-        Real n_neu = ps->s(HYD,k,j,i)/mh;
-
-        // //ionization
-        // // negative sign bc downward energy transfer
-        // Real energy_ion = -dt * pmb->ruser_meshblock_data[0](k,j,i);
-        // Real n_ion_gain = energy_ion/Ry/vol(i);
-
-        // // Real n = ps->s(0,k,j,i)/mh;
-        // // Real Fx = pmb->prad->pband->bflxdn(k,j,i)/2.563e-18;// Divide by 16eV per photon to get photon number flux
-        // // Real I = Fx * (n_neu * A0);
-        // // Real n_ion_gain = dt * I;
-
-        // if (n_ion_gain > n_neu) {
-        //   std::stringstream msg;
-        //   msg << "### FATAL ERROR in SourceTerms" << std::endl
-        //       << "    n_ion_gain ("<< n_ion_gain <<") is greater than n_neutral ("<< n_neu <<")." << std::endl
-        //       << "    Re-run with lower timestep." << std::endl;
-        // }
-
-        Real n_ion_gain = 0.0;
-
-        // recombination
-        Real R = pmb->pthermo->GetRd();
-        Real T = w(IPR,k,j,i)/(R * w(IDN,k,j,i));
-        Real ion_f = ps->r(HPLUS,k,j,i);
-        T = T * (1.- ion_f/2.);
-
-        Real testval;
-        pmb->peos->Temperature(w, pmb->pscalars->s, pmb->pscalars->m, testval, k,j,i);
-
-        // Real T = pmb->pthermo->Temp(pmb->phydro->w.at(k,j,i));
-        Real alpha_B  = 2.59E-19 * pow(T/1.E4,-0.7); // m3 s-1
-        Real n_recomb = dt * alpha_B * (n_ion * n_ion); //m-3
-
-        // cooling processes
-        // -- recomb cooling
-        Real kb = 1.3806504E-23; // J/K
-        Real recomb_cooling_const = 6.11E-16 * pow(T,-0.89); // m3 s-1
-        Real recomb_cooling_rate = recomb_cooling_const * (kb * T) * (n_ion * n_ion); //J s-1 m-3
-
-        // -- lya cooling
-        Real lya_cooling_const = 7.5E-32 * exp(-118348./T); // J m3 s-1
-        Real lya_cooling_rate = lya_cooling_const * n_ion * n_neu; // J m-3 s-1
-
-        // recomb_cooling_rate = 0;
-        du(IEN,k,j,i) -= (recomb_cooling_rate + lya_cooling_rate) * dt; // J m-3
-        // du(IEN,k,j,i) -= (lya_cooling_rate) * dt; // J m-3
-        
-        // n_recomb = 0;
-        ds(HYD,k,j,i) += ( n_recomb) * mh;
-        ds(HPLUS,k,j,i) += (-n_recomb) * mh;
-        ds(ELEC,k,j,i) += (-n_recomb) * ps->m(0);
-
-        // pmb->ruser_meshblock_data[0](k,j,i) = pmb->prad->my_bands(0)->spectral_flux_density(0,k,j,i);
-
-        // // Outputs
-        // // 1 -- radiation energy absorbed prad->du
-        // pmb->ruser_meshblock_data[1](k,j,i) = pmb->prad->dE(k,j,i);
-        // // 2 -- ionization rate
-        // // pmb->ruser_meshblock_data[2](k,j,i) = n_ion_gain/dt;
-        // // 3 -- recombination rate
-        // // pmb->ruser_meshblock_data[3](k,j,i) = n_recomb/dt;
-        // // 4 -- recombinative cooling rate
-        // pmb->ruser_meshblock_data[4](k,j,i) = recomb_cooling_rate;
-        // // 5 -- lyman alpha cooling rate
-        // pmb->ruser_meshblock_data[5](k,j,i) = lya_cooling_rate;
-        // // 6 -- output du?
-        // pmb->ruser_meshblock_data[6](k,j,i) = du(IEN,k,j,i);
-      }
-    }
-  }
-
-  // clear eng deposited for next iteration
-  // pmb->ruser_meshblock_data[0].ZeroClear();
-}
+//       for (int i = is; i <= ie; ++i) {
+//       }
+//     }
+//   }
+// }
 
 // needs validation
 void gravity_func(MeshBlock *pmb, AthenaArray<Real> &g1, AthenaArray<Real> &g2, AthenaArray<Real> &g3) {
