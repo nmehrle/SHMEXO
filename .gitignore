@@ -1,6 +1,7 @@
 test/
 run/
 setup/
+build.sh
 sync_from_laptop
 merge.py
 builder
