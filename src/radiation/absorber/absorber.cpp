@@ -4,12 +4,13 @@
 // Athena++ headers
 #include "../../athena.hpp"
 #include "absorber.hpp"
+#include "../../parameter_input.hpp"
 #include "../radiation.hpp"
 #include "../../mesh/mesh.hpp"
 #include "../../scalars/scalars.hpp"
 #include "../../reaction/reaction_network.hpp"
 
-Absorber::Absorber(RadiationBand *pband, int my_scalar_number) {
+Absorber::Absorber(RadiationBand *pband, int my_scalar_number, ParameterInput *pin) {
   pmy_band = pband;
   MeshBlock *pmb = pmy_band->pmy_rad->pmy_block;
   ps = pmb->pscalars;
@@ -30,6 +31,9 @@ Absorber::Absorber(RadiationBand *pband, int my_scalar_number) {
     h(n) = 0.0;
     q(n) = 1.0;
   }
+
+  c = pin->GetReal("problem", "c");
+  h = pin->GetReal("problem", "h");
 
   absorptionCoefficient.NewAthenaArray(pband->nspec, pmb->ncells3, pmb->ncells2, pmb->ncells1);
   energyAbsorbed.NewAthenaArray(pband->nspec, pmb->ncells3, pmb->ncells2, pmb->ncells1);
@@ -95,5 +99,25 @@ void Absorber::CalculateAbsorptionCoefficient(AthenaArray<Real> const& prim, Ath
   for (int n = 0; n < pmy_band->nspec; ++n)
   {
     absorptionCoefficient(n,k,j,i) = number_density * crossSection(n);
+  }
+}
+
+
+void Absorber::CalculateEnergyFunctions(Spectrum const *spec, int nspec) {
+  Real wave;
+  Real lambda_0 = (c*h)/ionization_energy;
+  for (int n = 0; n < nspec; ++n) {
+    wave = spec[n].wave * pmy_band->wavelength_coefficient;
+    if (wave > lambda_0) {
+      // what do we do!!
+      // region where cross section is zero so should never be relevant
+      // default values
+      h(n) = 0.0;
+      q(n) = 1.0; 
+    }
+    else {
+      h(n) = wave/lambda_0;
+      q(n) = 1.0 - h(n);
+    }
   }
 }

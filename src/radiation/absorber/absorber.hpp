@@ -4,6 +4,7 @@
 // Athena++ headers
 #include "../../athena.hpp"
 
+class ParameterInput;
 class RadiationBand;
 class Radiation;
 class MeshBlock;
@@ -31,8 +32,8 @@ public:
   AthenaArray<Real> absorptionCoefficient;
   AthenaArray<Real> energyAbsorbed;
 
-  Absorber(RadiationBand *pband, int my_scalar_number);
-  Absorber(RadiationBand *pband): Absorber(pband, -1) {};
+  Absorber(RadiationBand *pband, int my_scalar_number, ParameterInput *pin);
+  Absorber(RadiationBand *pband, ParameterInput *pin): Absorber(pband, -1, *pin) {};
   virtual ~Absorber();
 
   // void AssociateReaction(Reaction *prxn);
@@ -41,7 +42,12 @@ public:
   void CalculateAbsorptionCoefficient(AthenaArray<Real> const& prim, AthenaArray<Real> const& cons_scalar, int n, int k, int j, int i);
 
   // used in some children
+  // should make an ionizing absorber child
   Real ionization_energy;
+  Real c, h;
+
+  // calculates how much ionizing radiaion becomes heat vs 
+  void CalculateEnergyFunctions(Spectrum const *spec, int nspec);
 protected:
   void SetScalar(int n);
 

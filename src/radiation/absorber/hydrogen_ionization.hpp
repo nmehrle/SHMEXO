@@ -17,7 +17,6 @@ protected:
   Real A0=6.30431812E-22; // m2
   // rydberg frequency
   Real nu_0=3.2898419603E15; // s-1
-  Real c=2.998E8; // m/s
 
   void CalculateCrossSections(Spectrum const *spec, int nspec);
   void CalculateEnergyFunctions(Spectrum const *spec, int nspec);
