@@ -7,17 +7,18 @@
 #include "../../scalars/scalars.hpp"
 #include "../../radiation/radiation.hpp"
 #include "../../radiation/absorber/absorber.hpp"
+#include "../../radiation/absorber/ionizing_absorber.hpp"
 #include "../reaction_network.hpp"
 #include "photoionization.hpp"
 
-Photoionization::Photoionization(ReactionNetwork *pnetwork, std::string name, Absorber *pabs,
-  int ion_num, int elec_num, Real ion_eng):
+Photoionization::Photoionization(ReactionNetwork *pnetwork, std::string name, IonizingAbsorber *pabs,
+  int ion_num, int elec_num):
     Reaction(pnetwork, name)
 {
   pmy_abs = pabs;
   scalar_num = pabs->scalar_num;
   ion_scalar_num = ion_num;
-  ionization_energy = ion_eng;
+  ionization_energy = pabs->ionization_energy;
   electron_scalar_num = elec_num;
   my_name = name;
 }

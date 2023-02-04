@@ -10,6 +10,7 @@ class Radiation;
 class MeshBlock;
 class PassiveScalars;
 class Reaction;
+struct Spectrum;
 
 class Absorber {
   friend class Reaction;
@@ -33,21 +34,20 @@ public:
   AthenaArray<Real> energyAbsorbed;
 
   Absorber(RadiationBand *pband, int my_scalar_number, ParameterInput *pin);
-  Absorber(RadiationBand *pband, ParameterInput *pin): Absorber(pband, -1, *pin) {};
+  Absorber(RadiationBand *pband, ParameterInput *pin): Absorber(pband, -1, pin) {};
   virtual ~Absorber();
-
-  // void AssociateReaction(Reaction *prxn);
 
   // should take in scalars as well
   void CalculateAbsorptionCoefficient(AthenaArray<Real> const& prim, AthenaArray<Real> const& cons_scalar, int n, int k, int j, int i);
 
-  // used in some children
-  // should make an ionizing absorber child
-  Real ionization_energy;
-  Real c, h;
+  // constants for unit conversion, from pin
+  Real speed_of_light, planck_constant;
 
-  // calculates how much ionizing radiaion becomes heat vs 
-  void CalculateEnergyFunctions(Spectrum const *spec, int nspec);
+  // calculate cross sections, to be overridden by children
+  virtual void CalculateCrossSections(Spectrum const *spec, int nspec){};
+
+  // calculates how much ionizing radiaion becomes heat vs absorbed
+  virtual void CalculateEnergyFunctions(Spectrum const *spec, int nspec){};
 protected:
   void SetScalar(int n);
 

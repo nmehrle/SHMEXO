@@ -12,24 +12,25 @@
 #include "../../globals.hpp"
 #include "../radiation.hpp"
 #include "absorber.hpp"
+#include "ionizing_absorber.hpp"
 #include "hydrogen_ionization.hpp"
 
-HydrogenIonization::HydrogenIonization(RadiationBand *pband, int my_scalar_number):
-  Absorber(pband, my_scalar_number)
-{
+HydrogenIonization::HydrogenIonization(RadiationBand *pband, int my_scalar_number, std::string name, ParameterInput *pin):
+  IonizingAbsorber(pband, my_scalar_number, name, pin)
+{  
   Spectrum *spec = pband->spec;
   int nspec = pband->nspec;
   CalculateCrossSections(spec, nspec);
-  CalculateEnergyFunctions(spec, nspec);
 }
 
 void HydrogenIonization::CalculateCrossSections(Spectrum const *spec, int nspec) {
   Real wave, freq;
   Real eps, term1, numerator, denominator;
+
   for (int n = 0; n < nspec; ++n)
   {
     wave = spec[n].wave;
-    freq = c/(wave * pmy_band->wavelength_coefficient);
+    freq = speed_of_light/(wave * pmy_band->wavelength_coefficient);
 
     if (freq<nu_0) {
       crossSection(n) = 0.0;

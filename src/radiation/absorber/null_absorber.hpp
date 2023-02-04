@@ -11,6 +11,8 @@ public:
   virtual ~NullAbsorber() {};
   void CalculateAsorptionCoefficient(AthenaArray<Real> const& prim, int n, int k, int j, int i)
     {return 0;};
+
+  virtual void CalculateEnergyFunctions(Spectrum const *spec, int nspec){};
 };
 
 #endif
