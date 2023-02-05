@@ -22,6 +22,7 @@
 #include "../radiation/radiation.hpp"
 #include "../reaction/reaction_network.hpp"
 #include "../radiation/absorber/hydrogen_ionization.hpp"
+#include "../radiation/absorber/helium_ionization.hpp"
 #include "../reaction/reactions/photoionization.hpp"
 #include "../reaction/reactions/hydrogen_reactions.hpp"
 
@@ -51,8 +52,7 @@ namespace {
   Real Ry=2.1798723611E-18;// J (joules)
 
   enum species {ELEC = 0, HYD = 1, HPLUS = 2,
-                HE = 3, HEPLUS = 4, HE21S = 5,
-                HE23S = 6, HE21P = 7, HE23P = 8};
+                HE = 3, HEPLUS = 4, HETRIP=5};
 
   AthenaArray<Real> initial_abundances;
 } //namespace
@@ -237,7 +237,8 @@ Absorber* RadiationBand::GetAbsorberByName(std::string name, ParameterInput *pin
     return a;
   }
   else if (name == "HELIUM_IONIZATION") {
-    HeliumIonization *a = new HeliumIonization(this, HE, name, pin);
+    std::string xc_file = pin->GetString("radiation", "Helium_1(1)S_file");
+    HeliumIonization *a = new HeliumIonization(this, HE, name, pin, xc_file);
 
     ReactionNetwork *pnetwork = pmy_rad->pmy_block->pnetwork;
     Reaction *rxn = new Photoionization(pnetwork, name, a, HEPLUS, ELEC);

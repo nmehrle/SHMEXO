@@ -17,7 +17,7 @@ H_recombination::H_recombination(ReactionNetwork *pnetwork, std::string name,
   scalar_num = neu_num;
   ion_scalar_num = ion_num;
   electron_scalar_num = elec_num;
-  my_name = name;  
+  my_name = name;
 }
 
 Lya_cooling::Lya_cooling(ReactionNetwork *pnetwork, std::string name,

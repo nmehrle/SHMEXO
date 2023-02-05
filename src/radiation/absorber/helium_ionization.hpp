@@ -5,29 +5,21 @@
 #include "absorber.hpp"
 #include "ionizing_absorber.hpp"
 
+struct float_triplet;
+
 class HeliumIonization: public IonizingAbsorber {
 public:
-  HeliumIonization(RadiationBand *pband, int my_scalar_number, std::string name, ParameterInput *pin);
+  HeliumIonization(RadiationBand *pband, int my_scalar_number, std::string name, ParameterInput *pin, std::string my_xc_file);
   ~HeliumIonization() {};
 
 protected:
   // Helium Cross Section Constants from Verner1996
   // https://articles.adsabs.harvard.edu/pdf/1996ApJ...465..487V
-
-  Real Eth  = 2.459E1; // eV
-  Real Emax = 5.000E4; // eV
-  Real E0   = 1.361E1; // eV
-  Real sig0 = 9.492E2; // Mb
+  std::string xc_file;
 
   Real eV_conversion = 1.602E-19; // J/eV
-  Real mb_conversion = 1.E-18; // m^2/Mb
-
-  // following are dimensionless
-  Real ya = 1.469;
-  Real P  = 3.188;
-  Real yw = 2.039;
-  Real y0 = 4.434E-1;
-  Real y1 = 2.136;
+  Real mb_conversion = 1.E-22; // m^2/Mb
+  Real ry_conversion = 13.605693123; // eV/Ry
 
   void CalculateCrossSections(Spectrum const *spec, int nspec);
 };
