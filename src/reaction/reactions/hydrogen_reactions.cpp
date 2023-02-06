@@ -42,14 +42,14 @@ void H_recombination::react(AthenaArray<Real> &dn_rate, AthenaArray<Real> &de_ra
   Real alpha_B  = 2.59E-13 * pow(T/1.E4,-0.7); // cm3 s-1
   Real n_recomb = alpha_B * n_ion * n_elec;
 
-  Real recomb_cooling_const = -6.11E-10 * pow(T,-0.89); // cm3 s-1
-  Real recomb_cooling_rate = recomb_cooling_const * (pmy_network->boltzmann * T) * (n_ion * n_elec); //J s-1 m-3
+  Real beta = 6.11E-10 * pow(T,-0.89); // cm3 s-1
+  Real e_recomb = beta * (pmy_network->boltzmann * T) * (n_ion * n_elec); //J s-1 m-3
 
   dn_rate(scalar_num, k, j, i) += n_recomb;
   dn_rate(ion_scalar_num, k, j, i) -= n_recomb;
   dn_rate(electron_scalar_num, k, j, i) -= n_recomb;
 
-  de_rate(my_rxn_num, k, j, i) += recomb_cooling_rate;
+  de_rate(my_rxn_num, k, j, i) -= e_recomb;
 }
 
 void Lya_cooling::react(AthenaArray<Real> &dn_rate, AthenaArray<Real> &de_rate, int k, int j, int i) {
