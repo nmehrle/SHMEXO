@@ -36,20 +36,12 @@ namespace {
   Real wave_to_meters_conversion;
 
   // radiation variables
-  Real dist_, ref_dist_;
+  Real rad_scaling;
 
   // tripathi conditions variables
   Real rho_p, cs, space_density_factor;
   Real r_0, r_e, rho_0, rho_e, P_0, P_e;
   Real r_replenish;
-
-  //Physical Constants -- for problem file?
-  Real A0=6.30431812E-22; // (m^2)
-  Real nu_0=3.2898419603E15; // (1/s) Rydberg frequency
-  Real c=2.998E8; // m/s
-  Real mh=1.674E-27; // kg
-  Real nm_0=91.126705058; // Hydrogen ionization wavelength in nm
-  Real Ry=2.1798723611E-18;// J (joules)
 
   enum species {ELEC = 0, HYD = 1, HPLUS = 2,
                 HE = 3, HEPLUS = 4, HETRIP=5};
@@ -86,10 +78,9 @@ void Mesh::InitUserMeshData(ParameterInput *pin)
   // EnrollUserExplicitSourceFunction(SourceTerms);
 
   // Radiation parameters
-  dist_ = pin->GetOrAddReal("radiation", "distance", 1.);
-  ref_dist_ = pin->GetOrAddReal("radiation", "reference_distance", 1.);
+  rad_scaling = pin->GetOrAddReal("radiation", "radiation_scaling", 1.);
 
-  wave_to_meters_conversion = pin->GetOrAddReal("radiation","wave_to_meters",1.e-9);
+  wave_to_meters_conversion = pin->GetOrAddReal("radiation","wave_to_meters",1.e-7);
   EnrollUserRadiationScalingFunction(RadiationTime);
 
   // Gravity/System Parameters
@@ -108,8 +99,8 @@ void Mesh::InitUserMeshData(ParameterInput *pin)
   pfloor = pin->GetOrAddReal("hydro", "pfloor", 0);
   sfloor = pin->GetOrAddReal("hydro", "sfloor", 0);
 
-  rho_p = pin->GetOrAddReal("problem","rho_p",1.0e-12);
-  cs = pin->GetOrAddReal("problem","cs",3.0e3);
+  rho_p = pin->GetOrAddReal("problem","rho_p",1.0e-15);
+  cs = pin->GetOrAddReal("problem","cs",3.0e5);
   space_density_factor = pin->GetOrAddReal("problem", "space_density_factor", 1.e-4);
   r_replenish = pin->GetOrAddReal("problem", "r_replenish_Rp", 0.75)*Rp;
 
@@ -226,7 +217,7 @@ void ReactionNetwork::InitUserReactions(ParameterInput *pin) {
 }
 
 Absorber* RadiationBand::GetAbsorberByName(std::string name, ParameterInput *pin)
-{ 
+{
   std::stringstream msg;
   if (name == "HYDROGEN_IONIZATION") {
     HydrogenIonization *a = new HydrogenIonization(this, HYD, name, pin);
@@ -348,8 +339,6 @@ void gravity_func(MeshBlock *pmb, AthenaArray<Real> &g1, AthenaArray<Real> &g2, 
 }
 
 Real RadiationTime(AthenaArray<Real> const &prim, Real time, int k, int j) {
-  Real rad_scaling = (ref_dist_*ref_dist_)/(dist_*dist_);
-
   // tripathi
   Real time_factor = 5 * erf(time/8.e4 - 1.5)+5.1;
   // Real time_factor = (std::tanh(time/2000. - 5.)+1.)/2.;
@@ -412,12 +401,12 @@ void SetInitialAbundances(MeshBlock *pmb, PassiveScalars *ps) {
 
 void MeshBlock::ProblemGenerator(ParameterInput *pin)
 {
-  if (NSCALARS != 3) {
-    std::stringstream msg;
-    msg << "### FATAL ERROR in Problem Generator" << std::endl
-        << "    NSCALARS ("<< NSCALARS <<") must be exactly 3." << std::endl;
-    ATHENA_ERROR(msg);
-  }
+  // if (NSCALARS != 3) {
+  //   std::stringstream msg;
+  //   msg << "### FATAL ERROR in Problem Generator" << std::endl
+  //       << "    NSCALARS ("<< NSCALARS <<") must be exactly 3." << std::endl;
+  //   ATHENA_ERROR(msg);
+  // }
 
 
   initial_abundances.NewAthenaArray(NSCALARS, ncells3, ncells2, ncells1);
