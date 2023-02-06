@@ -17,8 +17,8 @@ protected:
   // https://articles.adsabs.harvard.edu/pdf/1996ApJ...465..487V
   std::string xc_file;
 
-  Real eV_conversion = 1.602E-19; // J/eV
-  Real mb_conversion = 1.E-22; // m^2/Mb
+  Real eV_conversion = 1.602E-12; // erg/eV
+  Real mb_conversion = 1.E-18; // cm^2/Mb
   Real ry_conversion = 13.605693123; // eV/Ry
 
   void CalculateCrossSections(Spectrum const *spec, int nspec);

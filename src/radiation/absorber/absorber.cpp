@@ -32,8 +32,8 @@ Absorber::Absorber(RadiationBand *pband, int my_scalar_number, ParameterInput *p
     q(n) = 1.0;
   }
 
-  speed_of_light = pin->GetReal("problem", "c");
-  planck_constant = pin->GetReal("problem", "h");
+  speed_of_light = pin->GetReal("problem", "speed_of_light");
+  planck_constant = pin->GetReal("problem", "planck_constant");
 
   absorptionCoefficient.NewAthenaArray(pband->nspec, pmb->ncells3, pmb->ncells2, pmb->ncells1);
   energyAbsorbed.NewAthenaArray(pband->nspec, pmb->ncells3, pmb->ncells2, pmb->ncells1);

@@ -12,7 +12,7 @@ public:
 
 protected:
   // cross section constant
-  Real A0=6.30431812E-22; // m2
+  Real A0=6.30431812E-18; // cm2
 
   void CalculateCrossSections(Spectrum const *spec, int nspec);
 };
