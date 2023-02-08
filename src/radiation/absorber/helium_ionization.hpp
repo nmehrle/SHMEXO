@@ -5,8 +5,6 @@
 #include "absorber.hpp"
 #include "ionizing_absorber.hpp"
 
-struct float_triplet;
-
 class HeliumIonization: public IonizingAbsorber {
 public:
   HeliumIonization(RadiationBand *pband, int my_scalar_number, std::string name, ParameterInput *pin, std::string my_xc_file);

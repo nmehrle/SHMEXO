@@ -43,11 +43,12 @@ void HeliumIonization::CalculateCrossSections(Spectrum const *spec, int nspec) {
   ReadDataTable(file_data, xc_file);
 
   int n_file = file_data.GetDim2();
-  float_triplet *file_spec = new float_triplet[n_file];
+  Real *file_x = new Real[n_file];
+  Real *file_y = new Real[n_file];
   for (int i = 0; i < n_file; ++i)
   {
-    file_spec[i].x = file_data(i,0);
-    file_spec[i].y = file_data(i,1);
+    file_x[i] = file_data(i,0);
+    file_y[i] = file_data(i,1);
 
     if (i >0 && file_spec[i].x < file_spec[i-1].x) {
       std::stringstream msg;
@@ -56,8 +57,6 @@ void HeliumIonization::CalculateCrossSections(Spectrum const *spec, int nspec) {
       ATHENA_ERROR(msg);
     }
   }
-
-  spline(n_file, file_spec, 0., 0.);
 
   int ii = -1;
   Real dx;
@@ -80,8 +79,7 @@ void HeliumIonization::CalculateCrossSections(Spectrum const *spec, int nspec) {
       ATHENA_ERROR(msg);
     }
     else {
-      ii = find_place_in_table(n_file, file_spec, ry, &dx, ii);
-      xc_mb = splint(ry, file_spec+ii, dx);
+      xc_mb = interp1(ry, file_y, file_x, n_file);
       crossSection(n) = xc_mb * mb_conversion;
     }
   }
