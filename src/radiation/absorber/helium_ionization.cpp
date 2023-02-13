@@ -50,7 +50,7 @@ void HeliumIonization::CalculateCrossSections(Spectrum const *spec, int nspec) {
     file_x[i] = file_data(i,0);
     file_y[i] = file_data(i,1);
 
-    if (i >0 && file_spec[i].x < file_spec[i-1].x) {
+    if (i > 0 && file_x[i] < file_x[i-1]) {
       std::stringstream msg;
       msg << "###### FATAL ERROR in HeliumIonization::CalculateCrossSections" << std::endl
           << "Cross Sections file " << xc_file << " must be in ascending order." << std::endl;
@@ -69,10 +69,10 @@ void HeliumIonization::CalculateCrossSections(Spectrum const *spec, int nspec) {
     energy = planck_constant * freq / eV_conversion; // eV
     ry = energy / ry_conversion; // ry
 
-    if (energy < file_spec[0].x) {
+    if (energy < file_x[0]) {
       crossSection(n) = 0.0;
     }
-    else if (energy > file_spec[n_file-1].x) {
+    else if (energy > file_x[n_file-1]) {
       std::stringstream msg;
       msg << "##### FATAL ERROR in HeliumIonization::CalculateCrossSections"
           << std::endl << "Energy too high error." << std::endl;
