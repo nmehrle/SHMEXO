@@ -25,8 +25,7 @@
 #include "../radiation/absorber/helium_ionization.hpp"
 #include "../reaction/reactions/photoionization.hpp"
 #include "../reaction/reactions/hydrogen_reactions.hpp"
-
-
+#include "../reaction/reactions/helium_reactions.hpp"
 
 namespace {
   // user set variables
@@ -43,8 +42,10 @@ namespace {
   Real r_0, r_e, rho_0, rho_e, P_0, P_e;
   Real r_replenish;
 
+  // species variables
+  Real H_He_ratio, H_He_mass_ratio;
   enum species {ELEC = 0, HYD = 1, HPLUS = 2,
-                HE = 3, HEPLUS = 4, HETRIP=5};
+                HE = 3, HETRIP = 4, HEPLUS=5};
 
   AthenaArray<Real> initial_abundances;
 } //namespace
@@ -103,6 +104,10 @@ void Mesh::InitUserMeshData(ParameterInput *pin)
   cs = pin->GetOrAddReal("problem","cs",3.0e5);
   space_density_factor = pin->GetOrAddReal("problem", "space_density_factor", 1.e-4);
   r_replenish = pin->GetOrAddReal("problem", "r_replenish_Rp", 0.75)*Rp;
+
+  // 92.3% H by number == 75% H by mass
+  H_He_ratio      = pin->GetOrAddReal("problem", "H_He_ratio", -1);
+  H_He_mass_ratio = pin->GetOrAddReal("problem", "H_He_mass_ratio", 0.75);
 
   // Tripathi initial conditions variables
   r_0 = 0.5*Rp;
@@ -212,7 +217,9 @@ void MeshBlock::UserWorkBeforeOutput(ParameterInput *pin)
 }
 
 void ReactionNetwork::InitUserReactions(ParameterInput *pin) {
-  Reaction *rxn = new H_recombination(this, "H Recombination", HYD, HPLUS, ELEC);
+  Reaction *Hrec = new H_recombination(this, "H Recombination", HYD, HPLUS, ELEC);
+  Reaction *Herec = new He_recombination(this, "He Recombination", HE, HEPLUS, ELEC);
+  // Reaction *He23Srec = new He_23S_recombination(this, "He23S Recombination", HETRIP, HEPLUS, ELEC);
   return;
 }
 
@@ -369,7 +376,40 @@ void SetInitialConditions(Real rad, Real &dens, Real &press, Real &v1, Real &v2,
 void SetInitialAbundances(MeshBlock *pmb, PassiveScalars *ps) {
   int il, iu, jl, ju, kl, ku;
   Real rad;
-  Real minval = sfloor / ps->m(ELEC);
+  Real epsilon = sfloor / ps->m(ELEC);
+
+  // validate H/He ratio
+  bool ratio_error = false;
+  if (H_He_ratio <= 0 && H_He_mass_ratio <= 0) {
+    ratio_error = true;
+  }
+  else if (H_He_ratio > 0 && H_He_mass_ratio > 0){
+    ratio_error = true;
+  }
+  if (ratio_error) {
+    std::stringstream msg;
+    msg << "### FATAL ERROR in Problem File" << std::endl
+        << "Must specify exactly one of H_He_ratio or H_He_mass_ratio" << std::endl;
+    ATHENA_ERROR(msg);
+  }
+  if (H_He_ratio > 0) {
+    // mass ratio undefined
+    Real mh  = pmb->pscalars->s(HYD);
+    Real mhe = pmb->pscalars->s(HE);
+    Real r = H_He_ratio;
+    H_He_mass_ratio = (r * mh) / (r * mh + (1-r)*mhe);
+  }
+  else {
+    // number ratio undefined
+    Real mh  = pmb->pscalars->s(HYD);
+    Real mhe = pmb->pscalars->s(HE);
+    Real q = H_He_mass_ratio;
+    H_He_ratio = (q/mh) / (q / mh + (1-q)/mhe);
+  }
+
+  Real q = H_He_mass_ratio;
+  Real mh  = ps->m(HYD);
+  Real mhe = ps->m(HE); 
 
   getMBBounds(pmb, il, iu, jl, ju, kl, ku);
 
@@ -380,14 +420,20 @@ void SetInitialAbundances(MeshBlock *pmb, PassiveScalars *ps) {
         rad = getRad(pmb->pcoord, i, j, k);
         
         if (rad <= r_e) {
-          initial_abundances(HYD,k,j,i)   = 1/ps->m(HYD) - minval;
-          initial_abundances(ELEC,k,j,i)  = minval;
-          initial_abundances(HPLUS,k,j,i) = minval;
+          initial_abundances(ELEC,k,j,i)   = 2*epsilon;
+          initial_abundances(HYD,k,j,i)    = q/mh - epsilon;
+          initial_abundances(HPLUS,k,j,i)  = epsilon;
+          initial_abundances(HE,k,j,i)     = (1-q)/(mhe) - 2*epsilon;
+          initial_abundances(HETRIP,k,j,i) = epsilon;
+          initial_abundances(HEPLUS,k,j,i) = epsilon;
         }
         else {
-          initial_abundances(HYD,k,j,i)   = minval;
-          initial_abundances(ELEC,k,j,i)  = 1/ps->m(HYD) - minval;
-          initial_abundances(HPLUS,k,j,i) = 1/ps->m(HYD) - minval;
+          initial_abundances(ELEC,k,j,i)   = q/mh + (1-q)/(mhe) - 3*epsilon;
+          initial_abundances(HYD,k,j,i)    = epsilon;
+          initial_abundances(HPLUS,k,j,i)  = q/mh - epsilon;;
+          initial_abundances(HE,k,j,i)     = epsilon;
+          initial_abundances(HETRIP,k,j,i) = epsilon;
+          initial_abundances(HEPLUS,k,j,i) = (1-q)/(mhe) - 2*epsilon;
         }
 
         for (int n = 0; n < NSCALARS; ++n)
@@ -401,12 +447,12 @@ void SetInitialAbundances(MeshBlock *pmb, PassiveScalars *ps) {
 
 void MeshBlock::ProblemGenerator(ParameterInput *pin)
 {
-  // if (NSCALARS != 3) {
-  //   std::stringstream msg;
-  //   msg << "### FATAL ERROR in Problem Generator" << std::endl
-  //       << "    NSCALARS ("<< NSCALARS <<") must be exactly 3." << std::endl;
-  //   ATHENA_ERROR(msg);
-  // }
+  if (NSCALARS != 6) {
+    std::stringstream msg;
+    msg << "### FATAL ERROR in Problem Generator" << std::endl
+        << "    NSCALARS ("<< NSCALARS <<") must be exactly 6." << std::endl;
+    ATHENA_ERROR(msg);
+  }
 
 
   initial_abundances.NewAthenaArray(NSCALARS, ncells3, ncells2, ncells1);
