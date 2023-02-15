@@ -64,7 +64,7 @@ public:
 
   Reaction(ReactionNetwork *pnetwork, std::string name);
   virtual ~Reaction() {};
-  virtual void react(AthenaArray<Real> &dn_rate, AthenaArray<Real> &de_rate, int k, int j, int i) {};
+  virtual void react(int k, int j, int i) {};
 
   int my_rxn_num;
 protected:

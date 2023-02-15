@@ -20,7 +20,7 @@ He_recombination::He_recombination(ReactionNetwork *pnetwork, std::string name,
   my_name = name;
 }
 
-void He_recombination::react(AthenaArray<Real> &dn_rate, AthenaArray<Real> &de_rate, int k, int j, int i) {
+void He_recombination::react(int k, int j, int i) {
   PassiveScalars *ps = pmy_network->pscalars;
   Real T = pmy_network->temperature_(k,j,i);
 
@@ -33,11 +33,11 @@ void He_recombination::react(AthenaArray<Real> &dn_rate, AthenaArray<Real> &de_r
   Real n_recomb = n_elec * n_ion * alpha_1;
   Real e_recomb = n_elec * n_ion * (pmy_network->boltzmann * T) * beta_1;
 
-  dn_rate(scalar_num, k, j, i) += n_recomb;
-  dn_rate(ion_scalar_num, k, j, i) -= n_recomb;
-  dn_rate(electron_scalar_num, k, j, i) -= n_recomb;
+  pmy_network->dn_rate(scalar_num, k, j, i) += n_recomb;
+  pmy_network->dn_rate(ion_scalar_num, k, j, i) -= n_recomb;
+  pmy_network->dn_rate(electron_scalar_num, k, j, i) -= n_recomb;
 
-  de_rate(my_rxn_num, k, j, i) -= e_recomb;
+  pmy_network->de_rate(my_rxn_num, k, j, i) -= e_recomb;
 }
 
 He_23S_recombination::He_23S_recombination(ReactionNetwork *pnetwork, std::string name,
@@ -50,7 +50,7 @@ He_23S_recombination::He_23S_recombination(ReactionNetwork *pnetwork, std::strin
   my_name = name;
 }
 
-void He_23S_recombination::react(AthenaArray<Real> &dn_rate, AthenaArray<Real> &de_rate, int k, int j, int i) {
+void He_23S_recombination::react(int k, int j, int i) {
   PassiveScalars *ps = pmy_network->pscalars;
   Real T = pmy_network->temperature_(k,j,i);
 
@@ -63,9 +63,9 @@ void He_23S_recombination::react(AthenaArray<Real> &dn_rate, AthenaArray<Real> &
   Real n_recomb = n_elec * n_ion * alpha_3;
   Real e_recomb = n_elec * n_ion * (pmy_network->boltzmann * T) * beta_3;
 
-  dn_rate(scalar_num, k, j, i) += n_recomb;
-  dn_rate(ion_scalar_num, k, j, i) -= n_recomb;
-  dn_rate(electron_scalar_num, k, j, i) -= n_recomb;
+  pmy_network->dn_rate(scalar_num, k, j, i) += n_recomb;
+  pmy_network->dn_rate(ion_scalar_num, k, j, i) -= n_recomb;
+  pmy_network->dn_rate(electron_scalar_num, k, j, i) -= n_recomb;
 
-  de_rate(my_rxn_num, k, j, i) -= e_recomb;
+  pmy_network->de_rate(my_rxn_num, k, j, i) -= e_recomb;
 }

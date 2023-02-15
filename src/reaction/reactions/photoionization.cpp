@@ -23,7 +23,7 @@ Photoionization::Photoionization(ReactionNetwork *pnetwork, std::string name, Io
   my_name = name;
 }
 
-void Photoionization::react(AthenaArray<Real> &dn_rate, AthenaArray<Real> &de_rate, int k, int j, int i) {
+void Photoionization::react(int k, int j, int i) {
   Real reaction_energy, contribution;
 
   Real dn = 0;
@@ -38,9 +38,9 @@ void Photoionization::react(AthenaArray<Real> &dn_rate, AthenaArray<Real> &de_ra
     d_energy   += reaction_energy * pmy_abs->q(n) * spec[n].wgt;
   }
 
-  dn_rate(scalar_num, k, j, i) -= dn;
-  dn_rate(ion_scalar_num, k, j, i) += dn;
-  dn_rate(electron_scalar_num, k, j, i) += dn;
+  pmy_network->dn_rate(scalar_num, k, j, i) -= dn;
+  pmy_network->dn_rate(ion_scalar_num, k, j, i) += dn;
+  pmy_network->dn_rate(electron_scalar_num, k, j, i) += dn;
 
-  de_rate(my_rxn_num, k, j, i) += d_energy;
+  pmy_network->de_rate(my_rxn_num, k, j, i) += d_energy;
 }

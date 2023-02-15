@@ -16,7 +16,7 @@ class Photoionization: public Reaction {
 public:
   Photoionization(ReactionNetwork *pnetwork, std::string name, IonizingAbsorber *pabs, 
     int ion_num, int elec_num);
-  void react(AthenaArray<Real> &dn_rate, AthenaArray<Real> &de_rate, int k, int j, int i);
+  void react(int k, int j, int i);
 
   std::string my_name;
 protected:
