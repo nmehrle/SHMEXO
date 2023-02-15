@@ -84,7 +84,8 @@ void ReactionNetwork::ComputeReactionForcing(const Real dt, const AthenaArray<Re
   // loop over space
   // compute rate values at each point,
   // add to total value
-  Real temp, drho;
+  Real temp;
+  Real drho[NSCALARS];
   for (int k=ks; k<=ke; ++k) {
     for (int j=js; j<=je; ++j) {
       for (int i=is; i<=ie; ++i) {
@@ -102,27 +103,37 @@ void ReactionNetwork::ComputeReactionForcing(const Real dt, const AthenaArray<Re
           du(IEN, k, j, i) += de_rate(r, k,j,i) * dt;
         }
 
+        ComputeScalarDensityChange(dt, drho, k, j, i);
         for (int n = 0; n < NSCALARS; ++n)
-        {
-          // convert number density to mass density
-          // convert density rate to density
-          drho = dn_rate(n,k,j,i) * pscalars->m(n) * dt;
+        { 
 
-          if (drho < 0 && -drho > cons_scalar(n,k,j,i)) {
+          // check this drho isnt in error
+          if (drho[n] < 0 && -drho[n] > cons_scalar(n,k,j,i)) {
             std::stringstream msg;
             msg << "##### FATAL ERROR in ReactionNetwork::ComputeReactionForcing" << std::endl
                 << "Error at position (k,j,i) = " << k << ", " << j << ", " << i << "." << std::endl
-                << "drho ("<<drho<<") for scalar (" << n << ") exceeds scalar concentration"
+                << "drho ("<<drho[n]<<") for scalar (" << n << ") exceeds scalar concentration"
                 << "(" << cons_scalar(n,k,j,i)<< ") causing negative density." << std::endl;
             ATHENA_ERROR(msg);
           }
 
-          ds(n,k,j,i) += drho;
+          // add to scalar change array
+          ds(n,k,j,i) += drho[n];
         }
 
       } // i
     } // j
   } // k
+}
+
+void ReactionNetwork::ComputeScalarDensityChange(const Real dt, Real drho[NSCALARS], int k, int j, int i) {
+
+  for (int n = 0; n < NSCALARS; ++n)
+  {
+    // convert number density to mass density
+    // convert density rate to density
+    drho[n] = dn_rate(n,k,j,i) * pscalars->m(n) * dt;
+  }
 }
 
 

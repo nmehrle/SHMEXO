@@ -51,6 +51,9 @@ public:
 protected:
   // called at each timestep to rest dn_rate, etc. to be re-calculated
   void ResetRates();
+
+  // calculates dn inside ComputeReactionForcing
+  void ComputeScalarDensityChange(const Real dt, Real drho[NSCALARS], int k, int j, int i);
 };
 
 // general type to be overridden by individual reactions

@@ -61,8 +61,8 @@ void Lya_cooling::react(int k, int j, int i) {
   Real n_ion = ps->s(ion_scalar_num, k, j, i) / ps->m(ion_scalar_num);
   Real n_neu = ps->s(scalar_num, k, j, i) / ps->m(scalar_num);
 
-  Real lya_cooling_const = -7.5E-19 * exp(-118348./T); // erg cm3 s-1
-  Real lya_cooling_rate = lya_cooling_const * n_ion * n_neu; // J m-3 s-1
+  Real beta = -7.5E-19 * exp(-118348./T); // erg cm3 s-1
+  Real de_lya = beta * n_ion * n_neu; // J m-3 s-1
 
-  pmy_network->de_rate(my_rxn_num, k, j, i) += lya_cooling_rate;
+  pmy_network->de_rate(my_rxn_num, k, j, i) += de_lya;
 }
