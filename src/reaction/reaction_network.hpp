@@ -24,7 +24,9 @@ public:
 
   AthenaArray<Reaction*> my_reactions;
 
-  // int stoichiometry_matrix;
+  // All have spatial position (k,j,i) as last three elements
+  // dn_rate[NSCALARS]            -- Element i contains dn_i/dt summed over all reactions
+  // de_rate[num_reactions]       -- Element i contains dE/dt for reaction i
   AthenaArray<Real> dn_rate, de_rate;
 
   // functions
@@ -47,6 +49,8 @@ public:
 
   int num_reactions;
 protected:
+  // called at each timestep to rest dn_rate, etc. to be re-calculated
+  void ResetRates();
 };
 
 // general type to be overridden by individual reactions
