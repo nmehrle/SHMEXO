@@ -37,7 +37,7 @@ void He_recombination::react(int k, int j, int i) {
   int sign[3]    = {+1, -1, -1};
   for (int l = 0; l < 3; ++l)
   {
-    pmy_network->dn_rate(species[l], k, j, i) += sign[l] * n_recomb;
+    pmy_network->dn_rate(my_rxn_num, species[l], k, j, i) += sign[l] * n_recomb;
     pmy_network->jacobian(species[l], ion_scalar_num, k, j, i)  += sign[l] * alpha_1 * n_elec;
     pmy_network->jacobian(species[l], electron_scalar_num, k, j, i) += sign[l] * alpha_1 * n_ion;
   }
@@ -72,7 +72,7 @@ void He_23S_recombination::react(int k, int j, int i) {
   int sign[3]    = {+1, -1, -1};
   for (int l = 0; l < 3; ++l)
   {
-    pmy_network->dn_rate(species[l], k, j, i) += sign[l] * n_recomb;
+    pmy_network->dn_rate(my_rxn_num, species[l], k, j, i) += sign[l] * n_recomb;
     pmy_network->jacobian(species[l], ion_scalar_num, k, j, i)  += sign[l] * alpha_3 * n_elec;
     pmy_network->jacobian(species[l], electron_scalar_num, k, j, i) += sign[l] * alpha_3 * n_ion;
   }

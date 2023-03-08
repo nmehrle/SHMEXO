@@ -38,9 +38,9 @@ void Photoionization::react(int k, int j, int i) {
     d_energy   += reaction_energy * pmy_abs->q(n) * spec[n].wgt;
   }
 
-  pmy_network->dn_rate(scalar_num, k, j, i) -= dn;
-  pmy_network->dn_rate(ion_scalar_num, k, j, i) += dn;
-  pmy_network->dn_rate(electron_scalar_num, k, j, i) += dn;
+  pmy_network->dn_rate(my_rxn_num, scalar_num, k, j, i) -= dn;
+  pmy_network->dn_rate(my_rxn_num, ion_scalar_num, k, j, i) += dn;
+  pmy_network->dn_rate(my_rxn_num, electron_scalar_num, k, j, i) += dn;
 
   pmy_network->de_rate(my_rxn_num, k, j, i) += d_energy;
 }
