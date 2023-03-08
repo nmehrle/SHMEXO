@@ -29,7 +29,7 @@
 
 namespace {
   // user set variables
-  Real G, Mp, Ms, Rp, period, a;
+  Real G, Mp, Ms, Rp, period, semi_major_axis;
   Real dfloor, pfloor, sfloor;
   Real gas_gamma;
   Real wave_to_meters_conversion;
@@ -92,7 +92,7 @@ void Mesh::InitUserMeshData(ParameterInput *pin)
   period = pin->GetReal("problem","period");
 
   Real x = 4. * pow(M_PI,2.) / (G * Ms);
-  a = pow( pow(period*86400.,2.)/x ,(1./3));
+  semi_major_axis = pow( pow(period*86400.,2.)/x ,(1./3));
 
   gas_gamma = pin->GetReal("hydro","gamma");
 
@@ -153,10 +153,21 @@ Real MeshSpacingX3(Real x, RegionSize rs) {
 void MeshBlock::InitUserMeshBlockData(ParameterInput *pin)
 {
   // User outputs
-  AllocateUserOutputVariables(3);
+  AllocateUserOutputVariables(9);
   SetUserOutputVariableName(0, "temp");
-  SetUserOutputVariableName(1, "t2");
-  SetUserOutputVariableName(2, "flux");
+  SetUserOutputVariableName(1,"de_recomb");
+  SetUserOutputVariableName(2,"de_H_ioniz");
+
+
+  // ELEC = 0, HYD = 1, HPLUS = 2,
+  // HE = 3, HETRIP = 4, HEPLUS=5
+  SetUserOutputVariableName(3,"dn_elec");
+  SetUserOutputVariableName(4,"dn_H");
+  SetUserOutputVariableName(5,"dn_Hplus");
+
+  SetUserOutputVariableName(6,"dn_He");
+  SetUserOutputVariableName(7,"dn_Hetrip");
+  SetUserOutputVariableName(8,"dn_Heplus");
   // SetUserOutputVariableName(2, "ionization_rate");
   // SetUserOutputVariableName(3, "recombination_rate");
   // SetUserOutputVariableName(4, "recombinative_cooling");
@@ -171,8 +182,8 @@ void MeshBlock::InitUserMeshBlockData(ParameterInput *pin)
   // 4 -- recombinative cooling rate
   // 5 -- lyman alpha cooling rate
   // 6 -- output du?
-  AllocateRealUserMeshBlockDataField(1);
-  ruser_meshblock_data[0].NewAthenaArray(ncells3, ncells2, ncells1);
+  // AllocateRealUserMeshBlockDataField(1);
+  // ruser_meshblock_data[0].NewAthenaArray(ncells3, ncells2, ncells1);
   // ruser_meshblock_data[1].NewAthenaArray(ncells3, ncells2, ncells1);
   // ruser_meshblock_data[2].NewAthenaArray(ncells3, ncells2, ncells1);
   // ruser_meshblock_data[3].NewAthenaArray(ncells3, ncells2, ncells1);
@@ -193,20 +204,30 @@ void MeshBlock::UserWorkBeforeOutput(ParameterInput *pin)
   for (int k = kl; k <= ku; ++k) {
     for (int j = jl; j <= ju; ++j) {
       for (int i = il; i <= iu; ++i) {
-        Real R = pthermo->GetRd();
-        Real T = phydro->w(IPR,k,j,i)/(R * phydro->w(IDN,k,j,i));
-        Real ion_f = pscalars->r(HPLUS,k,j,i);
-        T = T * (1.-ion_f/2.);
+        // Real R = pthermo->GetRd();
+        // Real T = phydro->w(IPR,k,j,i)/(R * phydro->w(IDN,k,j,i));
+        // Real ion_f = pscalars->r(HPLUS,k,j,i);
+        // T = T * (1.-ion_f/2.);
 
-        Real t2;
-        peos->Temperature(phydro->w, pscalars->s, pscalars->m, t2, k, j, i);
+        Real T;
+        peos->Temperature(phydro->w, pscalars->s, pscalars->mass, T, k, j, i);
 
         user_out_var(0,k,j,i) = T;
-        user_out_var(1,k,j,i) = t2;
+
+        user_out_var(1,k,j,i) = pnetwork->de_rate(0,k,j,i);
+        user_out_var(2,k,j,i) = pnetwork->de_rate(1,k,j,i);
+
+        for (int n = 0; n < NSCALARS; ++n)
+        {
+          /* code */
+          user_out_var(n+3,k,j,i) = pnetwork->dn_rate(n,k,j,i);
+        }
+      
+        // user_out_var(1,k,j,i) = t2;
         // user_out_var(1,k,j,i) = phydro->hsrc.g1(k,j,i);
         // user_out_var(2,k,j,i) = phydro->hsrc.g2(k,j,i);
         // user_out_var(3,k,j,i) = phydro->hsrc.g3(k,j,i);
-        user_out_var(2,k,j,i) = ruser_meshblock_data[0](k,j,i);
+        // user_out_var(2,k,j,i) = ruser_meshblock_data[0](k,j,i);
 
         // for (int o=0; o<6; ++o) {
         //   user_out_var(o+4,k,j,i) = ruser_meshblock_data[o+1](k,j,i);
@@ -218,7 +239,8 @@ void MeshBlock::UserWorkBeforeOutput(ParameterInput *pin)
 
 void ReactionNetwork::InitUserReactions(ParameterInput *pin) {
   Reaction *Hrec = new H_recombination(this, "H Recombination", HYD, HPLUS, ELEC);
-  Reaction *Herec = new He_recombination(this, "He Recombination", HE, HEPLUS, ELEC);
+  // Reaction *Lya = new Lya_cooling(this, "Lyman Alpha", HYD, HPLUS, ELEC);
+  // Reaction *Herec = new He_recombination(this, "He Recombination", HE, HEPLUS, ELEC);
   // Reaction *He23Srec = new He_23S_recombination(this, "He23S Recombination", HETRIP, HEPLUS, ELEC);
   return;
 }
@@ -304,7 +326,7 @@ void gravity_func(MeshBlock *pmb, AthenaArray<Real> &g1, AthenaArray<Real> &g2, 
           y = z = 0;
 
           r = x;
-          rs = a-x;
+          rs = semi_major_axis-x;
         }
         else {
           x = pmb->pcoord->x1v(i);
@@ -316,7 +338,7 @@ void gravity_func(MeshBlock *pmb, AthenaArray<Real> &g1, AthenaArray<Real> &g2, 
           r = sqrt(rsq);
 
           // star placed at (x,y,z) = (a,0,0)
-          rs_sq = (a-x)*(a-x) + y*y + z*z;
+          rs_sq = (semi_major_axis-x)*(semi_major_axis-x) + y*y + z*z;
           rs = sqrt(rs_sq);
           // rs = (a-x, -y, -z)
         }
@@ -334,10 +356,10 @@ void gravity_func(MeshBlock *pmb, AthenaArray<Real> &g1, AthenaArray<Real> &g2, 
         // star -- in (a-r) direction
         gs = (G * Ms) / pow(rs,3);
         // centrifugal -- in ( -(a-r) ) direction (note negative sign)
-        gc = (G * Ms) / pow(a,3);
+        gc = (G * Ms) / pow(semi_major_axis,3);
 
         // missing negative signs?
-        g1(k, j, i) = gp * (-x) + (gs - gc) * (a-x);
+        g1(k, j, i) = gp * (-x) + (gs - gc) * (semi_major_axis-x);
         g2(k, j, i) = gp * (-y) + (gs - gc) * (-y);
         g3(k, j, i) = gp * (-z) + (gs - gc) * (-z);
       }
@@ -408,35 +430,69 @@ void SetInitialAbundances(MeshBlock *pmb, PassiveScalars *ps) {
   }
 
   Real q = H_He_mass_ratio;
+  Real norm;
 
   getMBBounds(pmb, il, iu, jl, ju, kl, ku);
 
   // set number densities, fill in mass later
   for (int k = kl; k <= ku; ++k) {
     for (int j = jl; j <= ju; ++j) {
-      for (int i = il; i <= iu; ++i) {
+      for (int i = il; i <= iu; ++i) { 
         rad = getRad(pmb->pcoord, i, j, k);
-        
+
         if (rad <= r_e) {
-          initial_abundances(ELEC,k,j,i)   = 2*epsilon;
-          initial_abundances(HYD,k,j,i)    = q/mh - epsilon;
-          initial_abundances(HPLUS,k,j,i)  = epsilon;
-          initial_abundances(HE,k,j,i)     = (1-q)/(mhe) - 2*epsilon;
-          initial_abundances(HETRIP,k,j,i) = epsilon;
-          initial_abundances(HEPLUS,k,j,i) = epsilon;
+          initial_abundances(HYD,k,j,i)   = 1;
+          initial_abundances(ELEC,k,j,i)  = epsilon;
+          initial_abundances(HPLUS,k,j,i) = epsilon;
+          // initial_abundances(HE,k,j,i) = epsilon;
+          // initial_abundances(HETRIP,k,j,i) = epsilon;
+          // initial_abundances(HEPLUS,k,j,i) = epsilon;
+
         }
         else {
-          initial_abundances(ELEC,k,j,i)   = q/mh + (1-q)/(mhe) - 3*epsilon;
-          initial_abundances(HYD,k,j,i)    = epsilon;
-          initial_abundances(HPLUS,k,j,i)  = q/mh - epsilon;;
-          initial_abundances(HE,k,j,i)     = epsilon;
-          initial_abundances(HETRIP,k,j,i) = epsilon;
-          initial_abundances(HEPLUS,k,j,i) = (1-q)/(mhe) - 2*epsilon;
+          initial_abundances(HYD,k,j,i)   = epsilon;
+          initial_abundances(ELEC,k,j,i)  = 1;
+          initial_abundances(HPLUS,k,j,i) = 1;
+          // initial_abundances(HE,k,j,i) = epsilon;
+          // initial_abundances(HETRIP,k,j,i) = epsilon;
+          // initial_abundances(HEPLUS,k,j,i) = epsilon;
+        }
+
+        for (int n = 3; n < NSCALARS; ++n)
+        {
+          initial_abundances(n,k,j,i) = epsilon;
+        }
+
+        // initial_abundances(6,k,j,i) = epsilon;
+
+        // if (rad <= r_e) {
+        //   initial_abundances(ELEC,k,j,i)   = epsilon;
+        //   initial_abundances(HYD,k,j,i)    = q/mh - epsilon;
+        //   initial_abundances(HPLUS,k,j,i)  = epsilon;
+        //   initial_abundances(HE,k,j,i)     = 0;//(1-q)/(mhe) - 2*epsilon;
+        //   initial_abundances(HETRIP,k,j,i) = 0;//epsilon;
+        //   initial_abundances(HEPLUS,k,j,i) = 0;//epsilon;
+        // }
+        // else {
+        //   initial_abundances(ELEC,k,j,i)   = q/mh + (1-q)/(mhe) - 3*epsilon;
+        //   initial_abundances(HYD,k,j,i)    = epsilon;
+        //   initial_abundances(HPLUS,k,j,i)  = q/mh - epsilon;;
+        //   initial_abundances(HE,k,j,i)     = 0;//epsilon;
+        //   initial_abundances(HETRIP,k,j,i) = 0;//epsilon;
+        //   initial_abundances(HEPLUS,k,j,i) = 0;//(1-q)/(mhe) - 2*epsilon;
+        // }
+
+        // add up accross n
+        norm = 0;
+        for (int n = 0; n < NSCALARS; ++n)
+        {
+          // initial_abundances(n,k,j,i) *= ps->m(n);
+          norm += initial_abundances(n,k,j,i);
         }
 
         for (int n = 0; n < NSCALARS; ++n)
         {
-          initial_abundances(n,k,j,i) *= ps->m(n);
+          initial_abundances(n,k,j,i) /= norm;
         }
       }
     }
@@ -445,12 +501,12 @@ void SetInitialAbundances(MeshBlock *pmb, PassiveScalars *ps) {
 
 void MeshBlock::ProblemGenerator(ParameterInput *pin)
 {
-  if (NSCALARS != 6) {
-    std::stringstream msg;
-    msg << "### FATAL ERROR in Problem Generator" << std::endl
-        << "    NSCALARS ("<< NSCALARS <<") must be exactly 6." << std::endl;
-    ATHENA_ERROR(msg);
-  }
+  // if (NSCALARS != 6) {
+  //   std::stringstream msg;
+  //   msg << "### FATAL ERROR in Problem Generator" << std::endl
+  //       << "    NSCALARS ("<< NSCALARS <<") must be exactly 6." << std::endl;
+  //   ATHENA_ERROR(msg);
+  // }
 
 
   initial_abundances.NewAthenaArray(NSCALARS, ncells3, ncells2, ncells1);
@@ -503,7 +559,7 @@ void MeshBlock::UserWorkInLoop() {
   // happens at last stage, at end
 
   Real gm1 = gas_gamma - 1.0;
-  Real rad, dens, press, ion_f, v1, v2, v3;
+  Real rad, dens, press, v1, v2, v3;
 
   bool nancheck = false;
   std::stringstream nan_msg;
@@ -576,7 +632,6 @@ void MeshBlock::UserWorkInLoop() {
   return;
 }
 
-
 //----------------------------------------------------------------------------------------
 // Utility
 //----------------------------------------------------------------------------------------
@@ -625,4 +680,3 @@ void getMBBounds(MeshBlock *pmb, int &il, int &iu, int &jl, int &ju, int &kl, in
   kl = pmb->block_size.nx3 == 1 ? pmb->ks : pmb->ks-NGHOST;
   ku = pmb->block_size.nx3 == 1 ? pmb->ke : pmb->ke+NGHOST;
 }
-

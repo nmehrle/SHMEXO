@@ -192,7 +192,7 @@ void MeshBlock::UserWorkBeforeOutput(ParameterInput *pin)
         T = T * (1.-ion_f/2.);
 
         Real t2;
-        peos->Temperature(phydro->w, pscalars->s, pscalars->m, t2, k, j, i);
+        peos->Temperature(phydro->w, pscalars->s, pscalars->mass, t2, k, j, i);
 
         user_out_var(0,k,j,i) = T;
         user_out_var(1,k,j,i) = t2;
@@ -358,7 +358,7 @@ void SetInitialConditions(Real rad, Real &dens, Real &press, Real &v1, Real &v2,
 void SetInitialAbundances(MeshBlock *pmb, PassiveScalars *ps) {
   int il, iu, jl, ju, kl, ku;
   Real rad;
-  Real minval = sfloor / ps->m(ELEC);
+  Real minval = sfloor / ps->mass(ELEC);
 
   getMBBounds(pmb, il, iu, jl, ju, kl, ku);
 
@@ -369,19 +369,19 @@ void SetInitialAbundances(MeshBlock *pmb, PassiveScalars *ps) {
         rad = getRad(pmb->pcoord, i, j, k);
         
         if (rad <= r_e) {
-          initial_abundances(HYD,k,j,i)   = 1/ps->m(HYD) - minval;
+          initial_abundances(HYD,k,j,i)   = 1/ps->mass(HYD) - minval;
           initial_abundances(ELEC,k,j,i)  = minval;
           initial_abundances(HPLUS,k,j,i) = minval;
         }
         else {
           initial_abundances(HYD,k,j,i)   = minval;
-          initial_abundances(ELEC,k,j,i)  = 1/ps->m(HYD) - minval;
-          initial_abundances(HPLUS,k,j,i) = 1/ps->m(HYD) - minval;
+          initial_abundances(ELEC,k,j,i)  = 1/ps->mass(HYD) - minval;
+          initial_abundances(HPLUS,k,j,i) = 1/ps->mass(HYD) - minval;
         }
 
         for (int n = 0; n < NSCALARS; ++n)
         {
-          initial_abundances(n,k,j,i) *= ps->m(n);
+          initial_abundances(n,k,j,i) *= ps->mass(n);
         }
       }
     }
