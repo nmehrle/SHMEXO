@@ -45,9 +45,14 @@ void H_recombination::react(int k, int j, int i) {
   Real beta = 6.11E-10 * pow(T,-0.89); // cm3 s-1
   Real e_recomb = beta * (pmy_network->boltzmann * T) * (n_ion * n_elec); //J s-1 m-3
 
-  pmy_network->dn_rate(scalar_num, k, j, i) += n_recomb;
-  pmy_network->dn_rate(ion_scalar_num, k, j, i) -= n_recomb;
-  pmy_network->dn_rate(electron_scalar_num, k, j, i) -= n_recomb;
+  int species[3] = {scalar_num, ion_scalar_num, electron_scalar_num};
+  int sign[3]    = {+1, -1, -1};
+  for (int l = 0; l < 3; ++l)
+  {
+    pmy_network->dn_rate(species[l], k, j, i) += sign[l] * n_recomb;
+    pmy_network->jacobian(species[l], ion_scalar_num, k, j, i)      += sign[l] * alpha_B * n_elec;
+    pmy_network->jacobian(species[l], electron_scalar_num, k, j, i) += sign[l] * alpha_B * n_ion;
+  }
 
   pmy_network->de_rate(my_rxn_num, k, j, i) -= e_recomb;
 }

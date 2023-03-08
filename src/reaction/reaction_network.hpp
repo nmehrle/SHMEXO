@@ -4,6 +4,10 @@
 // C/C++ headers
 #include <string>
 
+// Math headers
+#include "../math/eigen335/Eigen/Core"
+#include "../math/eigen335/Eigen/LU"
+
 // Athena++ headers
 #include "../athena.hpp"
 
@@ -27,7 +31,8 @@ public:
   // All have spatial position (k,j,i) as last three elements
   // dn_rate[NSCALARS]            -- Element i contains dn_i/dt summed over all reactions
   // de_rate[num_reactions]       -- Element i contains dE/dt for reaction i
-  AthenaArray<Real> dn_rate, de_rate;
+  // jacobian[NSCALARS, NSCALARS] -- Element i,j contains d (dn_i/dt)/ dn_j, summed over reactions
+  AthenaArray<Real> dn_rate, de_rate, jacobian;
 
   // functions
   ReactionNetwork(MeshBlock *pmb, ParameterInput *pin);
@@ -49,6 +54,10 @@ public:
 
   int num_reactions;
 protected:
+  bool implicit_reactions;
+  typedef Eigen::Matrix<Real,NSCALARS,NSCALARS> MatrixNSR;
+  typedef Eigen::Matrix<Real,NSCALARS,1> VectorNSR;
+
   // called at each timestep to rest dn_rate, etc. to be re-calculated
   void ResetRates();
 

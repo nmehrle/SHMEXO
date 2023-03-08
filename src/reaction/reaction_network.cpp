@@ -21,6 +21,7 @@ ReactionNetwork::ReactionNetwork(MeshBlock *pmb, ParameterInput *pin){
   num_reactions = 0;
 
   boltzmann = pin->GetReal("hydro", "boltzmann");
+  implicit_reactions = pin->GetOrAddBoolean("problem", "implicit_reactions", "False");
   temperature_.NewAthenaArray(pmb->ncells3, pmb->ncells2, pmb->ncells1);
 
   InitUserReactions(pin);
@@ -56,6 +57,7 @@ void ReactionNetwork::AddReaction(Reaction *prxn) {
 void ReactionNetwork::Initialize() {
   de_rate.NewAthenaArray(num_reactions, pmy_block->ncells3, pmy_block->ncells2, pmy_block->ncells1);
   dn_rate.NewAthenaArray(NSCALARS, pmy_block->ncells3, pmy_block->ncells2, pmy_block->ncells1);
+  jacobian.NewAthenaArray(NSCALARS, NSCALARS, pmy_block->ncells3, pmy_block->ncells2, pmy_block->ncells1);
 
   my_reactions.NewAthenaArray(num_reactions);
 
@@ -70,6 +72,7 @@ void ReactionNetwork::Initialize() {
 void ReactionNetwork::ResetRates() {
   dn_rate.ZeroClear();
   de_rate.ZeroClear();
+  jacobian.ZeroClear();
 }
 
 void ReactionNetwork::ComputeReactionForcing(const Real dt, const AthenaArray<Real> prim, const AthenaArray<Real> cons, const AthenaArray<Real> cons_scalar, AthenaArray<Real> &du, AthenaArray<Real> &ds) {
@@ -127,17 +130,34 @@ void ReactionNetwork::ComputeReactionForcing(const Real dt, const AthenaArray<Re
 }
 
 void ReactionNetwork::ComputeScalarDensityChange(const Real dt, Real drho[NSCALARS], int k, int j, int i) {
+  if (implicit_reactions) {
+    // populate jacobian matrix
+    // and RHS vector
+    MatrixNSR jacobi_matrix;
+    VectorNSR dn_RHS;
+    for (int l = 0; l < NSCALARS; ++l)
+    {
+      for (int m = 0; m < NSCALARS; ++m)
+      {
+        jacobi_matrix(l,m) = jacobian(l,m,k,j,i);
+      }
+      dn_RHS(l) = dn_rate(l,k,j,i) * dt;
+    }
 
-  for (int n = 0; n < NSCALARS; ++n)
-  {
-    // convert number density to mass density
-    // convert density rate to density
-    drho[n] = dn_rate(n,k,j,i) * pscalars->m(n) * dt;
+    MatrixNSR LHS = MatrixNSR::Identity() - dt * jacobi_matrix;
+    VectorNSR dn_sol = LHS.inverse() * dn_RHS;
+
+    for (int n = 0; n < NSCALARS; ++n)
+    {
+      // convert density rate to density
+      drho[n] = dn_sol(n) * pscalars->m(n);
+    }
+  }
+  else {
+    for (int n = 0; n < NSCALARS; ++n)
+    {
+      // convert density rate to density
+      drho[n] = dn_rate(n,k,j,i) * dt * pscalars->m(n);
+    }
   }
 }
-
-
-
-
-
-

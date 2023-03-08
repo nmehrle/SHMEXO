@@ -33,9 +33,14 @@ void He_recombination::react(int k, int j, int i) {
   Real n_recomb = n_elec * n_ion * alpha_1;
   Real e_recomb = n_elec * n_ion * (pmy_network->boltzmann * T) * beta_1;
 
-  pmy_network->dn_rate(scalar_num, k, j, i) += n_recomb;
-  pmy_network->dn_rate(ion_scalar_num, k, j, i) -= n_recomb;
-  pmy_network->dn_rate(electron_scalar_num, k, j, i) -= n_recomb;
+  int species[3] = {scalar_num, ion_scalar_num, electron_scalar_num};
+  int sign[3]    = {+1, -1, -1};
+  for (int l = 0; l < 3; ++l)
+  {
+    pmy_network->dn_rate(species[l], k, j, i) += sign[l] * n_recomb;
+    pmy_network->jacobian(species[l], ion_scalar_num, k, j, i)  += sign[l] * alpha_1 * n_elec;
+    pmy_network->jacobian(species[l], electron_scalar_num, k, j, i) += sign[l] * alpha_1 * n_ion;
+  }
 
   pmy_network->de_rate(my_rxn_num, k, j, i) -= e_recomb;
 }
@@ -63,9 +68,14 @@ void He_23S_recombination::react(int k, int j, int i) {
   Real n_recomb = n_elec * n_ion * alpha_3;
   Real e_recomb = n_elec * n_ion * (pmy_network->boltzmann * T) * beta_3;
 
-  pmy_network->dn_rate(scalar_num, k, j, i) += n_recomb;
-  pmy_network->dn_rate(ion_scalar_num, k, j, i) -= n_recomb;
-  pmy_network->dn_rate(electron_scalar_num, k, j, i) -= n_recomb;
+  int species[3] = {scalar_num, ion_scalar_num, electron_scalar_num};
+  int sign[3]    = {+1, -1, -1};
+  for (int l = 0; l < 3; ++l)
+  {
+    pmy_network->dn_rate(species[l], k, j, i) += sign[l] * n_recomb;
+    pmy_network->jacobian(species[l], ion_scalar_num, k, j, i)  += sign[l] * alpha_3 * n_elec;
+    pmy_network->jacobian(species[l], electron_scalar_num, k, j, i) += sign[l] * alpha_3 * n_ion;
+  }
 
   pmy_network->de_rate(my_rxn_num, k, j, i) -= e_recomb;
 }
