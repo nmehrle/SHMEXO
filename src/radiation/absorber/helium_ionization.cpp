@@ -58,8 +58,6 @@ void HeliumIonization::CalculateCrossSections(Spectrum const *spec, int nspec) {
     }
   }
 
-  int ii = -1;
-  Real dx;
   Real wave, freq, energy, ry, xc_mb;
 
   for (int n = 0; n < nspec; ++n)

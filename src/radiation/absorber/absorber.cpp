@@ -72,7 +72,6 @@ void Absorber::SetScalar(int n) {
 }
 
 void Absorber::CalculateAbsorptionCoefficient(AthenaArray<Real> const& prim, AthenaArray<Real> const& cons_scalar, int n, int k, int j, int i) {
-  Spectrum *spec = pmy_band->spec;
   Real number_density;
 
   if (scalar_num == -1) {

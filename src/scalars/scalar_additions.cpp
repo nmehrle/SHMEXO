@@ -38,7 +38,7 @@ void PassiveScalars::ImplicitCorrectionFull(AthenaArray<Real> &ds, AthenaArray<R
   for (int n=0; n<NSCALARS; ++n) {
     for (int k=ks; k<=ke; ++k) {
       for (int j=js; j<=je; ++j) {
-        for (int i=ks; i<=ie; ++i) {
+        for (int i=is; i<=ie; ++i) {
           scalar_correction(n,k,j,i) = r(n,k,j,i) * implicit_correction(IDN, k, j, i);
         }
       }

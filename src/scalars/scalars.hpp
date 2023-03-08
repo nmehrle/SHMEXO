@@ -33,11 +33,11 @@ class PassiveScalars {
   // public data:
   // "conserved vars" = passive scalar mass
   AthenaArray<Real> s, s1, s2;  // (no more than MAX_NREGISTER allowed)
-  AthenaArray<Real> ds;
+
   // "primitive vars" = (density-normalized) mass fraction/concentration of each species
   AthenaArray<Real> r;  // , r1;
-  AthenaArray<Real> s_flux[3];  // face-averaged flux vector
 
+  AthenaArray<Real> ds;
   // Mass of scalar particles (optional, required for Radiation/Reaction networks)
   // Number density of scalar i = s[i] / m[i]
   AthenaArray<Real> mass;
