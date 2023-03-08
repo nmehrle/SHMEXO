@@ -93,7 +93,7 @@ void ReactionNetwork::ComputeReactionForcing(const Real dt, const AthenaArray<Re
     for (int j=js; j<=je; ++j) {
       for (int i=is; i<=ie; ++i) {
 
-        pmb->peos->Temperature(prim, cons_scalar, pscalars->m, temp, k, j, i);
+        pmb->peos->Temperature(prim, cons_scalar, pscalars->mass, temp, k, j, i);
         temperature_(k,j,i) = temp;
 
         // populates de_rate(k,j,i), dn_rate(k,j,i)
@@ -150,14 +150,14 @@ void ReactionNetwork::ComputeScalarDensityChange(const Real dt, Real drho[NSCALA
     for (int n = 0; n < NSCALARS; ++n)
     {
       // convert density rate to density
-      drho[n] = dn_sol(n) * pscalars->m(n);
+      drho[n] = dn_sol(n) * pscalars->mass(n);
     }
   }
   else {
     for (int n = 0; n < NSCALARS; ++n)
     {
       // convert density rate to density
-      drho[n] = dn_rate(n,k,j,i) * dt * pscalars->m(n);
+      drho[n] = dn_rate(n,k,j,i) * dt * pscalars->mass(n);
     }
   }
 }

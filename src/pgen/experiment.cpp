@@ -376,7 +376,11 @@ void SetInitialConditions(Real rad, Real &dens, Real &press, Real &v1, Real &v2,
 void SetInitialAbundances(MeshBlock *pmb, PassiveScalars *ps) {
   int il, iu, jl, ju, kl, ku;
   Real rad;
-  Real epsilon = sfloor / ps->m(ELEC);
+  Real me  = ps->mass(ELEC);
+  Real mh  = ps->mass(HYD);
+  Real mhe = ps->mass(HE);
+
+  Real epsilon = 1.e-6;
 
   // validate H/He ratio
   bool ratio_error = false;
@@ -394,22 +398,16 @@ void SetInitialAbundances(MeshBlock *pmb, PassiveScalars *ps) {
   }
   if (H_He_ratio > 0) {
     // mass ratio undefined
-    Real mh  = pmb->pscalars->s(HYD);
-    Real mhe = pmb->pscalars->s(HE);
     Real r = H_He_ratio;
     H_He_mass_ratio = (r * mh) / (r * mh + (1-r)*mhe);
   }
   else {
     // number ratio undefined
-    Real mh  = pmb->pscalars->s(HYD);
-    Real mhe = pmb->pscalars->s(HE);
     Real q = H_He_mass_ratio;
     H_He_ratio = (q/mh) / (q / mh + (1-q)/mhe);
   }
 
   Real q = H_He_mass_ratio;
-  Real mh  = ps->m(HYD);
-  Real mhe = ps->m(HE); 
 
   getMBBounds(pmb, il, iu, jl, ju, kl, ku);
 

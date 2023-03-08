@@ -36,8 +36,8 @@ void H_recombination::react(int k, int j, int i) {
 
   Real T = pmy_network->temperature_(k,j,i);
 
-  Real n_ion = ps->s(ion_scalar_num, k, j, i) / ps->m(ion_scalar_num);
-  Real n_elec = ps->s(electron_scalar_num, k, j, i)/ ps->m(electron_scalar_num);
+  Real n_ion = ps->s(ion_scalar_num, k, j, i) / ps->mass(ion_scalar_num);
+  Real n_elec = ps->s(electron_scalar_num, k, j, i)/ ps->mass(electron_scalar_num);
 
   Real alpha_B  = 2.59E-13 * pow(T/1.E4,-0.7); // cm3 s-1
   Real n_recomb = alpha_B * n_ion * n_elec;
@@ -63,8 +63,8 @@ void Lya_cooling::react(int k, int j, int i) {
 
   Real T = pmy_network->temperature_(k,j,i);
 
-  Real n_ion = ps->s(ion_scalar_num, k, j, i) / ps->m(ion_scalar_num);
-  Real n_neu = ps->s(scalar_num, k, j, i) / ps->m(scalar_num);
+  Real n_ion = ps->s(ion_scalar_num, k, j, i) / ps->mass(ion_scalar_num);
+  Real n_neu = ps->s(scalar_num, k, j, i) / ps->mass(scalar_num);
 
   Real beta = -7.5E-19 * exp(-118348./T); // erg cm3 s-1
   Real de_lya = beta * n_ion * n_neu; // J m-3 s-1

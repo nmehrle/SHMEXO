@@ -40,7 +40,9 @@ class PassiveScalars {
 
   // Mass of scalar particles (optional, required for Radiation/Reaction networks)
   // Number density of scalar i = s[i] / m[i]
-  AthenaArray<Real> m;
+  AthenaArray<Real> mass;
+
+  AthenaArray<Real> s_flux[3];  // face-averaged flux vector
 
   // fourth-order intermediate quantities
   AthenaArray<Real> mass_flux_fc[3];  // deep copy of Hydro intermediate flux quantities

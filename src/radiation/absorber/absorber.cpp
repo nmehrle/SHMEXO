@@ -52,7 +52,7 @@ void Absorber::SetScalar(int n) {
   }
   else if (n < NSCALARS) {
     // Check scalar has valid mass
-    mass = ps->m(n);
+    mass = ps->mass(n);
     if (mass <= 0) {
       std::stringstream msg;
       msg << "##### Fatal Error in Absorber Constructor." << std::endl
