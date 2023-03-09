@@ -98,6 +98,7 @@
 #include "../scalars/scalars.hpp"
 #include "../diagnostics/diagnostics.hpp"
 #include "../radiation/radiation.hpp"
+#include "../reaction/reaction_network.hpp"
 #include "outputs.hpp"
 
 //----------------------------------------------------------------------------------------
@@ -556,6 +557,41 @@ void OutputType::LoadOutputData(MeshBlock *pmb) {
       }
     }
   }
+
+  if (REACTION_ENABLED) {
+    if (ContainVariable(output_params.variable, "rxn")) {
+      std::string root_name = "rxn";
+      ReactionNetwork *pnetwork = pmb->pnetwork;
+      // AthenaArray<Real> temp_arr;
+      for (int r=0; r<pnetwork->num_reactions; ++r) {
+        // e.g. rxn1
+        std::string rxn_name = root_name + std::to_string(r);
+
+        // output energy tendancy from reaction
+        std::string de_name = rxn_name + "_dedt";
+        pod = new OutputData;
+        pod->type = "SCALARS";
+        pod->name = de_name;
+        pod->data.InitWithShallowSlice(pnetwork->de_rate, 4, r, 1);
+        AppendOutputDataNode(pod);
+        num_vars_++;
+
+        // output concentration tendancies from reaction
+        for (int n=0; n<NSCALARS; ++n) {
+          std::string dn_name = rxn_name + "_dn" + std::to_string(n)+"dt";
+          pod = new OutputData;
+          pod->type = "SCALARS";
+          pod->name = dn_name;
+          // temp_arr.InitWithShallowSlice(pnetwork->dn_rate, 5, r, 1)
+          pod->data.InitWithShallowSlice(pnetwork->dn_rate, 5, r, 1);
+          pod->data.InitWithShallowSlice(pod->data, 4, n, 1);
+          AppendOutputDataNode(pod);
+          num_vars_++;
+        }
+      }
+    }
+  }
+
   // note, the Bcc variables are stored in a separate HDF5 dataset from the above Output
   // nodes, and it must come after those nodes in the linked list
   if (MAGNETIC_FIELDS_ENABLED) {

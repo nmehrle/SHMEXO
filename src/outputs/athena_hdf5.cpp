@@ -27,6 +27,7 @@
 #include "../hydro/hydro.hpp"
 #include "../mesh/mesh.hpp"
 #include "../parameter_input.hpp"
+#include "../reaction/reaction_network.hpp"
 #include "outputs.hpp"
 
 // Only proceed if HDF5 output enabled
@@ -558,6 +559,31 @@ void ATHDF5Output::WriteOutputFile(Mesh *pm, ParameterInput *pin, bool flag) {
                          H5P_DEFAULT, H5P_DEFAULT);
   H5Awrite(attribute, string_type, variable_names);
   H5Aclose(attribute);
+
+  // Write reaction names if applicable
+  if (REACTION_ENABLED && ContainVariable(variable, "rxn")) {
+    ReactionNetwork *pnetwork = pm->pblock->pnetwork;
+    int num_reactions = pnetwork->num_reactions;
+
+    char (*reaction_names)[max_name_length+1];
+    reaction_names = new char[num_reactions][max_name_length+1];
+
+    for (int r = 0; r < num_reactions; ++r)
+    {
+      std::strncpy(reaction_names[r], pnetwork->my_reactions(r)->my_name.c_str(), max_name_length+1);
+      reaction_names[r][max_name_length] = '\0';
+    }
+  
+    dims_count[0] = num_reactions;
+    hid_t dataspace_reaction_list = H5Screate_simple(1, dims_count, NULL);
+
+    attribute = H5Acreate2(file, "ReactionNames", string_type, dataspace_reaction_list, H5P_DEFAULT, H5P_DEFAULT);
+    H5Awrite(attribute, string_type, reaction_names);
+    H5Aclose(attribute);
+
+    H5Sclose(dataspace_reaction_list);
+    delete[] reaction_names;
+  }
 
   // Close attribute dataspaces
   H5Sclose(dataspace_scalar);
