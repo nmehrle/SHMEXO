@@ -39,6 +39,7 @@ public:
   ~ReactionNetwork();
 
   Real boltzmann;
+  Real eV_conversion, ry_conversion;
   AthenaArray<Real> temperature_;
 
   // To be included in problem generator

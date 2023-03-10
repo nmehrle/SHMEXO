@@ -17,7 +17,6 @@ He_recombination::He_recombination(ReactionNetwork *pnetwork, std::string name,
   scalar_num = neu_num;
   ion_scalar_num = ion_num;
   electron_scalar_num = elec_num;
-  my_name = name;
 }
 
 void He_recombination::react(int k, int j, int i) {
@@ -52,7 +51,6 @@ He_23S_recombination::He_23S_recombination(ReactionNetwork *pnetwork, std::strin
   scalar_num = neu_num;
   ion_scalar_num = ion_num;
   electron_scalar_num = elec_num;
-  my_name = name;
 }
 
 void He_23S_recombination::react(int k, int j, int i) {

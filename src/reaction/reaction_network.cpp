@@ -21,6 +21,10 @@ ReactionNetwork::ReactionNetwork(MeshBlock *pmb, ParameterInput *pin){
   num_reactions = 0;
 
   boltzmann = pin->GetReal("hydro", "boltzmann");
+
+  eV_conversion = pin->GetReal("problem", "eV_conversion");
+  ry_conversion = pin->GetReal("problem", "ry_conversion");
+
   implicit_reactions = pin->GetOrAddBoolean("problem", "implicit_reactions", "False");
   temperature_.NewAthenaArray(pmb->ncells3, pmb->ncells2, pmb->ncells1);
 

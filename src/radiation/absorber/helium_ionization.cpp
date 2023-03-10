@@ -81,4 +81,7 @@ void HeliumIonization::CalculateCrossSections(Spectrum const *spec, int nspec) {
       crossSection(n) = xc_mb * mb_conversion;
     }
   }
+
+  delete[] file_x;
+  delete[] file_y;
 }

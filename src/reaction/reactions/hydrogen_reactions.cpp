@@ -17,7 +17,6 @@ H_recombination::H_recombination(ReactionNetwork *pnetwork, std::string name,
   scalar_num = neu_num;
   ion_scalar_num = ion_num;
   electron_scalar_num = elec_num;
-  my_name = name;
 }
 
 Lya_cooling::Lya_cooling(ReactionNetwork *pnetwork, std::string name,
@@ -27,7 +26,6 @@ Lya_cooling::Lya_cooling(ReactionNetwork *pnetwork, std::string name,
   scalar_num = neu_num;
   ion_scalar_num = ion_num;
   electron_scalar_num = elec_num;
-  my_name = name;
 }
 
 void H_recombination::react(int k, int j, int i) {
@@ -43,7 +41,7 @@ void H_recombination::react(int k, int j, int i) {
   Real n_recomb = alpha_B * n_ion * n_elec;
 
   Real beta = 6.11E-10 * pow(T,-0.89); // cm3 s-1
-  Real e_recomb = beta * (pmy_network->boltzmann * T) * (n_ion * n_elec); //J s-1 m-3
+  Real e_recomb = beta * (pmy_network->boltzmann * T) * (n_ion * n_elec); //erg s-1 cm-3
 
   int species[3] = {scalar_num, ion_scalar_num, electron_scalar_num};
   int sign[3]    = {+1, -1, -1};

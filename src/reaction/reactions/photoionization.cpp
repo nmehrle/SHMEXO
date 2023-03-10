@@ -20,7 +20,6 @@ Photoionization::Photoionization(ReactionNetwork *pnetwork, std::string name, Io
   ion_scalar_num = ion_num;
   ionization_energy = pabs->ionization_energy;
   electron_scalar_num = elec_num;
-  my_name = name;
 }
 
 void Photoionization::react(int k, int j, int i) {
