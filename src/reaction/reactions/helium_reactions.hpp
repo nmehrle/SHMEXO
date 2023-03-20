@@ -50,3 +50,13 @@ protected:
   Real *temp_q;
   Real *temp_L;
 };
+
+class He_triplet_decay: public Reaction {
+public:
+  He_triplet_decay(ReactionNetwork *pnetwork, std::string name, int He_trip_num, int He_singlet_num, Real E_triplet);
+
+  void react(int k, int j, int i);
+protected:
+  int He_trip_num_, He_singlet_num_;
+  Real E_triplet_;
+};

@@ -171,7 +171,28 @@ void He_e_collisions::react(int k, int j, int i) {
  pmy_network->de_rate(my_rxn_num, k, j, i) -= temp_L[x31] * triplet_reaction_factor;
 
  // ----- triplet -> triplet collisions
- // pmy_network->dn_rate(my_rxn_num, triplet_scalar_num, k, j, i) -= temp_q[x33] * triplet_reaction_factor;
- // pmy_network->dn_rate(my_rxn_num, triplet_scalar_num, k, j, i) += temp_q[x33] * triplet_reaction_factor;
  pmy_network->de_rate(my_rxn_num, k, j, i) -= temp_L[x33] * triplet_reaction_factor;
+}
+
+
+He_triplet_decay::He_triplet_decay(ReactionNetwork *pnetwork, std::string name, int He_trip_num, int He_singlet_num, Real E_triplet):
+    Reaction(pnetwork, name)
+{
+  He_trip_num_    = He_trip_num;
+  He_singlet_num_ = He_singlet_num;
+  E_triplet_ = E_triplet;
+}
+
+void He_triplet_decay::react(int k, int j, int i) {
+  PassiveScalars *ps = pmy_network->pscalars;
+
+  Real n_triplet = ps->s(He_trip_num_, k, j, i) / ps->mass(He_trip_num_);
+  Real alpha = 1.272E-4; // s^-1 Lampon+ 2020, Table 2
+  Real n_rxn = alpha * n_triplet;
+  Real e_rxn = n_rxn * E_triplet_;
+
+  pmy_network->dn_rate(my_rxn_num, He_trip_num_, k, j, i) -= n_rxn;
+  pmy_network->dn_rate(my_rxn_num, He_singlet_num_, k, j, i) += n_rxn;
+
+  pmy_network->de_rate(my_rxn_num, k, j, i) += e_rxn;
 }
