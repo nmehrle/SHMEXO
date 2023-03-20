@@ -26,6 +26,7 @@
 #include "../reaction/reactions/photoionization.hpp"
 #include "../reaction/reactions/hydrogen_reactions.hpp"
 #include "../reaction/reactions/helium_reactions.hpp"
+#include "../reaction/reactions/twobody_reactions.hpp"
 
 namespace {
   // user set variables
@@ -183,6 +184,21 @@ void ReactionNetwork::InitUserReactions(ParameterInput *pin) {
   Reaction *Lya = new Lya_cooling(this, "Lyman Alpha", HYD, HPLUS, ELEC);
   Reaction *Herec = new He_recombination(this, "He Recombination", HE, HEPLUS, ELEC);
   Reaction *He23Srec = new He_23S_recombination(this, "He23S Recombination", HETRIP, HEPLUS, ELEC);
+
+  std::string collisions_file_name = pin->GetString("problem", "HE_COLLISIONS_FILE");
+  Reaction *HEcol = new He_e_collisions(this, collisions_file_name, "He Electron Collisions", HE, HETRIP, ELEC);
+
+  // other reactions
+  Real HPLUS_energy = pin->GetReal("problem", "HYDROGEN_IONIZATION_ENERGY");
+  Real HEPLUS_energy = pin->GetReal("problem", "HELIUM_IONIZATION_ENERGY");
+  Real HETRIP_ion_energy = pin->GetReal("problem", "HELIUM_TRIPLET_IONIZATION_ENERGY");
+  Real HETRIP_energy = HEPLUS_energy - HETRIP_ion_energy;
+
+  Reaction *HETripDecay = new He_triplet_decay(this, "He Triplet Radio-decay", HETRIP, HE, HETRIP_energy);
+  Reaction *CE1 = new ChargeExchange_HeToH(this, "ChargeExchange_HeToH", HEPLUS, HYD, HE, HPLUS, HEPLUS_energy, HPLUS_energy);
+  Reaction *CE2 = new ChargeExchange_HToHe(this, "ChargeExchange_HToHe", HE, HPLUS, HEPLUS, HYD, HPLUS_energy, HEPLUS_energy);
+  Reaction *CollisionalRelax = new CollisionalRelaxation_HeH(this, "CollisionalRelaxation_HeH", HETRIP, HYD, HE, HYD, HETRIP_energy, 0.0);
+
   return;
 }
 
@@ -205,6 +221,15 @@ Absorber* RadiationBand::GetAbsorberByName(std::string name, ParameterInput *pin
     Reaction *rxn = new Photoionization(pnetwork, name, a, HEPLUS, ELEC);
 
     return a;
+  }
+  else if (name == "HELIUM_TRIPLET_IONIZATION") {
+    std::string xc_file = pin->GetString("radiation", "Helium_2(3)S_file");
+    HeliumIonization *a = new HeliumIonization(this, HE, name, pin, xc_file);
+
+    ReactionNetwork *pnetwork = pmy_rad->pmy_block->pnetwork;
+    Reaction *rxn = new Photoionization(pnetwork, name, a, HEPLUS, ELEC);
+
+    return a; 
   }
   else {
     msg << "### FATAL ERROR in RadiationBand::AddAbsorber"
