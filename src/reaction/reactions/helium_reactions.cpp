@@ -158,8 +158,6 @@ void He_e_collisions::react(int k, int j, int i) {
  Real triplet_reaction_factor = (n_triplet * n_elec);
  
  // ----- singlet -> singlet collisions
- // pmy_network->dn_rate(my_rxn_num, singlet_scalar_num, k, j, i) -= temp_q[x11] * singlet_reaction_factor;
- // pmy_network->dn_rate(my_rxn_num, singlet_scalar_num, k, j, i) += temp_q[x11] * singlet_reaction_factor;
  pmy_network->de_rate(my_rxn_num, k, j, i) -= temp_L[x11] * singlet_reaction_factor;
 
  // ----- singlet -> triplet collisions
