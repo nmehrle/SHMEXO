@@ -42,6 +42,9 @@ public:
 
   // constants for unit conversion, from pin
   Real speed_of_light, planck_constant;
+  Real eV_conversion;// = 1.602E-12; // erg/eV
+  Real mb_conversion;// = 1.E-18; // cm^2/Mb
+  Real ry_conversion;// = 13.605693123; // eV/Ry
 
   // calculate cross sections, to be overridden by children
   virtual void CalculateCrossSections(Spectrum const *spec, int nspec){};
