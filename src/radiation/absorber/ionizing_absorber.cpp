@@ -18,7 +18,7 @@
 IonizingAbsorber::IonizingAbsorber(RadiationBand *pband, int my_scalar_number, std::string name, ParameterInput *pin):
   Absorber(pband, my_scalar_number, pin)
 {
-  ionization_energy = pin->GetReal("problem", name+"_ENERGY");
+  ionization_energy = pin->GetReal("reaction", name+"_ENERGY");
   nu_0 = ionization_energy/planck_constant;
   lambda_0 = speed_of_light/nu_0;
 
