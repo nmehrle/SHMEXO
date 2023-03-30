@@ -83,6 +83,7 @@ Mesh::Mesh(ParameterInput *pin, int mesh_test) :
     multilevel((adaptive || pin->GetOrAddString("mesh", "refinement", "none") == "static")
                ? true : false),
     fluid_setup(GetFluidFormulation(pin->GetOrAddString("hydro", "active", "true"))),
+    continue_running(true),
     start_time(pin->GetOrAddReal("time", "start_time", 0.0)), time(start_time),
     tlim(pin->GetReal("time", "tlim")), dt(std::numeric_limits<Real>::max()),
     dt_hyperbolic(dt), dt_parabolic(dt), dt_user(dt),
@@ -1093,6 +1094,11 @@ void Mesh::NewTimeStep() {
   if (time < tlim && (tlim - time) < dt) // timestep would take us past desired endpoint
     dt = tlim - time;
 
+  return;
+}
+
+void Mesh::EndTimeIntegration() {
+  continue_running = false;
   return;
 }
 

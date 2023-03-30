@@ -431,7 +431,9 @@ int main(int argc, char *argv[]) {
 #endif
 
   while ((pmesh->time < pmesh->tlim) &&
-         (pmesh->nlim < 0 || pmesh->ncycle < pmesh->nlim)) {
+         (pmesh->nlim < 0 || pmesh->ncycle < pmesh->nlim) &&
+         (pmesh->continue_running))
+  {
     if (Globals::my_rank == 0)
       pmesh->OutputCycleDiagnostics();
 
@@ -540,6 +542,8 @@ int main(int argc, char *argv[]) {
       std::cout << std::endl << "Terminating on wall-time limit" << std::endl;
     } else if (pmesh->ncycle == pmesh->nlim) {
       std::cout << std::endl << "Terminating on cycle limit" << std::endl;
+    } else if (!pmesh->continue_running) {
+      std::cout << std::endl << "Terminating on convergence criteria" << std::endl;
     } else {
       std::cout << std::endl << "Terminating on time limit" << std::endl;
     }

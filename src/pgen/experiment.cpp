@@ -49,6 +49,11 @@ namespace {
                 HE = 3, HETRIP = 4, HEPLUS=5};
 
   AthenaArray<Real> initial_abundances;
+
+  bool check_convergence;
+  Real convergence_level;
+  AthenaArray<Real> last_step_cons;
+  AthenaArray<Real> last_step_cons_scalar;
 } //namespace
 
   // Function declarations
@@ -78,6 +83,9 @@ void Mesh::InitUserMeshData(ParameterInput *pin)
 {
   EnrollUserExplicitGravityFunction(gravity_func);
   // EnrollUserExplicitSourceFunction(SourceTerms);
+
+  check_convergence = pin->GetOrAddBoolean("problem", "check_convergence", false);
+  convergence_level = pin->GetOrAddReal("problem", "convergence_level", 1.e-5);
 
   // Radiation parameters
   rad_scaling = pin->GetOrAddReal("radiation", "radiation_scaling", 1.);
@@ -499,6 +507,9 @@ void MeshBlock::ProblemGenerator(ParameterInput *pin)
   initial_abundances.NewAthenaArray(NSCALARS, ncells3, ncells2, ncells1);
   SetInitialAbundances(this, pscalars);
 
+  last_step_cons.NewAthenaArray(NHYDRO, ncells3, ncells2, ncells1);
+  last_step_cons_scalar.NewAthenaArray(NSCALARS, ncells3, ncells2, ncells1);
+
   // setup initial condition
   int il, iu, jl, ju, kl, ku;
   getMBBounds(this, il, iu, jl, ju, kl, ku);
@@ -553,6 +564,8 @@ void MeshBlock::UserWorkInLoop() {
   nan_msg << "### FATAL ERROR" << std::endl;
   nan_msg << "    nan value detected in (";
 
+  bool converged = true;
+
   // calculate energy that goes into ionizing
   int il, iu, jl, ju, kl, ku;
   getMBBounds(this, il, iu, jl, ju, kl, ku);
@@ -562,6 +575,7 @@ void MeshBlock::UserWorkInLoop() {
       for (int i = il; i <= iu; ++i) {
         rad = getRad(pcoord, i, j, k);
 
+        // nan checking
         if (std::isnan(phydro->w(IDN,k,j,i))) {
           nancheck = true;
           nan_msg << "dens";
@@ -579,12 +593,34 @@ void MeshBlock::UserWorkInLoop() {
           nan_msg << "vel3";
         }
 
-
         if (nancheck) {
           nan_msg << ") at (k=" << k << ", j=" << j << ", i=" << i << ")." << std::endl;
           nan_msg << " at time: " << pmy_mesh->time << " cycle: " << pmy_mesh->ncycle << std::endl;
           std::cout << nan_msg.str() << std::endl;
           ATHENA_ERROR(nan_msg);
+        }
+
+        // convergence check
+        if (check_convergence) {
+          for (int nh = 0; nh < NHYDRO; ++nh)
+          {
+            Real current_value = phydro->u(nh, k, j, i);
+            Real perc_difference = abs(current_value - last_step_cons(nh, k, j, i))/(current_value);
+            if (perc_difference > convergence_level) {
+              converged = false;
+            }
+            last_step_cons(nh, k, j, i) = current_value;
+          }
+
+          for (int ns = 0; ns < NSCALARS; ++ns)
+          {
+            Real current_value = pscalars->s(ns, k, j, i);
+            Real perc_difference = abs(current_value - last_step_cons_scalar(ns, k, j, i))/(current_value);
+            if (perc_difference > convergence_level) {
+              converged = false;
+            }
+            last_step_cons_scalar(ns, k, j, i) = current_value;
+          }
         }
 
         // reset conditions interior to r_replenish
@@ -616,6 +652,10 @@ void MeshBlock::UserWorkInLoop() {
       } // i
     } // j
   } // k
+  
+  if (converged) {
+    pmy_mesh->EndTimeIntegration();
+  }
   return;
 }
 

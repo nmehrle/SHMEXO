@@ -233,6 +233,7 @@ class Mesh {
   const int ndim;     // number of dimensions
   const bool adaptive, multilevel;
   const FluidFormulation fluid_setup;
+  bool continue_running;
   Real start_time, time, tlim, dt, dt_hyperbolic, dt_parabolic, dt_user, cfl_number;
   int nlim, ncycle, ncycle_out, dt_diagnostics;
   Real muj, nuj, muj_tilde;
@@ -258,6 +259,7 @@ class Mesh {
   void SetBlockSizeAndBoundaries(LogicalLocation loc, RegionSize &block_size,
                                  BoundaryFlag *block_bcs);
   void NewTimeStep();
+  void EndTimeIntegration();
   void OutputCycleDiagnostics();
   void LoadBalancingAndAdaptiveMeshRefinement(ParameterInput *pin);
   int CreateAMRMPITag(int lid, int ox1, int ox2, int ox3);
