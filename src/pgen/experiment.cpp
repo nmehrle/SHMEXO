@@ -422,7 +422,7 @@ void SetInitialAbundances(MeshBlock *pmb, PassiveScalars *ps) {
   Real mh  = ps->mass(HYD);
   Real mhe = ps->mass(HE);
 
-  Real epsilon = 1.e-6;
+  Real epsilon = 1.e-4;
 
   // validate H/He ratio
   bool ratio_error = false;

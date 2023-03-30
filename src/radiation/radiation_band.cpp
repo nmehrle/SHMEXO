@@ -102,7 +102,6 @@ RadiationBand::RadiationBand(Radiation *prad, std::string band_id, ParameterInpu
   nabs = abs_num;
   absorbers.NewAthenaArray(nabs);
 
-  int abs_scalar_num = 0;
   std::string abs_name;
   for (int i = 0; i < nabs; ++i)
   {
