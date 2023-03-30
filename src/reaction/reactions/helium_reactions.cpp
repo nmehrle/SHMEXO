@@ -14,9 +14,9 @@
 #include "../reaction_network.hpp"
 #include "helium_reactions.hpp"
 
-He_recombination::He_recombination(ReactionNetwork *pnetwork, std::string name,
+He_recombination::He_recombination(std::string name,
   int neu_num, int ion_num, int elec_num):
-    Reaction(pnetwork, name)
+    Reaction(name)
 {
   scalar_num = neu_num;
   ion_scalar_num = ion_num;
@@ -48,9 +48,9 @@ void He_recombination::react(int k, int j, int i) {
   pmy_network->de_rate(my_rxn_num, k, j, i) -= e_recomb;
 }
 
-He_23S_recombination::He_23S_recombination(ReactionNetwork *pnetwork, std::string name,
+He_23S_recombination::He_23S_recombination(std::string name,
   int neu_num, int ion_num, int elec_num):
-    Reaction(pnetwork, name)
+    Reaction(name)
 {
   scalar_num = neu_num;
   ion_scalar_num = ion_num;
@@ -82,8 +82,8 @@ void He_23S_recombination::react(int k, int j, int i) {
   pmy_network->de_rate(my_rxn_num, k, j, i) -= e_recomb;
 }
 
-He_e_collisions::He_e_collisions(ReactionNetwork *pnetwork, std::string data_file, std::string name, int singlet_num, int triplet_num, int elec_num):
-    Reaction(pnetwork, name)
+He_e_collisions::He_e_collisions(std::string data_file, std::string name, int singlet_num, int triplet_num, int elec_num):
+    Reaction(name)
 {
   ReadDataTable(file_data, data_file);
 
@@ -175,8 +175,8 @@ void He_e_collisions::react(int k, int j, int i) {
 }
 
 
-He_triplet_decay::He_triplet_decay(ReactionNetwork *pnetwork, std::string name, int He_trip_num, int He_singlet_num, Real E_triplet):
-    Reaction(pnetwork, name)
+He_triplet_decay::He_triplet_decay(std::string name, int He_trip_num, int He_singlet_num, Real E_triplet):
+    Reaction(name)
 {
   He_trip_num_    = He_trip_num;
   He_singlet_num_ = He_singlet_num;

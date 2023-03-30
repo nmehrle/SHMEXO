@@ -11,8 +11,8 @@
 #include "twobody_reactions.hpp"
 
 
-TwoBodyReaction::TwoBodyReaction(ReactionNetwork *pnetwork, std::string name, int r1_num, int r2_num, int p1_num, int p2_num, Real E_reactant, Real E_product):
-  Reaction (pnetwork, name)
+TwoBodyReaction::TwoBodyReaction(std::string name, int r1_num, int r2_num, int p1_num, int p2_num, Real E_reactant, Real E_product):
+  Reaction(name)
 {
   r1_num_ = r1_num;
   r2_num_ = r2_num;

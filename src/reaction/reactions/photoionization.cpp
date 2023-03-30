@@ -11,9 +11,9 @@
 #include "../reaction_network.hpp"
 #include "photoionization.hpp"
 
-Photoionization::Photoionization(ReactionNetwork *pnetwork, std::string name, IonizingAbsorber *pabs,
+Photoionization::Photoionization(std::string name, IonizingAbsorber *pabs,
   int ion_num, int elec_num):
-    Reaction(pnetwork, name)
+    Reaction(name)
 {
   pmy_abs = pabs;
   scalar_num = pabs->scalar_num;

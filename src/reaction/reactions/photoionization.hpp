@@ -14,7 +14,7 @@ class PassiveScalars;
 
 class Photoionization: public Reaction {
 public:
-  Photoionization(ReactionNetwork *pnetwork, std::string name, IonizingAbsorber *pabs, 
+  Photoionization(std::string name, IonizingAbsorber *pabs, 
     int ion_num, int elec_num);
   void react(int k, int j, int i);
 

@@ -179,59 +179,105 @@ void MeshBlock::UserWorkBeforeOutput(ParameterInput *pin)
   }
 }
 
-void ReactionNetwork::InitUserReactions(ParameterInput *pin) {
-  Reaction *Hrec = new H_recombination(this, "H Recombination", HYD, HPLUS, ELEC);
-  Reaction *Lya = new Lya_cooling(this, "Lyman Alpha", HYD, HPLUS, ELEC);
-  Reaction *Herec = new He_recombination(this, "He Recombination", HE, HEPLUS, ELEC);
-  Reaction *He23Srec = new He_23S_recombination(this, "He23S Recombination", HETRIP, HEPLUS, ELEC);
+// void ReactionNetwork::InitUserReactions(ParameterInput *pin) {
+  // Reaction *Hrec = new H_recombination("H Recombination", HYD, HPLUS, ELEC);
+  // Reaction *Lya = new Lya_cooling("Lyman Alpha", HYD, HPLUS, ELEC);
+  // Reaction *Herec = new He_recombination("He Recombination", HE, HEPLUS, ELEC);
+  // Reaction *He23Srec = new He_23S_recombination("He23S Recombination", HETRIP, HEPLUS, ELEC);
 
-  std::string collisions_file_name = pin->GetString("problem", "HE_COLLISIONS_FILE");
-  Reaction *HEcol = new He_e_collisions(this, collisions_file_name, "He Electron Collisions", HE, HETRIP, ELEC);
+  // std::string collisions_file_name = pin->GetString("problem", "HE_COLLISIONS_FILE");
+  // Reaction *HEcol = new He_e_collisions(collisions_file_name, "He Electron Collisions", HE, HETRIP, ELEC);
 
   // other reactions
-  Real HPLUS_energy = pin->GetReal("problem", "HYDROGEN_IONIZATION_ENERGY");
-  Real HEPLUS_energy = pin->GetReal("problem", "HELIUM_IONIZATION_ENERGY");
-  Real HETRIP_ion_energy = pin->GetReal("problem", "HELIUM_TRIPLET_IONIZATION_ENERGY");
-  Real HETRIP_energy = HEPLUS_energy - HETRIP_ion_energy;
+  // Real HPLUS_energy = pin->GetReal("problem", "HYDROGEN_IONIZATION_ENERGY");
+  // Real HEPLUS_energy = pin->GetReal("problem", "HELIUM_IONIZATION_ENERGY");
+  // Real HETRIP_ion_energy = pin->GetReal("problem", "HELIUM_TRIPLET_IONIZATION_ENERGY");
+  // Real HETRIP_energy = HEPLUS_energy - HETRIP_ion_energy;
 
-  Reaction *HETripDecay = new He_triplet_decay(this, "He Triplet Radio-decay", HETRIP, HE, HETRIP_energy);
-  Reaction *CE1 = new ChargeExchange_HeToH(this, "ChargeExchange_HeToH", HEPLUS, HYD, HE, HPLUS, HEPLUS_energy, HPLUS_energy);
-  Reaction *CE2 = new ChargeExchange_HToHe(this, "ChargeExchange_HToHe", HE, HPLUS, HEPLUS, HYD, HPLUS_energy, HEPLUS_energy);
-  Reaction *CollisionalRelax = new CollisionalRelaxation_HeH(this, "CollisionalRelaxation_HeH", HETRIP, HYD, HE, HYD, HETRIP_energy, 0.0);
+  // Reaction *HETripDecay = new He_triplet_decay("He Triplet Radio-decay", HETRIP, HE, HETRIP_energy);
+  // Reaction *CE1 = new ChargeExchange_HeToH("ChargeExchange_HeToH", HEPLUS, HYD, HE, HPLUS, HEPLUS_energy, HPLUS_energy);
+  // Reaction *CE2 = new ChargeExchange_HToHe("ChargeExchange_HToHe", HE, HPLUS, HEPLUS, HYD, HPLUS_energy, HEPLUS_energy);
 
-  return;
+  // problematic!
+  // Reaction *CollisionalRelax = new CollisionalRelaxation_HeH(this, "CollisionalRelaxation_HeH", HETRIP, HYD, HE, HYD, HETRIP_energy, 0.0);
+
+  // return;
+// }
+
+Reaction* ReactionNetwork::GetReactionByName(std::string name, ParameterInput *pin)
+{
+  if (name == "H_RECOMBINATION") {
+    return new H_recombination(name, HYD, HPLUS, ELEC);
+
+  } else if (name == "LYA_COOLING") {
+    return new Lya_cooling(name, HYD, HPLUS, ELEC);
+
+  } else if (name == "HE_RECOMBINATION") {
+    return new H_recombination(name, HE, HEPLUS, ELEC);
+
+  } else if (name == "HE23S_RECOMBINATION") {
+    return new He_23S_recombination(name, HETRIP, HEPLUS, ELEC);
+
+  } else if (name == "HE_E_COLLISIONS") {
+    std::string collisions_file_name = pin->GetString("reaction", "HE_COLLISIONS_FILE");
+    return new He_e_collisions(collisions_file_name, name, HE, HETRIP, ELEC);
+
+  } else if (name == "HE23S_RADIO_DECAY") {
+    Real HEPLUS_energy = pin->GetReal("reaction", "HELIUM_IONIZATION_ENERGY");
+    Real HETRIP_ion_energy = pin->GetReal("reaction", "HELIUM_TRIPLET_IONIZATION_ENERGY");
+    Real HETRIP_energy = HEPLUS_energy - HETRIP_ion_energy;
+    return new He_triplet_decay(name, HETRIP, HE, HETRIP_energy);
+
+  } else if (name == "CHARGE_EXCHANGE_HE_H") {
+    Real HPLUS_energy = pin->GetReal("reaction", "HYDROGEN_IONIZATION_ENERGY");
+    Real HEPLUS_energy = pin->GetReal("reaction", "HELIUM_IONIZATION_ENERGY");
+    return new ChargeExchange_HeToH(name, HEPLUS, HYD, HE, HPLUS, HEPLUS_energy, HPLUS_energy);
+
+  } else if (name == "CHARGE_EXCHANGE_H_HE") {
+    Real HPLUS_energy = pin->GetReal("reaction", "HYDROGEN_IONIZATION_ENERGY");
+    Real HEPLUS_energy = pin->GetReal("reaction", "HELIUM_IONIZATION_ENERGY");
+    return new ChargeExchange_HToHe(name, HE, HPLUS, HEPLUS, HYD, HPLUS_energy, HEPLUS_energy);
+
+  } else if (name == "TRIPLET_COLLISIONAL_RELAXATION") {
+    Real HEPLUS_energy = pin->GetReal("reaction", "HELIUM_IONIZATION_ENERGY");
+    Real HETRIP_ion_energy = pin->GetReal("reaction", "HELIUM_TRIPLET_IONIZATION_ENERGY");
+    Real HETRIP_energy = HEPLUS_energy - HETRIP_ion_energy;
+    return new CollisionalRelaxation_HeH(name, HETRIP, HYD, HE, HYD, HETRIP_energy, 0.0);
+
+  } else {
+    std::stringstream msg;
+    msg << "### FATAL ERROR in ReactionNetwork::GetReactionByName"
+        << std::endl << "unknown reaction: '" << name <<"' ";
+    ATHENA_ERROR(msg);
+  }
 }
 
 Absorber* RadiationBand::GetAbsorberByName(std::string name, ParameterInput *pin)
 {
-  std::stringstream msg;
+  ReactionNetwork *pnetwork = pmy_rad->pmy_block->pnetwork;
+
   if (name == "HYDROGEN_IONIZATION") {
     HydrogenIonization *a = new HydrogenIonization(this, HYD, name, pin);
 
-    ReactionNetwork *pnetwork = pmy_rad->pmy_block->pnetwork;
-    Reaction *rxn = new Photoionization(pnetwork, name, a, HPLUS, ELEC);
-
+    pnetwork->AddReaction(new Photoionization(name, a, HPLUS, ELEC));
     return a;
   }
   else if (name == "HELIUM_IONIZATION") {
     std::string xc_file = pin->GetString("radiation", "Helium_1(1)S_file");
     HeliumIonization *a = new HeliumIonization(this, HE, name, pin, xc_file);
 
-    ReactionNetwork *pnetwork = pmy_rad->pmy_block->pnetwork;
-    Reaction *rxn = new Photoionization(pnetwork, name, a, HEPLUS, ELEC);
-
+    pnetwork->AddReaction(new Photoionization(name, a, HEPLUS, ELEC));
     return a;
   }
   else if (name == "HELIUM_TRIPLET_IONIZATION") {
     std::string xc_file = pin->GetString("radiation", "Helium_2(3)S_file");
     HeliumIonization *a = new HeliumIonization(this, HE, name, pin, xc_file);
 
-    ReactionNetwork *pnetwork = pmy_rad->pmy_block->pnetwork;
-    Reaction *rxn = new Photoionization(pnetwork, name, a, HEPLUS, ELEC);
-
+    pnetwork->AddReaction(new Photoionization(name, a, HEPLUS, ELEC));
     return a; 
   }
   else {
+    std::stringstream msg;
     msg << "### FATAL ERROR in RadiationBand::AddAbsorber"
         << std::endl << "unknown absorber: '" << name <<"' ";
     ATHENA_ERROR(msg);

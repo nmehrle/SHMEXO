@@ -12,7 +12,7 @@ class PassiveScalars;
 
 class TwoBodyReaction: public Reaction {
 public:
-  TwoBodyReaction(ReactionNetwork *pnetwork, std::string name, int r1_num, int r2_num, int p1_num, int p2_num, Real E_reactant, Real E_product);
+  TwoBodyReaction(std::string name, int r1_num, int r2_num, int p1_num, int p2_num, Real E_reactant, Real E_product);
   void react(int k, int j, int i);
 
   virtual Real alpha(Real T, int k, int j, int i) {};

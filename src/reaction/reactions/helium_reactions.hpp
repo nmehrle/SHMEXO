@@ -13,7 +13,7 @@ class PassiveScalars;
 
 class He_recombination: public Reaction {
 public:
-  He_recombination(ReactionNetwork *pnetwork, std::string name, int neu_num, int ion_num, int elec_num);
+  He_recombination(std::string name, int neu_num, int ion_num, int elec_num);
   void react(int k, int j, int i);
 protected:
   int scalar_num, ion_scalar_num, electron_scalar_num;
@@ -22,7 +22,7 @@ protected:
 
 class He_23S_recombination: public Reaction {
 public:
-  He_23S_recombination(ReactionNetwork *pnetwork, std::string name, int neu_num, int ion_num, int elec_num);
+  He_23S_recombination(std::string name, int neu_num, int ion_num, int elec_num);
   void react(int k, int j, int i);
 protected:
   int scalar_num, ion_scalar_num, electron_scalar_num;
@@ -31,7 +31,7 @@ protected:
 
 class He_e_collisions: public Reaction {
 public:
-  He_e_collisions(ReactionNetwork *pnetwork, std::string data_file, std::string name, int singlet_num, int triplet_num, int elec_num);
+  He_e_collisions(std::string data_file, std::string name, int singlet_num, int triplet_num, int elec_num);
   ~He_e_collisions();
   void react(int k, int j, int i);
 protected:
@@ -53,7 +53,7 @@ protected:
 
 class He_triplet_decay: public Reaction {
 public:
-  He_triplet_decay(ReactionNetwork *pnetwork, std::string name, int He_trip_num, int He_singlet_num, Real E_triplet);
+  He_triplet_decay(std::string name, int He_trip_num, int He_singlet_num, Real E_triplet);
 
   void react(int k, int j, int i);
 protected:

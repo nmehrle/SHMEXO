@@ -44,7 +44,9 @@ public:
 
   // To be included in problem generator
   // Adds user reactions
-  void __attribute__((weak)) InitUserReactions(ParameterInput *pin);
+  // void __attribute__((weak)) InitUserReactions(ParameterInput *pin);
+
+  Reaction* GetReactionByName(std::string name, ParameterInput *pin);
 
   // to be called at end of problem generator.
   // creates athena arrays for output
@@ -75,7 +77,7 @@ public:
   Reaction *next;
   Reaction *prev;
 
-  Reaction(ReactionNetwork *pnetwork, std::string name);
+  Reaction(std::string name);
   virtual ~Reaction() {};
   virtual void react(int k, int j, int i) {};
 

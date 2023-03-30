@@ -10,18 +10,18 @@
 #include "../reaction_network.hpp"
 #include "hydrogen_reactions.hpp"
 
-H_recombination::H_recombination(ReactionNetwork *pnetwork, std::string name,
+H_recombination::H_recombination(std::string name,
   int neu_num, int ion_num, int elec_num):
-    Reaction(pnetwork, name)
+    Reaction(name)
 {
   scalar_num = neu_num;
   ion_scalar_num = ion_num;
   electron_scalar_num = elec_num;
 }
 
-Lya_cooling::Lya_cooling(ReactionNetwork *pnetwork, std::string name,
+Lya_cooling::Lya_cooling(std::string name,
   int neu_num, int ion_num, int elec_num):
-    Reaction(pnetwork, name)
+    Reaction(name)
 {
   scalar_num = neu_num;
   ion_scalar_num = ion_num;

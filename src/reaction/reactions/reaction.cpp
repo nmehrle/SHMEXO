@@ -5,10 +5,10 @@
 // Athena++ header
 #include "../reaction_network.hpp"
 
-Reaction::Reaction(ReactionNetwork *pnetwork, std::string name):
-  pmy_network(pnetwork), my_name(name)
+Reaction::Reaction(std::string name):
+  my_name(name)
 {
+  pmy_network = nullptr;
   next = nullptr;
   prev = nullptr;
-  pnetwork->AddReaction(this);
 }

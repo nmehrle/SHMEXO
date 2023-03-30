@@ -25,10 +25,28 @@ ReactionNetwork::ReactionNetwork(MeshBlock *pmb, ParameterInput *pin){
   eV_conversion = pin->GetReal("problem", "eV_conversion");
   ry_conversion = pin->GetReal("problem", "ry_conversion");
 
-  implicit_reactions = pin->GetOrAddBoolean("problem", "implicit_reactions", "False");
+  implicit_reactions = pin->GetOrAddBoolean("reaction", "implicit_reactions", "False");
   temperature_.NewAthenaArray(pmb->ncells3, pmb->ncells2, pmb->ncells1);
 
-  InitUserReactions(pin);
+  std::string rxn_name = "";
+  std::string null_name = "NO_MORE_REACTIONS";
+  int rxn_num = 1;
+  char key[100];
+
+  // collects rxn1, rxn2, rxn3 etc. 
+  // must be in order with no skips
+  // this limitation can be fixed later
+  sprintf(key, "rxn%d", rxn_num);
+  rxn_name = pin->GetOrAddString("reaction", key, null_name);
+  while (rxn_name != null_name) {
+    Reaction* prxn = GetReactionByName(rxn_name, pin);
+    AddReaction(prxn);
+  
+    rxn_num +=1;
+    sprintf(key, "rxn%d", rxn_num);
+    rxn_name = pin->GetOrAddString("reaction", key, null_name);
+  }
+  // InitUserReactions(pin);
 }
 
 ReactionNetwork::~ReactionNetwork() {
@@ -42,6 +60,7 @@ ReactionNetwork::~ReactionNetwork() {
 }
 
 void ReactionNetwork::AddReaction(Reaction *prxn) {
+  prxn->pmy_network = this;
   Reaction *p = plast;
 
   if (p == nullptr) {
@@ -133,6 +152,7 @@ void ReactionNetwork::ComputeReactionForcing(const Real dt, const AthenaArray<Re
   } // k
 }
 
+//check for implicit bug here
 void ReactionNetwork::ComputeScalarDensityChange(const Real dt, Real drho[NSCALARS], int k, int j, int i) {
   Real dn_rate_total;
 
