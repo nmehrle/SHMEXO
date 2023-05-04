@@ -59,6 +59,9 @@ public:
   Real wavelength_coefficient;
   int nabs;
 
+  Real band_scaling_factor;
+
+
   int nspec;
   Spectrum *spec;
 
@@ -67,9 +70,9 @@ public:
   AthenaArray<Real> band_tau, band_tau_cell;
 
   // spectral flux density at bottom of cells
-  // units -- [energy / time * area * wavelength]
+  // units -- [energy / time * area]
   // length -- nspec, ncells3, ncells2, ncells1+1
-  AthenaArray<Real> spectral_flux_density;
+  AthenaArray<Real> flux_density;
 
   // tau_cell -- optical depth inside one cell
   // tau -- optical depth of all cells above this cell including this cell

@@ -50,6 +50,7 @@ class Coordinates;
 class ParameterInput;
 class HydroDiffusion;
 class FieldDiffusion;
+class RadiationBand;
 
 //--------------------------------------------------------------------------------------
 //! \struct LogicalLocation
@@ -202,6 +203,6 @@ using FieldDiffusionCoeffFunc = void (*)(
     const AthenaArray<Real> &w,
     const AthenaArray<Real> &bmag,
     int is, int ie, int js, int je, int ks, int ke);
-using RadiationScalingFunc = Real (*)(AthenaArray<Real> const &prim, Real time, int k, int j);
+using RadiationScalingFunc = Real (*)(RadiationBand *band, AthenaArray<Real> const &prim, Real time, int k, int j);
 
 #endif // ATHENA_HPP_

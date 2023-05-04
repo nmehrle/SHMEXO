@@ -84,6 +84,10 @@ RadiationBand::RadiationBand(Radiation *prad, std::string band_id, ParameterInpu
     value = pmy_rad->default_rt_solver;
   }
 
+  // Gather band scaling
+  sprintf(key, "%s.scaling", my_id.c_str());
+  band_scaling_factor = pin->GetOrAddReal("radiation", key, 1.0);
+
   my_rtsolver = new RTSolver(this, pin);
   ConstructRTSolver(value, pin);
 

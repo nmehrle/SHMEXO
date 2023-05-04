@@ -51,11 +51,12 @@ Radiation::~Radiation() {
 
 void Radiation::CalculateRadiativeTransfer(AthenaArray<Real> const& prim, AthenaArray<Real> const& cons_scalar, Real time, int k, int j)
 {
-  Real radiation_scaling = UserRadiationScalingFunc(prim, time, k, j);
 
   for (int i = 0; i < nbands; ++i)
   {
     RadiationBand *p = my_bands(i);
+    Real radiation_scaling = UserRadiationScalingFunc(p, prim, time, k, j);
+
     p->SetSpectralProperties(pmy_block, prim, cons_scalar, k, j);
 
     p->RadiativeTransfer(pmy_block, radiation_scaling, k, j);
