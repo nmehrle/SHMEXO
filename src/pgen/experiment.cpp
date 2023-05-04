@@ -36,7 +36,7 @@ namespace {
   Real wave_to_meters_conversion;
 
   // radiation variables
-  Real rad_scaling;
+  Real global_rad_scaling;
 
   // tripathi conditions variables
   Real rho_p, cs, space_density_factor;
@@ -67,7 +67,7 @@ namespace {
     const AthenaArray<Real> &w, const AthenaArray<Real> &r,
     const AthenaArray<Real> &bcc,
     AthenaArray<Real> &du, AthenaArray<Real> &ds);
-  Real RadiationTime(AthenaArray<Real> const &prim, Real time, int k, int j);
+  Real RadiationTime(RadiationBand *band, AthenaArray<Real> const &prim, Real time, int k, int j);
 
   // mesh generators
   MeshGenerator meshgen_x1, meshgen_x2, meshgen_x3;
@@ -88,7 +88,7 @@ void Mesh::InitUserMeshData(ParameterInput *pin)
   convergence_level = pin->GetOrAddReal("problem", "convergence_level", 1.e-5);
 
   // Radiation parameters
-  rad_scaling = pin->GetOrAddReal("radiation", "radiation_scaling", 1.);
+  global_rad_scaling = pin->GetOrAddReal("radiation", "global_radiation_scaling", 1.);
 
   wave_to_meters_conversion = pin->GetOrAddReal("radiation","wave_to_meters",1.e-7);
   EnrollUserRadiationScalingFunction(RadiationTime);
@@ -387,12 +387,13 @@ void gravity_func(MeshBlock *pmb, AthenaArray<Real> &g1, AthenaArray<Real> &g2, 
   }
 }
 
-Real RadiationTime(AthenaArray<Real> const &prim, Real time, int k, int j) {
+Real RadiationTime(RadiationBand *band, AthenaArray<Real> const &prim, Real time, int k, int j) {
   // tripathi
   Real time_factor = 5 * erf(time/8.e4 - 1.5)+5.1;
   // Real time_factor = (std::tanh(time/2000. - 5.)+1.)/2.;
+  Real scaling = global_rad_scaling * band->band_scaling_factor;
 
-  return rad_scaling*time_factor;
+  return scaling*time_factor;
 }
 
 //----------------------------------------------------------------------------------------
