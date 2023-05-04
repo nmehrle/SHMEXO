@@ -42,11 +42,9 @@ public:
   Real eV_conversion, ry_conversion;
   AthenaArray<Real> temperature_;
 
-  // To be included in problem generator
-  // Adds user reactions
-  // void __attribute__((weak)) InitUserReactions(ParameterInput *pin);
-
+  // To be included/overwritten in problem generator
   Reaction* GetReactionByName(std::string name, ParameterInput *pin);
+  bool DoRunReactions(int k, int j, int i);
 
   // to be called at end of problem generator.
   // creates athena arrays for output
@@ -57,6 +55,9 @@ public:
 
   int num_reactions;
 protected:
+  Real consumption_tolerance;
+  Real sfloor;
+
   bool implicit_reactions;
   typedef Eigen::Matrix<Real,NSCALARS,NSCALARS> MatrixNSR;
   typedef Eigen::Matrix<Real,NSCALARS,1> VectorNSR;

@@ -26,6 +26,8 @@ ReactionNetwork::ReactionNetwork(MeshBlock *pmb, ParameterInput *pin){
   ry_conversion = pin->GetReal("problem", "ry_conversion");
 
   implicit_reactions = pin->GetOrAddBoolean("reaction", "implicit_reactions", "False");
+  consumption_tolerance = pin->GetOrAddReal("reaction", "consumption_tolerance", 0.0);
+  sfloor = pin->GetOrAddReal("hydro", "sfloor", 1.e-12);
   temperature_.NewAthenaArray(pmb->ncells3, pmb->ncells2, pmb->ncells1);
 
   std::string rxn_name = "";
@@ -92,6 +94,10 @@ void ReactionNetwork::Initialize() {
   }
 }
 
+bool __attribute__((weak)) DoRunReactions(int k, int j, int i) { 
+  return true;
+}
+
 void ReactionNetwork::ResetRates() {
   dn_rate.ZeroClear();
   de_rate.ZeroClear();
@@ -116,37 +122,48 @@ void ReactionNetwork::ComputeReactionForcing(const Real dt, const AthenaArray<Re
     for (int j=js; j<=je; ++j) {
       for (int i=is; i<=ie; ++i) {
 
-        pmb->peos->Temperature(prim, cons_scalar, pscalars->mass, temp, k, j, i);
-        temperature_(k,j,i) = temp;
+        if (DoRunReactions(k,j,i)) {
+          pmb->peos->Temperature(prim, cons_scalar, pscalars->mass, temp, k, j, i);
+          temperature_(k,j,i) = temp;
 
-        // populates de_rate(k,j,i), dn_rate(k,j,i)
-        // by summing contributions from reacations
-        for (int r = 0; r < num_reactions; ++r)
-        {
-          Reaction *p = my_reactions(r);
-          p->react(k, j, i);
+          // populates de_rate(k,j,i), dn_rate(k,j,i)
+          // by summing contributions from reacations
+          for (int r = 0; r < num_reactions; ++r)
+          {
+            Reaction *p = my_reactions(r);
+            p->react(k, j, i);
 
-          du(IEN, k, j, i) += de_rate(r, k,j,i) * dt;
-        }
-
-        ComputeScalarDensityChange(dt, drho, k, j, i);
-        for (int n = 0; n < NSCALARS; ++n)
-        { 
-
-          // check this drho isnt in error
-          if (drho[n] < 0 && -drho[n] > cons_scalar(n,k,j,i)) {
-            std::stringstream msg;
-            msg << "##### FATAL ERROR in ReactionNetwork::ComputeReactionForcing" << std::endl
-                << "Error at position (k,j,i) = " << k << ", " << j << ", " << i << "." << std::endl
-                << "drho ("<<drho[n]<<") for scalar (" << n << ") exceeds scalar concentration"
-                << "(" << cons_scalar(n,k,j,i)<< ") causing negative density." << std::endl;
-            ATHENA_ERROR(msg);
+            du(IEN, k, j, i) += de_rate(r, k,j,i) * dt;
           }
 
-          // add to scalar change array
-          ds(n,k,j,i) += drho[n];
-        }
+          ComputeScalarDensityChange(dt, drho, k, j, i);
+          for (int n = 0; n < NSCALARS; ++n)
+          { 
 
+            // check this drho isnt in error
+            if (drho[n] < 0 && -drho[n] > cons_scalar(n,k,j,i)) {
+              Real s_rho = cons_scalar(n,k,j,i);
+              Real deviation = (-drho[n] - s_rho)/s_rho;
+
+              // unnecessary abs
+              if (std::abs(deviation) < consumption_tolerance) {
+                drho[n] = s_rho * (1.0 - sfloor);
+              } else {
+                std::stringstream msg;
+                msg << "##### FATAL ERROR in ReactionNetwork::ComputeReactionForcing" << std::endl
+                    << "Error at position (k,j,i) = " << k << ", " << j << ", " << i << "." << std::endl
+                    << "drho ("<<drho[n]<<") for scalar (" << n << ") exceeds scalar concentration"
+                    << "(" << cons_scalar(n,k,j,i)<< ") causing negative density." << std::endl
+                    << "fraction deviation " << deviation << " exceeds consumption tolerance "<<consumption_tolerance
+                    << std::endl;
+                ATHENA_ERROR(msg);
+              }
+            }
+
+            // add to scalar change array
+            ds(n,k,j,i) += drho[n];
+          }
+        }
       } // i
     } // j
   } // k
