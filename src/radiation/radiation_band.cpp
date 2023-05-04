@@ -42,13 +42,19 @@ RadiationBand::RadiationBand(Radiation *prad, std::string band_id, ParameterInpu
     ATHENA_ERROR(msg);
   }
 
-  nspec = (int)((v[1] - v[0])/v[2]) + 1; // including the last one
+  Real nspec_fractional = ((v[1] - v[0])/v[2]);
+  nspec = (int) nspec_fractional;
+  if (nspec_fractional != nspec ) {
+    nspec +=1;
+  }
+
+  Real bin_width = (v[1]-v[0]) / nspec;
+
   spec = new Spectrum [nspec];
   for (int i = 0; i < nspec; ++i) {
-    spec[i].wave = v[0] + v[2]*i;
-    spec[i].wgt = (i == 0) || (i == nspec - 1) ? 0.5*v[2] : v[2];
+    spec[i].wave = v[0] + bin_width*(i+1.0/2.0);
+    spec[i].wgt = bin_width;
   }
-  if (nspec == 1) spec[0].wgt = 1.;
 
   // Gather wavelength unit
   sprintf(key, "%s.wavelength_coefficient", my_id.c_str());
