@@ -40,7 +40,7 @@ void IonizingAbsorber::CalculateEnergyFunctions(Spectrum const *spec, int nspec)
       // region where cross section is zero so should never be relevant
       // default values
       h(n) = 0.0;
-      q(n) = 1.0; 
+      q(n) = 0.0; 
     }
     else {
       h(n) = wave/lambda_0;
