@@ -67,13 +67,16 @@ void HeliumIonization::CalculateCrossSections(Spectrum const *spec, int nspec) {
     energy = planck_constant * freq / eV_conversion; // eV
     ry = energy / ry_conversion; // ry
 
-    if (energy < file_x[0]) {
+    if (ry < file_x[0]) {
       crossSection(n) = 0.0;
     }
-    else if (energy > file_x[n_file-1]) {
+    else if (ry > file_x[n_file-1]) {
       std::stringstream msg;
       msg << "##### FATAL ERROR in HeliumIonization::CalculateCrossSections"
-          << std::endl << "Energy too high error." << std::endl;
+          << std::endl << "Energy " << energy << "eV (" << ry << " Ry) " <<std::endl
+          << "exceeds maximum energy in cross_section file."
+          << " (" << file_x[n_file-1] << ")" << std::endl
+          << "For absorber " << my_name << std::endl;
       ATHENA_ERROR(msg);
     }
     else {
