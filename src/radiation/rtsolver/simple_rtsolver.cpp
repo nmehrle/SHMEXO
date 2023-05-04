@@ -29,8 +29,7 @@ void SimpleRTSolver::RadiativeTransfer(MeshBlock *pmb, int n, int k, int j)
   // pmb->pcoord->Face1Area(k, j, is, ie+1, farea);
 
   int nabs = pband->nabs;
-  Real Ftop = pband->spectral_flux_density(n,k,j,ie+1);
-
+  Real Ftop = pband->flux_density(n,k,j,ie+1);
 
   Real Fbot, attenuation, tau_cell;
   Real delta_F, fraction_absorbed, J_i;
@@ -52,7 +51,7 @@ void SimpleRTSolver::RadiativeTransfer(MeshBlock *pmb, int n, int k, int j)
       pabs->energyAbsorbed(n,k,j,i) = J_i;
     }
 
-    pband->spectral_flux_density(n,k,j,i) = Fbot;
+    pband->flux_density(n,k,j,i) = Fbot;
     Ftop = Fbot;
   }
 }

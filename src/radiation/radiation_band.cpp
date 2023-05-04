@@ -124,7 +124,7 @@ RadiationBand::RadiationBand(Radiation *prad, std::string band_id, ParameterInpu
   band_tau.NewAthenaArray(pmb->ncells3, pmb->ncells2, pmb->ncells1);
   band_tau_cell.NewAthenaArray(pmb->ncells3, pmb->ncells2, pmb->ncells1);
 
-  spectral_flux_density.NewAthenaArray(nspec, pmb->ncells3, pmb->ncells2, pmb->ncells1+1);
+  flux_density.NewAthenaArray(nspec, pmb->ncells3, pmb->ncells2, pmb->ncells1+1);
   tau.NewAthenaArray(nspec, pmb->ncells3, pmb->ncells2, pmb->ncells1);
   tau_cell.NewAthenaArray(nspec, pmb->ncells3, pmb->ncells2, pmb->ncells1);
 }
@@ -235,14 +235,15 @@ void RadiationBand::SetSpectralProperties(MeshBlock *pmb, AthenaArray<Real> cons
   }
 }
 
-// sets spectral_flux_density at the top
+// sets flux_density at the top
 // calls my_rtsolver to compute it through the collumn
 void RadiationBand::RadiativeTransfer(MeshBlock *pmb, Real radiation_scaling, int k, int j) {
   int ie = pmb->ie;
   for (int n = 0; n < nspec; ++n) {
-    spectral_flux_density(n,k,j,ie+1) = spec[n].flux*radiation_scaling;
+    flux_density(n,k,j,ie+1) = spec[n].flux * spec[n].wgt * radiation_scaling;
+    // flux_density(n,k,j,ie+1) = spec[n].flux * radiation_scaling;
 
-    // fills in spectral_flux_density
+    // fills in flux_density
     // computes which absorber absorbs the radiation
     my_rtsolver->RadiativeTransfer(pmb, n, k, j);
   }
