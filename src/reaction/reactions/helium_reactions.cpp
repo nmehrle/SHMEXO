@@ -196,3 +196,40 @@ void He_triplet_decay::react(int k, int j, int i) {
 
   pmy_network->de_rate(my_rxn_num, k, j, i) += e_rxn;
 }
+
+
+//HETRIP, HYD, HE, HPLUS, ELEC
+CollisionalRelaxation_HeH::CollisionalRelaxation_HeH(std::string name, int r1_num, int r2_num, int p1_num, int p2_num, int p3_num, Real E_reactant, Real E_product):
+  Reaction(name)
+{
+  r1_num_ = r1_num;
+  r2_num_ = r2_num;
+  p1_num_ = p1_num;
+  p2_num_ = p2_num;
+  p3_num_ = p3_num;
+
+  E_reactant_ = E_reactant;
+  E_product_  = E_product;
+}
+
+void CollisionalRelaxation_HeH::react(int k, int j, int i) {
+  PassiveScalars *ps = pmy_network->pscalars;
+  Real T = pmy_network->temperature_(k,j,i);
+
+  Real n_r1 = ps->s(r1_num_, k, j, i)/ps->mass(r1_num_);
+  Real n_r2 = ps->s(r2_num_, k, j, i)/ps->mass(r2_num_);
+
+  Real alpha = 5.0E-17;
+  // Real alpha = 5.0E-10;
+
+  Real n_rxn = alpha * n_r1 * n_r2;
+  Real e_rxn = (E_reactant_ - E_product_) * n_rxn;
+
+  pmy_network->dn_rate(my_rxn_num, r1_num_, k, j, i) -= n_rxn;
+  pmy_network->dn_rate(my_rxn_num, r2_num_, k, j, i) -= n_rxn;
+  pmy_network->dn_rate(my_rxn_num, p1_num_, k, j, i) += n_rxn;
+  pmy_network->dn_rate(my_rxn_num, p2_num_, k, j, i) += n_rxn;
+  pmy_network->dn_rate(my_rxn_num, p3_num_, k, j, i) += n_rxn;
+
+  pmy_network->de_rate(my_rxn_num, k, j, i) += e_rxn;
+}

@@ -52,7 +52,3 @@ Real ChargeExchange_HToHe::alpha(Real T, int k, int j, int i) {
   Real t2 = exp(-128000.0/T);
   return t1 * t2;
 }
-
-Real CollisionalRelaxation_HeH::alpha(Real T, int k, int j, int i) {
-  return 5.0E-10;
-}

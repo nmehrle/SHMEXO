@@ -60,3 +60,21 @@ protected:
   int He_trip_num_, He_singlet_num_;
   Real E_triplet_;
 };
+
+
+class CollisionalRelaxation_HeH: public Reaction {
+public:
+  // CollisionalRelaxation_HeH(ReactionNetwork *pnetwork, std::string name, int HEtrip_num, int H_num, int HE_num, Real E_reactant, Real E_product);
+
+  CollisionalRelaxation_HeH(std::string name, int r1_num, int r2_num, int p1_num, int p2_num, int p3_num, Real E_reactant, Real E_product);
+  void react(int k, int j, int i);
+protected:
+  int r1_num_;
+  int r2_num_;
+  int p1_num_;
+  int p2_num_;
+  int p3_num_;
+
+  Real E_reactant_;
+  Real E_product_;
+};

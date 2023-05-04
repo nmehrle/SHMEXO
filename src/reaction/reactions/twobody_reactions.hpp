@@ -42,11 +42,3 @@ public:
   using TwoBodyReaction::TwoBodyReaction;
   Real alpha(Real T, int k, int j, int i);
 };
-
-class CollisionalRelaxation_HeH: public TwoBodyReaction {
-public:
-  // CollisionalRelaxation_HeH(ReactionNetwork *pnetwork, std::string name, int HEtrip_num, int H_num, int HE_num, Real E_reactant, Real E_product);
-
-  using TwoBodyReaction::TwoBodyReaction;
-  Real alpha(Real T, int k, int j, int i);
-};
