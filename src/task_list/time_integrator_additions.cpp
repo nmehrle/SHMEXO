@@ -105,7 +105,7 @@ TaskStatus TimeIntegratorTaskList::IntegrateReactions(MeshBlock *pmb, int stage)
     // Clears and updates both
     // pnetwork->dn and pnetwork->de
     Real dt = (stage_wghts[(stage-1)].beta)*(pmb->pmy_mesh->dt);
-    pnetwork->ComputeReactionForcing(dt, phydro->w, phydro->u, pscalars->s, phydro->du, pscalars->ds2);
+    pnetwork->ComputeReactionForcing(dt, phydro->w, phydro->u, pscalars->s, phydro->du, pscalars->ds);
 
     return TaskStatus::next;
   }
