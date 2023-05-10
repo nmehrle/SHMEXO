@@ -105,25 +105,10 @@ TaskStatus TimeIntegratorTaskList::IntegrateReactions(MeshBlock *pmb, int stage)
     // Clears and updates both
     // pnetwork->dn and pnetwork->de
     Real dt = (stage_wghts[(stage-1)].beta)*(pmb->pmy_mesh->dt);
-    pnetwork->ComputeReactionForcing(dt, phydro->w, phydro->u, pscalars->s, phydro->du, pscalars->ds);
+    pnetwork->ComputeReactionForcing(dt, phydro->w, phydro->u, pscalars->s, phydro->du, pscalars->ds2);
 
     return TaskStatus::next;
   }
 
   return TaskStatus::fail;
 }
-
-// // after integrate hydro
-// // before update hydro
-// TaskStatus TimeIntegratorTaskList::AddSourceTermsRadiation(MeshBlock *pmb, int stage) {
-//   Radiation *prad = pmb->prad;
-//   Hydro *ph       = pmb->phydro;
-
-//   if (stage <= nstages) {
-//     Real dt = (stage_wghts[(stage-1)].beta)*(pmb->pmy_mesh->dt);
-//     prad->AddRadiationSourceTerm(dt, ph->du);
-//   } else {
-//     return TaskStatus::fail;
-//   }
-//   return TaskStatus::next;
-// }
