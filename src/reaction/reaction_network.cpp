@@ -127,7 +127,7 @@ void ReactionNetwork::ComputeReactionForcing(const Real dt, const AthenaArray<Re
           temperature_(k,j,i) = temp;
 
           // populates de_rate(k,j,i), dn_rate(k,j,i)
-          // by summing contributions from reacations
+          // by summing contributions from reactions
           for (int r = 0; r < num_reactions; ++r)
           {
             Reaction *p = my_reactions(r);
