@@ -161,13 +161,33 @@ void He_e_collisions::react(int k, int j, int i) {
  pmy_network->de_rate(my_rxn_num, k, j, i) -= temp_L[x11] * singlet_reaction_factor;
 
  // ----- singlet -> triplet collisions
- pmy_network->dn_rate(my_rxn_num, singlet_scalar_num, k, j, i) -= temp_q[x13] * singlet_reaction_factor;
- pmy_network->dn_rate(my_rxn_num, triplet_scalar_num, k, j, i) += temp_q[x13] * singlet_reaction_factor;
+ int s2t_species[2] = {singlet_scalar_num, triplet_scalar_num};
+ int s2t_sign[2]   = {-1, +1};
+
+ for (int l = 0; l < 2; ++l) {
+   pmy_network->dn_rate(my_rxn_num, s2t_species[l], k, j, i) += s2t_sign[l] * temp_q[x13] * singlet_reaction_factor;
+   pmy_network->jacobian(s2t_species[l], singlet_scalar_num, k, j ,i) += s2t_sign[l] * temp_q[x13] * n_elec;
+   pmy_network->jacobian(s2t_species[l], electron_scalar_num, k, j ,i) += s2t_sign[l] * temp_q[x13] * n_singlet;
+ }
+
+ // pmy_network->dn_rate(my_rxn_num, singlet_scalar_num, k, j, i) -= temp_q[x13] * singlet_reaction_factor;
+ // pmy_network->dn_rate(my_rxn_num, triplet_scalar_num, k, j, i) += temp_q[x13] * singlet_reaction_factor;
+
  pmy_network->de_rate(my_rxn_num, k, j, i) -= temp_L[x13] * singlet_reaction_factor;
 
  // ----- triplet -> singlet collisions
- pmy_network->dn_rate(my_rxn_num, triplet_scalar_num, k, j, i) -= temp_q[x31] * triplet_reaction_factor;
- pmy_network->dn_rate(my_rxn_num, singlet_scalar_num, k, j, i) += temp_q[x31] * triplet_reaction_factor;
+ int t2s_species[2] = {triplet_scalar_num, triplet_scalar_num};
+ int t2s_sign[2]   = {-1, +1};
+
+ for (int l = 0; l < 2; ++l) {
+   pmy_network->dn_rate(my_rxn_num, t2s_species[l], k, j, i) += t2s_sign[l] * temp_q[x31] * triplet_reaction_factor;
+   pmy_network->jacobian(t2s_species[l], triplet_scalar_num, k, j ,i) += t2s_sign[l] * temp_q[x31] * n_elec;
+   pmy_network->jacobian(t2s_species[l], electron_scalar_num, k, j ,i) += t2s_sign[l] * temp_q[x31] * n_triplet;
+ }
+
+ // pmy_network->dn_rate(my_rxn_num, triplet_scalar_num, k, j, i) -= temp_q[x31] * triplet_reaction_factor;
+ // pmy_network->dn_rate(my_rxn_num, singlet_scalar_num, k, j, i) += temp_q[x31] * triplet_reaction_factor;
+
  pmy_network->de_rate(my_rxn_num, k, j, i) -= temp_L[x31] * triplet_reaction_factor;
 
  // ----- triplet -> triplet collisions
@@ -194,6 +214,9 @@ void He_triplet_decay::react(int k, int j, int i) {
   pmy_network->dn_rate(my_rxn_num, He_trip_num_, k, j, i) -= n_rxn;
   pmy_network->dn_rate(my_rxn_num, He_singlet_num_, k, j, i) += n_rxn;
 
+  pmy_network->jacobian(He_trip_num_, He_trip_num_, k, j, i) -= alpha;
+  pmy_network->jacobian(He_singlet_num_, He_trip_num_, k, j, i) += alpha;
+
   pmy_network->de_rate(my_rxn_num, k, j, i) += e_rxn;
 }
 
@@ -214,22 +237,23 @@ CollisionalRelaxation_HeH::CollisionalRelaxation_HeH(std::string name, int r1_nu
 
 void CollisionalRelaxation_HeH::react(int k, int j, int i) {
   PassiveScalars *ps = pmy_network->pscalars;
-  Real T = pmy_network->temperature_(k,j,i);
 
   Real n_r1 = ps->s(r1_num_, k, j, i)/ps->mass(r1_num_);
   Real n_r2 = ps->s(r2_num_, k, j, i)/ps->mass(r2_num_);
 
-  Real alpha = 5.0E-17;
-  // Real alpha = 5.0E-10;
+  Real alpha = 5.0E-10;
 
   Real n_rxn = alpha * n_r1 * n_r2;
   Real e_rxn = (E_reactant_ - E_product_) * n_rxn;
 
-  pmy_network->dn_rate(my_rxn_num, r1_num_, k, j, i) -= n_rxn;
-  pmy_network->dn_rate(my_rxn_num, r2_num_, k, j, i) -= n_rxn;
-  pmy_network->dn_rate(my_rxn_num, p1_num_, k, j, i) += n_rxn;
-  pmy_network->dn_rate(my_rxn_num, p2_num_, k, j, i) += n_rxn;
-  pmy_network->dn_rate(my_rxn_num, p3_num_, k, j, i) += n_rxn;
+  int species[5] = {r1_num_, r2_num_, p1_num_, p2_num_, p3_num_};
+  int sign[5] = {-1, -1, +1, +1, +1};
+
+  for (int l = 0; l < 5; ++l) {
+    pmy_network->dn_rate(my_rxn_num, species[l], k, j, i) += sign[l] * n_rxn;
+    pmy_network->jacobian(species[l], r1_num_, k, j, i) += sign[l] * alpha * n_r2;
+    pmy_network->jacobian(species[l], r2_num_, k, j, i) += sign[l] * alpha * n_r1;
+  }
 
   pmy_network->de_rate(my_rxn_num, k, j, i) += e_rxn;
 }

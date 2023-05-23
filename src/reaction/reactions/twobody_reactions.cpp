@@ -35,10 +35,14 @@ void TwoBodyReaction::react(int k, int j, int i) {
   Real n_rxn = alpha * n_r1 * n_r2;
   Real e_rxn = (E_reactant_ - E_product_) * n_rxn;
 
-  pmy_network->dn_rate(my_rxn_num, r1_num_, k, j, i) -= n_rxn;
-  pmy_network->dn_rate(my_rxn_num, r2_num_, k, j, i) -= n_rxn;
-  pmy_network->dn_rate(my_rxn_num, p1_num_, k, j, i) += n_rxn;
-  pmy_network->dn_rate(my_rxn_num, p2_num_, k, j, i) += n_rxn;
+  int species[4] = {r1_num_, r2_num_, p1_num_, p2_num_};
+  int sign[4] = {-1, -1, +1, +1};
+
+  for (int l = 0; l < 4; ++l) {
+    pmy_network->dn_rate(my_rxn_num, species[l], k, j, i) += sign[l] * n_rxn;
+    pmy_network->jacobian(species[l], r1_num_, k, j ,i) += sign[l] * alpha * n_r2;
+    pmy_network->jacobian(species[l], r2_num_, k, j ,i) += sign[l] * alpha * n_r1;
+  }
 
   pmy_network->de_rate(my_rxn_num, k, j, i) += e_rxn;
 }
