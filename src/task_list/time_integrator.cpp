@@ -270,20 +270,9 @@ TimeIntegratorTaskList::TimeIntegratorTaskList(ParameterInput *pin, Mesh *pm) {
     } else {
       AddTask(SRC_TERM,INT_HYD);
     }
-    // ADD RADIATION HERE?
-    if (REACTION_ENABLED) {
-      if (RADIATION_ENABLED) {
-        AddTask(INT_RXN, CALC_RADFLX|SRC_TERM);
-      }
-      else {
-        AddTask(INT_RXN, SRC_TERM);
-      }
-      AddTask(UPDATE_HYD, INT_RXN);
-    } else {
-      AddTask(UPDATE_HYD,SRC_TERM);
-    }
-    // AddTask(UPDATE_HYD,SRCTERM_HYD);
-    // END ADD RADIATION
+
+    AddTask(UPDATE_HYD,SRC_TERM);
+
     AddTask(INT_CHM,UPDATE_HYD);
     AddTask(SEND_HYD,INT_CHM);
     AddTask(RECV_HYD,NONE);
@@ -301,16 +290,20 @@ TimeIntegratorTaskList::TimeIntegratorTaskList(ParameterInput *pin, Mesh *pm) {
       } else {
         AddTask(INT_SCLR,CALC_SCLRFLX);
       }
-      // there is no SRCTERM_SCLR task
+      AddTask(UPDATE_SCLR,INT_SCLR|SRC_TERM);
+
       if (REACTION_ENABLED) {
-        AddTask(UPDATE_SCLR,INT_SCLR|INT_RXN);  
+        AddTask(INT_RXN, UPDATE_SCLR|UPDATE_HYD);
+
+        AddTask(SEND_SCLR,INT_RXN);
+        AddTask(RECV_SCLR,NONE);
+        AddTask(SETB_SCLR,(RECV_SCLR|INT_RXN));
       }
       else {
-        AddTask(UPDATE_SCLR,INT_SCLR|SRC_TERM);
+        AddTask(SEND_SCLR,UPDATE_SCLR);
+        AddTask(RECV_SCLR,NONE);
+        AddTask(SETB_SCLR,(RECV_SCLR|UPDATE_SCLR));
       }
-      AddTask(SEND_SCLR,UPDATE_SCLR);
-      AddTask(RECV_SCLR,NONE);
-      AddTask(SETB_SCLR,(RECV_SCLR|UPDATE_SCLR));
       // if (SHEARING_BOX) {
       //   AddTask(SEND_SCLRSH,SETB_SCLR);
       //   AddTask(RECV_SCLRSH,SETB_SCLR);
@@ -1279,7 +1272,7 @@ TaskStatus TimeIntegratorTaskList::IntegrateScalars(MeshBlock *pmb, int stage) {
       pmb->WeightedAve(ps->s2, ps->s1, ps->s2, ave_wghts);
       ps->AddFluxDivergence(wght_ssp, ps->s2);
     }
-    return TaskStatus::next;
+    return TaskStatus::success;
   }
   return TaskStatus::fail;
 }
