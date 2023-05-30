@@ -120,7 +120,7 @@ RadiationBand::RadiationBand(Radiation *prad, std::string band_id, ParameterInpu
     // sprintf(scalar_key, "%s.scalar", key);
     // abs_scalar_num = pin->GetOrAddInteger("radiation", scalar_key, -1);
 
-    Absorber* pabs = GetAbsorberByName(abs_name, pin);
+    Absorber* pabs = GetAbsorberByName(abs_name, my_name, pin);
 
     absorbers(i) = pabs;
   }
@@ -190,7 +190,7 @@ void RadiationBand::ConstructRTSolver(std::string name, ParameterInput *pin) {
 // To be overridden in pgen file
 // Constructs an absorber object based on the name from the problem file
 Absorber* __attribute__((weak)) RadiationBand::GetAbsorberByName(
-  std::string name, ParameterInput *pin) {}
+  std::string name, std::string band_name, ParameterInput *pin) {}
 
 void RadiationBand::SetSpectralProperties(MeshBlock *pmb, AthenaArray<Real> const& w, AthenaArray<Real> const& cons_scalar, int k, int j) {
   Coordinates *pcoord = pmy_rad->pmy_block->pcoord;

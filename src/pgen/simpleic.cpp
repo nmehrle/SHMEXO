@@ -233,28 +233,30 @@ Reaction* ReactionNetwork::GetReactionByName(std::string name, ParameterInput *p
   }
 }
 
-Absorber* RadiationBand::GetAbsorberByName(std::string name, ParameterInput *pin)
+Absorber* RadiationBand::GetAbsorberByName(std::string name, std::string band_name, ParameterInput *pin)
 {
   ReactionNetwork *pnetwork = pmy_rad->pmy_block->pnetwork;
+
+  std::string rxn_name = band_name + "_" + name;
 
   if (name == "HYDROGEN_IONIZATION") {
     HydrogenIonization *a = new HydrogenIonization(this, HYD, name, pin);
 
-    pnetwork->AddReaction(new Photoionization(name, a, HPLUS, ELEC));
+    pnetwork->AddReaction(new Photoionization(rxn_name, a, HPLUS, ELEC));
     return a;
   }
   else if (name == "HELIUM_IONIZATION") {
     std::string xc_file = pin->GetString("radiation", "Helium_1(1)S_file");
     HeliumIonization *a = new HeliumIonization(this, HE, name, pin, xc_file);
 
-    pnetwork->AddReaction(new Photoionization(name, a, HEPLUS, ELEC));
+    pnetwork->AddReaction(new Photoionization(rxn_name, a, HEPLUS, ELEC));
     return a;
   }
   else if (name == "HELIUM_TRIPLET_IONIZATION") {
     std::string xc_file = pin->GetString("radiation", "Helium_2(3)S_file");
     HeliumIonization *a = new HeliumIonization(this, HETRIP, name, pin, xc_file);
 
-    pnetwork->AddReaction(new Photoionization(name, a, HEPLUS, ELEC));
+    pnetwork->AddReaction(new Photoionization(rxn_name, a, HEPLUS, ELEC));
     return a; 
   }
   else {
