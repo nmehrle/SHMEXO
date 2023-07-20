@@ -293,7 +293,12 @@ TimeIntegratorTaskList::TimeIntegratorTaskList(ParameterInput *pin, Mesh *pm) {
       AddTask(UPDATE_SCLR,INT_SCLR|SRC_TERM);
 
       if (REACTION_ENABLED) {
-        AddTask(INT_RXN, UPDATE_SCLR|UPDATE_HYD);
+        if (RADIATION_ENABLED){
+          AddTask(INT_RXN, UPDATE_SCLR|UPDATE_HYD|CALC_RADFLX);
+        }
+        else {
+          AddTask(INT_RXN, UPDATE_SCLR|UPDATE_HYD);
+        }
 
         AddTask(SEND_SCLR,INT_RXN);
         AddTask(RECV_SCLR,NONE);
