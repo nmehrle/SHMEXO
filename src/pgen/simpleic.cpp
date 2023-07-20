@@ -46,6 +46,7 @@ namespace {
   Real H_He_ratio, H_He_mass_ratio, mu;
   enum species {ELEC = 0, HYD = 1, HPLUS = 2,
                 HE = 3, HETRIP = 4, HEPLUS=5};
+  Real epsilon_concentration;
 
   AthenaArray<Real> initial_abundances;
 
@@ -121,6 +122,8 @@ void Mesh::InitUserMeshData(ParameterInput *pin)
   // 92.3% H by number == 75% H by mass
   H_He_ratio      = pin->GetOrAddReal("problem", "H_He_ratio", 0);
   H_He_mass_ratio = pin->GetOrAddReal("problem", "H_He_mass_ratio", 0);
+  epsilon_concentration = pin->GetOrAddReal("reaction", "epsilon_concentration", 1.e-4);
+
 
   // Tripathi initial conditions variables
 
@@ -387,8 +390,6 @@ void SetInitialAbundances(MeshBlock *pmb, PassiveScalars *ps) {
   Real mh  = ps->mass(HYD);
   Real mhe = ps->mass(HE);
 
-  Real epsilon = 1.e-4;
-
   // validate H/He ratio
   bool ratio_error = false;
   if (H_He_ratio <= 0 && H_He_mass_ratio <= 0) {
@@ -427,18 +428,18 @@ void SetInitialAbundances(MeshBlock *pmb, PassiveScalars *ps) {
 
         if (rad <= r_e) {
           initial_abundances(HYD,k,j,i)   = q;
-          initial_abundances(ELEC,k,j,i)  = 2*epsilon;
-          initial_abundances(HPLUS,k,j,i) = epsilon;
+          initial_abundances(ELEC,k,j,i)  = 2*epsilon_concentration;
+          initial_abundances(HPLUS,k,j,i) = epsilon_concentration;
           initial_abundances(HE,k,j,i) = (1.-q);
-          initial_abundances(HETRIP,k,j,i) = epsilon;
-          initial_abundances(HEPLUS,k,j,i) = epsilon;
+          initial_abundances(HETRIP,k,j,i) = epsilon_concentration;
+          initial_abundances(HEPLUS,k,j,i) = epsilon_concentration;
         }
         else {
-          initial_abundances(HYD,k,j,i)   = epsilon;
+          initial_abundances(HYD,k,j,i)   = epsilon_concentration;
           initial_abundances(ELEC,k,j,i)  = 1.;
           initial_abundances(HPLUS,k,j,i) = q;
-          initial_abundances(HE,k,j,i) = epsilon;
-          initial_abundances(HETRIP,k,j,i) = epsilon;
+          initial_abundances(HE,k,j,i) = epsilon_concentration;
+          initial_abundances(HETRIP,k,j,i) = epsilon_concentration;
           initial_abundances(HEPLUS,k,j,i) = 1.-q;
         }
 
