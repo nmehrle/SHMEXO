@@ -247,7 +247,7 @@ TimeIntegratorTaskList::TimeIntegratorTaskList(ParameterInput *pin, Mesh *pm) {
         AddTask(CALC_HYDFLX,DIFFUSE_HYD);
       }
       if (RADIATION_ENABLED) {
-        AddTask(CALC_RADFLX,DIFFUSE_HYD);
+        AddTask(CALC_RADFLX,NONE);
       }
       if (NSCALARS > 0) {
         AddTask(DIFFUSE_SCLR,NONE);
@@ -258,6 +258,8 @@ TimeIntegratorTaskList::TimeIntegratorTaskList(ParameterInput *pin, Mesh *pm) {
       if (NSCALARS > 0)
         AddTask(CALC_SCLRFLX,CALC_HYDFLX);
     }
+
+    // Integrate Hydro Fluxes
     if (pm->multilevel) { // SMR or AMR
       AddTask(SEND_HYDFLX,CALC_HYDFLX);
       AddTask(RECV_HYDFLX,CALC_HYDFLX);
@@ -265,23 +267,8 @@ TimeIntegratorTaskList::TimeIntegratorTaskList(ParameterInput *pin, Mesh *pm) {
     } else {
       AddTask(INT_HYD, CALC_HYDFLX);
     }
-    if (NSCALARS > 0) {
-      AddTask(SRC_TERM,(INT_HYD|INT_SCLR));
-    } else {
-      AddTask(SRC_TERM,INT_HYD);
-    }
 
-    AddTask(UPDATE_HYD,SRC_TERM);
-
-    AddTask(INT_CHM,UPDATE_HYD);
-    AddTask(SEND_HYD,INT_CHM);
-    AddTask(RECV_HYD,NONE);
-    AddTask(SETB_HYD,(RECV_HYD|INT_CHM));
-    if (SHEARING_BOX) { // Shearingbox BC for Hydro
-      AddTask(SEND_HYDSH,SETB_HYD);
-      AddTask(RECV_HYDSH,SETB_HYD);
-    }
-
+    // Integrate Scalar Fluxes
     if (NSCALARS > 0) {
       if (pm->multilevel) {
         AddTask(SEND_SCLRFLX,CALC_SCLRFLX);
@@ -290,29 +277,57 @@ TimeIntegratorTaskList::TimeIntegratorTaskList(ParameterInput *pin, Mesh *pm) {
       } else {
         AddTask(INT_SCLR,CALC_SCLRFLX);
       }
+    }
+
+    // Source Terms
+    if (NSCALARS > 0) {
+      AddTask(SRC_TERM,(INT_HYD|INT_SCLR));
+    } else {
+      AddTask(SRC_TERM,INT_HYD);
+    }
+
+    // Update Hydro/Scalar Variables
+    AddTask(UPDATE_HYD,SRC_TERM);
+    if (NSCALARS > 0) {
       AddTask(UPDATE_SCLR,INT_SCLR|SRC_TERM);
+    }
 
-      if (REACTION_ENABLED) {
-        if (RADIATION_ENABLED){
-          AddTask(INT_RXN, UPDATE_SCLR|UPDATE_HYD|CALC_RADFLX);
-        }
-        else {
-          AddTask(INT_RXN, UPDATE_SCLR|UPDATE_HYD);
-        }
+    // Cheng Chemistry Module (NOT USED)
+    // AddTask(INT_CHM,UPDATE_HYD);
+    // AddTask(SEND_HYD,INT_CHM);
 
-        AddTask(SEND_SCLR,INT_RXN);
-        AddTask(RECV_SCLR,NONE);
-        AddTask(SETB_SCLR,(RECV_SCLR|INT_RXN));
+    // Chemical Reactions (Requires NSCALARS > 0)
+    if (REACTION_ENABLED) {
+      if (RADIATION_ENABLED){
+        AddTask(INT_RXN, UPDATE_SCLR|UPDATE_HYD|CALC_RADFLX);
       }
       else {
+        AddTask(INT_RXN, UPDATE_SCLR|UPDATE_HYD);
+      }
+
+      AddTask(SEND_HYD, INT_RXN);
+      AddTask(RECV_HYD,NONE);
+      AddTask(SETB_HYD,(RECV_HYD|INT_RXN));
+
+      AddTask(SEND_SCLR,INT_RXN);
+      AddTask(RECV_SCLR,NONE);
+      AddTask(SETB_SCLR,(RECV_SCLR|INT_RXN));
+    }
+    else {
+      AddTask(SEND_HYD, UPDATE_HYD);
+      AddTask(RECV_HYD,NONE);
+      AddTask(SETB_HYD,(RECV_HYD|UPDATE_HYD));
+
+      if (NSCALARS > 0) {
         AddTask(SEND_SCLR,UPDATE_SCLR);
         AddTask(RECV_SCLR,NONE);
         AddTask(SETB_SCLR,(RECV_SCLR|UPDATE_SCLR));
       }
-      // if (SHEARING_BOX) {
-      //   AddTask(SEND_SCLRSH,SETB_SCLR);
-      //   AddTask(RECV_SCLRSH,SETB_SCLR);
-      // }
+    }
+
+    if (SHEARING_BOX) { // Shearingbox BC for Hydro
+      AddTask(SEND_HYDSH,SETB_HYD);
+      AddTask(RECV_HYDSH,SETB_HYD);
     }
 
     if (MAGNETIC_FIELDS_ENABLED) { // MHD

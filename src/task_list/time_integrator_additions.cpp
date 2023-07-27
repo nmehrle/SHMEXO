@@ -70,8 +70,8 @@ TaskStatus TimeIntegratorTaskList::IntegrateChemistry(MeshBlock *pmb, int stage)
 
   return TaskStatus::next;
 }
-
 //----------------------------------------------------------------------------------------
+
 // Functions to calculate radiation flux
 TaskStatus TimeIntegratorTaskList::CalculateRadiationFlux(MeshBlock *pmb, int stage) {
   Radiation *prad = pmb->prad;
