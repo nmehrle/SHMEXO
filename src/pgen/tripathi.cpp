@@ -127,7 +127,7 @@ void Mesh::InitUserMeshData(ParameterInput *pin)
   space_density_factor = pin->GetOrAddReal("problem", "space_density_factor", 1.e-4);
   r_replenish = pin->GetOrAddReal("problem", "r_replenish_Rp", 0.75)*Rp;
 
-  epsilon_concentration = pin->GetOrAddReal("reaction", "epsilon_concentration", 1.e-4);
+  epsilon_concentration = pin->GetOrAddReal("reaction", "epsilon_concentration", 0);
 
   // Tripathi initial conditions variables
   r_0 = 0.5*Rp;

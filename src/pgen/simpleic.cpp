@@ -127,7 +127,7 @@ void Mesh::InitUserMeshData(ParameterInput *pin)
   // 92.3% H by number == 75% H by mass
   H_He_ratio      = pin->GetOrAddReal("problem", "H_He_ratio", 0);
   H_He_mass_ratio = pin->GetOrAddReal("problem", "H_He_mass_ratio", 0);
-  epsilon_concentration = pin->GetOrAddReal("reaction", "epsilon_concentration", 1.e-4);
+  epsilon_concentration = pin->GetOrAddReal("reaction", "epsilon_concentration", 0);
 
 
   // Tripathi initial conditions variables
