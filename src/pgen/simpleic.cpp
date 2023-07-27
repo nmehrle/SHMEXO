@@ -28,6 +28,10 @@
 #include "../reaction/reactions/helium_reactions.hpp"
 #include "../reaction/reactions/twobody_reactions.hpp"
 
+void FixedBoundary(MeshBlock *pmb, Coordinates *pcoord, AthenaArray<Real> &prim,
+                   FaceField &bb, Real time, Real dt,
+                   int il, int iu, int jl, int ju, int kl, int ku, int ngh);
+
 namespace {
   // user set variables
   Real G, Mp, Ms, Rp, period, semi_major_axis;
@@ -40,7 +44,7 @@ namespace {
 
   // tripathi conditions variables
   Real rho_0, Teq;
-  Real r_e, r_replenish;
+  Real r_e, r_replenish, r_inner;
 
   // species variables
   Real H_He_ratio, H_He_mass_ratio, mu;
@@ -115,6 +119,7 @@ void Mesh::InitUserMeshData(ParameterInput *pin)
   // space_density_factor = pin->GetOrAddReal("problem", "space_density_factor", 1.e-4);
   r_replenish = pin->GetOrAddReal("problem", "r_replenish_Rp", 1.0)*Rp;
   r_e = pin->GetOrAddReal("problem", "r_exterior_Rp", 2.0)*Rp;
+  r_inner = pin->GetOrAddReal("problem", "r_inner_Rp", 1.0)*Rp;
   
   Teq = pin->GetReal("problem", "Teq");
   rho_0 = pin->GetReal("problem","rho_0");
@@ -143,6 +148,10 @@ void Mesh::InitUserMeshData(ParameterInput *pin)
       meshgen_x3 = MeshGenerator(mesh_size.x3min, mesh_size.x3max, mesh_size.nx3, pin);
       EnrollUserMeshGenerator(X3DIR, MeshSpacingX3);
     }
+  }
+
+  if (GetBoundaryFlag(pin->GetString("mesh", "ix1_bc")) == BoundaryFlag::user) {
+    EnrollUserBoundaryFunction(BoundaryFace::inner_x1, FixedBoundary);  
   }
 }
 
@@ -379,8 +388,15 @@ Real RadiationTime(RadiationBand *band, AthenaArray<Real> const &prim, Real time
 //----------------------------------------------------------------------------------------
 void SetInitialConditions(Real rad, Real &dens, Real &press, Real &v1, Real &v2, Real &v3) {
   v1 = v2 = v3 = 0;
-    dens  = rho_func(rad);
-    press = press_func(dens);
+
+    if (rad <= r_inner) {
+      dens = rho_func(r_inner);
+      press = press_func(dens);
+    }
+    else {
+      dens  = rho_func(rad);
+      press = press_func(dens);  
+    }
 }
 
 void SetInitialAbundances(MeshBlock *pmb, PassiveScalars *ps) {
@@ -672,4 +688,10 @@ void getMBBounds(MeshBlock *pmb, int &il, int &iu, int &jl, int &ju, int &kl, in
   
   kl = pmb->block_size.nx3 == 1 ? pmb->ks : pmb->ks-NGHOST;
   ku = pmb->block_size.nx3 == 1 ? pmb->ke : pmb->ke+NGHOST;
+}
+
+void FixedBoundary(MeshBlock *pmb, Coordinates *pcoord, AthenaArray<Real> &prim,
+                   FaceField &bb, Real time, Real dt,
+                   int il, int iu, int jl, int ju, int kl, int ku, int ngh) {
+  return;
 }
