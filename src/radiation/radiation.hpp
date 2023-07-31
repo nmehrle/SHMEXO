@@ -60,6 +60,7 @@ public:
   int nabs;
 
   Real band_scaling_factor;
+  int integration_subbins;
 
 
   int nspec;

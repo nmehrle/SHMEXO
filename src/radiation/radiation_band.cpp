@@ -50,6 +50,7 @@ RadiationBand::RadiationBand(Radiation *prad, std::string band_id, ParameterInpu
 
   Real bin_width = (v[1]-v[0]) / nspec;
 
+  // wave is midpoint of bin
   spec = new Spectrum [nspec];
   for (int i = 0; i < nspec; ++i) {
     spec[i].wave = v[0] + bin_width*(i+1.0/2.0);
@@ -74,6 +75,9 @@ RadiationBand::RadiationBand(Radiation *prad, std::string band_id, ParameterInpu
     value = pmy_rad->default_spec_file;
   }
 
+  sprintf(key, "%s.integration_subbins", my_id.c_str());
+  integration_subbins = pin->GetOrAddInteger("radiation", key, 100);
+
   LoadInputSpectrum(value);
 
   // Gather RT Solver Info
@@ -82,7 +86,7 @@ RadiationBand::RadiationBand(Radiation *prad, std::string band_id, ParameterInpu
   if (value.empty()) {
     if (pmy_rad->default_rt_solver.empty()) {
       msg << "### FATAL ERROR in RadiationBand::RadiationBand" << std::endl
-          << "No input spectrum found for band " << my_id << "." << std::endl
+          << "No rtsolver found for band " << my_id << "." << std::endl
           << "Must specify either <radiation> rtsolver "
           << "or <radiation> " << my_id << ".rtsolver.";
       ATHENA_ERROR(msg);
@@ -159,13 +163,32 @@ void RadiationBand::LoadInputSpectrum(std::string file) {
   spline(n_file, file_spec, 0., 0.);
 
   int ii = -1;
-  Real dx;
+  Real spline_dx;
+  Real half_bin_width = (spec[1].wave - spec[0].wave)/2.0;
+  Real bin_start;
 
-  for (int n = 0; n < nspec; ++n)
-  {
-    Real wave = spec[n].wave;
-    ii = find_place_in_table(n_file, file_spec, wave, &dx, ii);
-    spec[n].flux = splint(wave, file_spec+ii, dx);
+  Real subbin_dx = (half_bin_width * 2.0) / integration_subbins;
+  Real integrated_value, weight, int_x, int_y;
+
+  for (int n = 0; n < nspec; ++n) {
+    integrated_value=0;
+    bin_start = spec[n].wave - half_bin_width;
+
+    for (int i = 0; i <= integration_subbins; ++i)
+    {
+      int_x = bin_start + (i * subbin_dx);
+
+      weight = 2.0;
+      if (i == 0 || i == integration_subbins) {
+        weight = 1.0;
+      }
+
+      ii = find_place_in_table(n_file, file_spec, int_x, &spline_dx, ii);
+      int_y = splint(int_x, file_spec+ii, spline_dx);
+      integrated_value += weight * int_y;
+    }
+    integrated_value = integrated_value * subbin_dx / 2.0;
+    spec[n].flux = integrated_value / (2.0*half_bin_width);
   }
 }
 
