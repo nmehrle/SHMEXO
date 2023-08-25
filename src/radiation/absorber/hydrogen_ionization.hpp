@@ -7,7 +7,7 @@
 
 class HydrogenIonization: public IonizingAbsorber {
 public:
-  HydrogenIonization(RadiationBand *pband, int my_scalar_number, std::string name, ParameterInput *pin);
+  HydrogenIonization(RadiationBand *pband, std::string name, int my_scalar_number, int my_ion_number, ParameterInput *pin);
   ~HydrogenIonization() {};
 
 protected:

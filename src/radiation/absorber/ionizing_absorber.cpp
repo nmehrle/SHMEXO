@@ -11,18 +11,20 @@
 #include "../../athena_arrays.hpp"
 #include "../../parameter_input.hpp"
 #include "../../globals.hpp"
+#include "../../scalars/scalars.hpp"
 #include "../radiation.hpp"
 #include "absorber.hpp"
 #include "ionizing_absorber.hpp"
 
-IonizingAbsorber::IonizingAbsorber(RadiationBand *pband, int my_scalar_number, std::string name, ParameterInput *pin):
+IonizingAbsorber::IonizingAbsorber(RadiationBand *pband, std::string name, int my_scalar_number, int my_ion_number, ParameterInput *pin):
   Absorber(pband, my_scalar_number, pin)
 {
-  ionization_energy = pin->GetReal("reaction", name+"_ENERGY");
+  ion_num = my_ion_number;
+  ionization_energy = ps->energy(my_ion_number) - ps->energy(my_scalar_number);
   nu_0 = ionization_energy/planck_constant;
   lambda_0 = speed_of_light/nu_0;
 
-  my_name=name;
+  my_name = name;
 
   Spectrum *spec = pband->spec;
   int nspec = pband->nspec;

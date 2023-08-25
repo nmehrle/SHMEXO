@@ -19,8 +19,8 @@
 #include "ionizing_absorber.hpp"
 #include "helium_ionization.hpp"
 
-HeliumIonization::HeliumIonization(RadiationBand *pband, int my_scalar_number, std::string name, ParameterInput *pin, std::string my_xc_file):
-  IonizingAbsorber(pband, my_scalar_number, name, pin)
+HeliumIonization::HeliumIonization(RadiationBand *pband, std::string name, int my_scalar_number, int my_ion_number, ParameterInput *pin, std::string my_xc_file):
+  IonizingAbsorber(pband, name, my_scalar_number, my_ion_number, pin)
 {
   Spectrum *spec = pband->spec;
   int nspec = pband->nspec;

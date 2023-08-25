@@ -8,9 +8,18 @@
 #include "absorber.hpp"
 #include "ionizing_absorber.hpp"
 
+struct VernerIonizationParams {
+  Real Eth, Emax, E0, sigma0, ya, P, yw, y0, y1;
+
+  VernerIonizationParams(Real Eth_, Real Emax_, Real E0_, Real sigma0_, Real ya_, Real P_, Real yw_, Real y0_, Real y1_):
+    Eth(Eth_), Emax(Emax_), E0(E0_), sigma0(sigma0_), ya(ya_), P(P_), yw(yw_), y0(y0_), y1(y1_)
+  {
+  }
+};
+
 class VernerIonization: public IonizingAbsorber {
 public:
-  VernerIonization(RadiationBand *pband, int my_scalar_number, std::string name, ParameterInput *pin, Real Eth_in, Real Emax_in, Real E0_in, Real sigma0_in, Real ya_in, Real P_in, Real yw_in, Real y0_in, Real y1_in);
+  VernerIonization(RadiationBand *pband, std::string name, int my_scalar_number, int my_ion_number, ParameterInput *pin, VernerIonizationParams *params);
   ~VernerIonization() {};
 
 protected:

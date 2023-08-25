@@ -15,8 +15,8 @@
 #include "ionizing_absorber.hpp"
 #include "hydrogen_ionization.hpp"
 
-HydrogenIonization::HydrogenIonization(RadiationBand *pband, int my_scalar_number, std::string name, ParameterInput *pin):
-  IonizingAbsorber(pband, my_scalar_number, name, pin)
+HydrogenIonization::HydrogenIonization(RadiationBand *pband, std::string name, int my_scalar_number, int my_ion_number, ParameterInput *pin):
+  IonizingAbsorber(pband, name, my_scalar_number, my_ion_number, pin)
 {  
   Spectrum *spec = pband->spec;
   int nspec = pband->nspec;

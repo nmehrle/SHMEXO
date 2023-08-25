@@ -7,7 +7,7 @@
 
 class HeliumIonization: public IonizingAbsorber {
 public:
-  HeliumIonization(RadiationBand *pband, int my_scalar_number, std::string name, ParameterInput *pin, std::string my_xc_file);
+  HeliumIonization(RadiationBand *pband, std::string name, int my_scalar_number, int my_ion_number, ParameterInput *pin, std::string my_xc_file);
   ~HeliumIonization() {};
 
 protected:

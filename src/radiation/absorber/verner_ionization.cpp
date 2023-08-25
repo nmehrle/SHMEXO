@@ -19,21 +19,21 @@
 #include "ionizing_absorber.hpp"
 #include "verner_ionization.hpp"
 
-VernerIonization::VernerIonization(RadiationBand *pband, int my_scalar_number, std::string name, ParameterInput *pin, Real Eth_in, Real Emax_in, Real E0_in, Real sigma0_in, Real ya_in, Real P_in, Real yw_in, Real y0_in, Real y1_in):
-  IonizingAbsorber(pband, my_scalar_number, name, pin)
+VernerIonization::VernerIonization(RadiationBand *pband, std::string name, int my_scalar_number, int my_ion_number, ParameterInput *pin, VernerIonizationParams *params):
+  IonizingAbsorber(pband, name, my_scalar_number, my_ion_number, pin)
 {
   Spectrum *spec = pband->spec;
   int nspec = pband->nspec;
 
-  Eth = Eth_in;
-  Emax = Emax_in;
-  E0 = E0_in;
-  sigma0 = sigma0_in;
-  ya = ya_in;
-  P = P_in;
-  yw = yw_in;
-  y0 = y0_in;
-  y1 = y1_in;
+  Eth = params->Eth;
+  Emax = params->Emax;
+  E0 = params->E0;
+  sigma0 = params->sigma0;
+  ya = params->ya;
+  P = params->P;
+  yw = params->yw;
+  y0 = params->y0;
+  y1 = params->y1;
 
   CalculateCrossSections(spec, nspec);
 }
@@ -42,8 +42,6 @@ void VernerIonization::CalculateCrossSections(Spectrum const *spec, int nspec) {
   Real wave, freq, energy;
   Real x, y, Fy1, Fy2, Fy3;
   
-
-
   for (int n = 0; n < nspec; ++n)
   {
     wave = spec[n].wave;
