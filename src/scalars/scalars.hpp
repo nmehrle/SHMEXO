@@ -38,9 +38,12 @@ class PassiveScalars {
   AthenaArray<Real> r;  // , r1;
 
   AthenaArray<Real> ds;
-  // Mass of scalar particles (optional, required for Radiation/Reaction networks)
+
+  // Mass and Energy Levels of scalar particles
+  // (optional, required for Radiation/Reaction networks)
   // Number density of scalar i = s[i] / m[i]
-  AthenaArray<Real> mass;
+  AthenaArray<Real> mass, energy;
+  AthenaArray<std::string> name;
 
   AthenaArray<Real> s_flux[3];  // face-averaged flux vector
 
