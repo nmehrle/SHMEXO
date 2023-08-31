@@ -14,7 +14,6 @@
 class MeshBlock;
 class ParameterInput;
 class PassiveScalars;
-class Absorber;
 class ReactionNetwork;
 class Reaction;
 
@@ -67,23 +66,6 @@ protected:
 
   // calculates dn inside ComputeReactionForcing
   void ComputeScalarDensityChange(const Real dt, Real drho[NSCALARS], int k, int j, int i);
-};
-
-// general type to be overridden by individual reactions
-class Reaction {
-public:
-  ReactionNetwork *pmy_network;
-  std::string my_name;
-
-  Reaction *next;
-  Reaction *prev;
-
-  Reaction(std::string name);
-  virtual ~Reaction() {};
-  virtual void react(int k, int j, int i) {};
-
-  int my_rxn_num;
-protected:
 };
 
 #endif

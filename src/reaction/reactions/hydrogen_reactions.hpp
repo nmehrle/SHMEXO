@@ -4,29 +4,18 @@
 // Athena++ headers
 #include "../../athena.hpp"
 #include "../reaction_network.hpp"
+#include "../reaction.hpp"
 
-class MeshBlock;
-class ReactionNetwork;
-class Reaction;
-class Absorber;
-class PassiveScalars;
-
-class H_recombination: public Reaction {
+class HydrogenRecombination: public ReactionTemplate {
 public:
-  H_recombination(std::string name, int neu_num, int ion_num, int elec_num);
-  void react(int k, int j, int i);
-
-protected:
-  int scalar_num, ion_scalar_num, electron_scalar_num;
-  Absorber *pmy_abs;
+  using ReactionTemplate::ReactionTemplate;
+  Real alpha(Real T, int k, int j, int i);
+  Real beta(Real T, int k, int j, int i);
 };
 
-class Lya_cooling: public Reaction {
+class LyaCooling: public ReactionTemplate {
 public:
-  Lya_cooling(std::string name, int neu_num, int ion_num, int elec_num);
-  void react(int k, int j, int i);
-
-protected:
-  int scalar_num, ion_scalar_num, electron_scalar_num;
-  Absorber *pmy_abs;
+  LyaCooling(std::string name, int scalar_num, int ion_num);
+  Real alpha(Real T, int k, int j, int i) {return 0;};
+  Real beta(Real T, int k, int j, int i);
 };

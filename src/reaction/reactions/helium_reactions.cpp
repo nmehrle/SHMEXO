@@ -12,75 +12,55 @@
 #include "../../radiation/radiation.hpp"
 #include "../../radiation/absorber/absorber.hpp"
 #include "../reaction_network.hpp"
+#include "../reaction.hpp"
 #include "helium_reactions.hpp"
 
-He_recombination::He_recombination(std::string name,
-  int neu_num, int ion_num, int elec_num):
-    Reaction(name)
-{
-  scalar_num = neu_num;
-  ion_scalar_num = ion_num;
-  electron_scalar_num = elec_num;
+Real HeliumRecombination::alpha(Real T, int k, int j, int i) {
+  return 1e-11 / (0.00217556 * pow(T, 1.12036526) + 0.32053997 * pow(T, 0.61526097));
 }
 
-void He_recombination::react(int k, int j, int i) {
-  PassiveScalars *ps = pmy_network->pscalars;
-  Real T = pmy_network->temperature_(k,j,i);
-
-  Real n_ion = ps->s(ion_scalar_num, k, j, i) / ps->mass(ion_scalar_num);
-  Real n_elec = ps->s(electron_scalar_num, k, j, i)/ ps->mass(electron_scalar_num);
-
-  Real alpha_1 = 1e-11 / (0.00217556 * pow(T, 1.12036526) + 0.32053997 * pow(T, 0.61526097));
-  Real beta_1 = 1e-11 / (0.00218954 * pow(T, 1.18645797) + 0.352778 * pow(T, 0.62645323));
-
-  Real n_recomb = n_elec * n_ion * alpha_1;
-  Real e_recomb = n_elec * n_ion * (pmy_network->boltzmann * T) * beta_1;
-
-  int species[3] = {scalar_num, ion_scalar_num, electron_scalar_num};
-  int sign[3]    = {+1, -1, -1};
-  for (int l = 0; l < 3; ++l)
-  {
-    pmy_network->dn_rate(my_rxn_num, species[l], k, j, i) += sign[l] * n_recomb;
-    pmy_network->jacobian(species[l], ion_scalar_num, k, j, i)  += sign[l] * alpha_1 * n_elec;
-    pmy_network->jacobian(species[l], electron_scalar_num, k, j, i) += sign[l] * alpha_1 * n_ion;
-  }
-
-  pmy_network->de_rate(my_rxn_num, k, j, i) -= e_recomb;
+Real HeliumRecombination::beta(Real T, int k, int j, int i) {
+  return -(1e-11 * pmy_network->boltzmann * T) / (0.00218954 * pow(T, 1.18645797) + 0.352778 * pow(T, 0.62645323));
 }
 
-He_23S_recombination::He_23S_recombination(std::string name,
-  int neu_num, int ion_num, int elec_num):
-    Reaction(name)
-{
-  scalar_num = neu_num;
-  ion_scalar_num = ion_num;
-  electron_scalar_num = elec_num;
+Real HeliumTripletRecombination::alpha(Real T, int k, int j, int i) {
+  return 1e-11 / (0.00258173 * pow(T, 0.9848205) + 0.10883234 * pow(T, 0.58864659));
 }
 
-void He_23S_recombination::react(int k, int j, int i) {
-  PassiveScalars *ps = pmy_network->pscalars;
-  Real T = pmy_network->temperature_(k,j,i);
-
-  Real n_ion = ps->s(ion_scalar_num, k, j, i) / ps->mass(ion_scalar_num);
-  Real n_elec = ps->s(electron_scalar_num, k, j, i)/ ps->mass(electron_scalar_num);
-
-  Real alpha_3 = 1e-11 / (0.00258173 * pow(T, 0.9848205) + 0.10883234 * pow(T, 0.58864659));
-  Real beta_3 = 1e-11 / (0.00427277 * pow(T, 0.99204123) + 0.12332369 * pow(T, 0.57871911));
-
-  Real n_recomb = n_elec * n_ion * alpha_3;
-  Real e_recomb = n_elec * n_ion * (pmy_network->boltzmann * T) * beta_3;
-
-  int species[3] = {scalar_num, ion_scalar_num, electron_scalar_num};
-  int sign[3]    = {+1, -1, -1};
-  for (int l = 0; l < 3; ++l)
-  {
-    pmy_network->dn_rate(my_rxn_num, species[l], k, j, i) += sign[l] * n_recomb;
-    pmy_network->jacobian(species[l], ion_scalar_num, k, j, i)  += sign[l] * alpha_3 * n_elec;
-    pmy_network->jacobian(species[l], electron_scalar_num, k, j, i) += sign[l] * alpha_3 * n_ion;
-  }
-
-  pmy_network->de_rate(my_rxn_num, k, j, i) -= e_recomb;
+Real HeliumTripletRecombination::beta(Real T, int k, int j, int i) {
+  return -(1e-11 * pmy_network->boltzmann * T) / (0.00427277 * pow(T, 0.99204123) + 0.12332369 * pow(T, 0.57871911));
 }
+
+Real HeliumTripletDecay::alpha(Real T, int k, int j, int i) {
+  return 1.272E-4; // s^-1 Lampon+ 2020, Table 2
+}
+
+// is it zero?
+// Energy released as 19eV photon
+// What does it do lol
+Real HeliumTripletDecay::beta(Real T, int k, int j, int i) {
+  // PassiveScalars *ps = pmy_network->pscalars;
+
+  // Real E_reactant = ps->energy(r1_num_);
+  // Real E_product = ps->energy(p1_num_);
+
+  // return this->alpha(T, k, j, i) * (E_reactant - E_product);
+  return 0;
+}
+
+Real TripletHydrogenCollision::alpha(Real T, int k, int j, int i) {
+  return 5.0E-10;
+}
+
+// todo
+// Real TripletHydrogenCollision::beta(Real T, int k, int j, int i) {
+//   PassiveScalars *ps = pmy_network->pscalars;
+
+//   Real E_reactant = ps->energy(r1_num_) + ps->energy(r2_num_);
+//   Real E_product = ps->energy(p1_num_) + ps->energy(p2_num_) + ps->energy(p3_num_);
+
+//   return this->alpha(T, k, j, i) * (E_reactant - E_product);
+// }
 
 He_e_collisions::He_e_collisions(std::string data_file, std::string name, int singlet_num, int triplet_num, int elec_num):
     Reaction(name)
@@ -192,68 +172,4 @@ void He_e_collisions::react(int k, int j, int i) {
 
  // ----- triplet -> triplet collisions
  pmy_network->de_rate(my_rxn_num, k, j, i) -= temp_L[x33] * triplet_reaction_factor;
-}
-
-
-He_triplet_decay::He_triplet_decay(std::string name, int He_trip_num, int He_singlet_num, Real E_triplet):
-    Reaction(name)
-{
-  He_trip_num_    = He_trip_num;
-  He_singlet_num_ = He_singlet_num;
-  E_triplet_ = E_triplet;
-}
-
-void He_triplet_decay::react(int k, int j, int i) {
-  PassiveScalars *ps = pmy_network->pscalars;
-
-  Real n_triplet = ps->s(He_trip_num_, k, j, i) / ps->mass(He_trip_num_);
-  Real alpha = 1.272E-4; // s^-1 Lampon+ 2020, Table 2
-  Real n_rxn = alpha * n_triplet;
-  Real e_rxn = n_rxn * E_triplet_;
-
-  pmy_network->dn_rate(my_rxn_num, He_trip_num_, k, j, i) -= n_rxn;
-  pmy_network->dn_rate(my_rxn_num, He_singlet_num_, k, j, i) += n_rxn;
-
-  pmy_network->jacobian(He_trip_num_, He_trip_num_, k, j, i) -= alpha;
-  pmy_network->jacobian(He_singlet_num_, He_trip_num_, k, j, i) += alpha;
-
-  pmy_network->de_rate(my_rxn_num, k, j, i) += e_rxn;
-}
-
-
-//HETRIP, HYD, HE, HPLUS, ELEC
-CollisionalRelaxation_HeH::CollisionalRelaxation_HeH(std::string name, int r1_num, int r2_num, int p1_num, int p2_num, int p3_num, Real E_reactant, Real E_product):
-  Reaction(name)
-{
-  r1_num_ = r1_num;
-  r2_num_ = r2_num;
-  p1_num_ = p1_num;
-  p2_num_ = p2_num;
-  p3_num_ = p3_num;
-
-  E_reactant_ = E_reactant;
-  E_product_  = E_product;
-}
-
-void CollisionalRelaxation_HeH::react(int k, int j, int i) {
-  PassiveScalars *ps = pmy_network->pscalars;
-
-  Real n_r1 = ps->s(r1_num_, k, j, i)/ps->mass(r1_num_);
-  Real n_r2 = ps->s(r2_num_, k, j, i)/ps->mass(r2_num_);
-
-  Real alpha = 5.0E-10;
-
-  Real n_rxn = alpha * n_r1 * n_r2;
-  Real e_rxn = (E_reactant_ - E_product_) * n_rxn;
-
-  int species[5] = {r1_num_, r2_num_, p1_num_, p2_num_, p3_num_};
-  int sign[5] = {-1, -1, +1, +1, +1};
-
-  for (int l = 0; l < 5; ++l) {
-    pmy_network->dn_rate(my_rxn_num, species[l], k, j, i) += sign[l] * n_rxn;
-    pmy_network->jacobian(species[l], r1_num_, k, j, i) += sign[l] * alpha * n_r2;
-    pmy_network->jacobian(species[l], r2_num_, k, j, i) += sign[l] * alpha * n_r1;
-  }
-
-  pmy_network->de_rate(my_rxn_num, k, j, i) += e_rxn;
 }

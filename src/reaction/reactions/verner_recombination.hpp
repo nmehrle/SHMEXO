@@ -4,23 +4,26 @@
 // Athena++ headers
 #include "../../athena.hpp"
 #include "../reaction_network.hpp"
+#include "../reaction.hpp"
 
-class MeshBlock;
-class ReactionNetwork;
-class Reaction;
-class Absorber;
-class PassiveScalars;
+// Recombination following Verner & Ferland 1996
+// https://ui.adsabs.harvard.edu/abs/1996ApJS..103..467V
+struct VernerRecombinationParams {
+  Real a, b, T0, T1;
 
-class VernerRecombination: public Reaction {
+  VernerRecombinationParams(Real a_, Real b_, Real T0_, Real T1_):
+    a(a_), b(b_), T0(T0_), T1(T1_)
+  {
+  }
+};
+
+class VernerRecombination: public ReactionTemplate {
 public:
-  VernerRecombination(std::string name, int neu_num, int ion_num, int elec_num, Real a_in, Real b_in, Real T0_in, Real T1_in, Real E_ion_in, Real E_neutral_in);
-  void react(int k, int j, int i);
+  // params is [a,b,T0, T1]
+  VernerRecombination(std::string name, std::vector<int> species, std::vector<Real> stoichiometry, VernerRecombinationParams *params);
+  Real alpha(Real T, int k, int j, int i);
+  // Real beta(Real T, int k, int j, int i);
 
 protected:
-  int scalar_num, ion_scalar_num, electron_scalar_num;
-
-  Real a,b,T1,T0;
-  Real E_neutral, E_ion;
-
-  Absorber *pmy_abs;
+  Real a,b,T0,T1;
 };

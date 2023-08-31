@@ -4,29 +4,34 @@
 // Athena++ headers
 #include "../../athena.hpp"
 #include "../reaction_network.hpp"
+#include "../reaction.hpp"
 
-class MeshBlock;
-class ReactionNetwork;
-class Reaction;
-class Absorber;
-class PassiveScalars;
-
-class He_recombination: public Reaction {
+class HeliumRecombination: public ReactionTemplate {
 public:
-  He_recombination(std::string name, int neu_num, int ion_num, int elec_num);
-  void react(int k, int j, int i);
-protected:
-  int scalar_num, ion_scalar_num, electron_scalar_num;
-  Absorber *pmy_abs;
+  using ReactionTemplate::ReactionTemplate;
+  Real alpha(Real T, int k, int j, int i);
+  Real beta(Real T, int k, int j, int i);
 };
 
-class He_23S_recombination: public Reaction {
+class HeliumTripletRecombination: public ReactionTemplate {
 public:
-  He_23S_recombination(std::string name, int neu_num, int ion_num, int elec_num);
-  void react(int k, int j, int i);
-protected:
-  int scalar_num, ion_scalar_num, electron_scalar_num;
-  Absorber *pmy_abs;
+  using ReactionTemplate::ReactionTemplate;
+  Real alpha(Real T, int k, int j, int i);
+  Real beta(Real T, int k, int j, int i);
+};
+
+class HeliumTripletDecay: public ReactionTemplate {
+public:
+  using ReactionTemplate::ReactionTemplate;
+  Real alpha(Real T, int k, int j, int i);
+  Real beta(Real T, int k, int j, int i);
+};
+
+class TripletHydrogenCollision: public ReactionTemplate {
+public:
+  using ReactionTemplate::ReactionTemplate;
+  Real alpha(Real T, int k, int j, int i);
+  // Real beta(Real T, int k, int j, int i);
 };
 
 class He_e_collisions: public Reaction {
@@ -49,32 +54,4 @@ protected:
 
   Real *temp_q;
   Real *temp_L;
-};
-
-class He_triplet_decay: public Reaction {
-public:
-  He_triplet_decay(std::string name, int He_trip_num, int He_singlet_num, Real E_triplet);
-
-  void react(int k, int j, int i);
-protected:
-  int He_trip_num_, He_singlet_num_;
-  Real E_triplet_;
-};
-
-
-class CollisionalRelaxation_HeH: public Reaction {
-public:
-  // CollisionalRelaxation_HeH(ReactionNetwork *pnetwork, std::string name, int HEtrip_num, int H_num, int HE_num, Real E_reactant, Real E_product);
-
-  CollisionalRelaxation_HeH(std::string name, int r1_num, int r2_num, int p1_num, int p2_num, int p3_num, Real E_reactant, Real E_product);
-  void react(int k, int j, int i);
-protected:
-  int r1_num_;
-  int r2_num_;
-  int p1_num_;
-  int p2_num_;
-  int p3_num_;
-
-  Real E_reactant_;
-  Real E_product_;
 };

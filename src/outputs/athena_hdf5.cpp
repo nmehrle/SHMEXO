@@ -28,6 +28,7 @@
 #include "../mesh/mesh.hpp"
 #include "../parameter_input.hpp"
 #include "../reaction/reaction_network.hpp"
+#include "../reaction/reaction.hpp"
 #include "outputs.hpp"
 
 // Only proceed if HDF5 output enabled

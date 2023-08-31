@@ -11,6 +11,7 @@
 #include "../radiation/radiation.hpp"
 #include "../scalars/scalars.hpp"
 #include "reaction_network.hpp"
+#include "reaction.hpp"
 
 ReactionNetwork::ReactionNetwork(MeshBlock *pmb, ParameterInput *pin){
   pmy_block = pmb;

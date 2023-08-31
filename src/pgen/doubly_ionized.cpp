@@ -20,11 +20,16 @@
 #include "../mesh_generator.hpp"
 
 #include "../radiation/radiation.hpp"
-#include "../reaction/reaction_network.hpp"
+
 #include "../radiation/absorber/hydrogen_ionization.hpp"
 #include "../radiation/absorber/helium_ionization.hpp"
 #include "../radiation/absorber/verner_ionization.hpp"
-#include "../reaction/reactions/photoionization.hpp"
+
+
+#include "../reaction/reaction_network.hpp"
+#include "../reaction/reaction.hpp"
+#include "../reaction/photoionization.hpp"
+
 #include "../reaction/reactions/hydrogen_reactions.hpp"
 #include "../reaction/reactions/helium_reactions.hpp"
 #include "../reaction/reactions/verner_recombination.hpp"
@@ -50,8 +55,10 @@ namespace {
 
   // species variables
   Real H_He_ratio, H_He_mass_ratio, mu;
-  enum species {ELEC = 0, HYD = 1, HPLUS = 2,
-                HE = 3, HETRIP = 4, HEPLUS=5, HE2PLUS=6};
+  enum speciesList {ELEC = 0,
+                H = 1, HII = 2,
+                He = 3, He23S = 4,
+                HeII = 5, HeIII = 6};
   Real epsilon_concentration;
 
   AthenaArray<Real> initial_abundances;
@@ -201,46 +208,40 @@ void MeshBlock::UserWorkBeforeOutput(ParameterInput *pin)
 Reaction* ReactionNetwork::GetReactionByName(std::string name, ParameterInput *pin)
 {
   if (name == "H_RECOMBINATION") {
-    return new H_recombination(name, HYD, HPLUS, ELEC);
+    return new HydrogenRecombination(name, {H, HII, ELEC}, {+1, -1, -1});
+    // return new HydrogenRecombination(name, H, HII, ELEC);
+
   } else if (name == "LYA_COOLING") {
-    return new Lya_cooling(name, HYD, HPLUS, ELEC);
+    return new LyaCooling(name, H, HII);
+
   } else if (name == "HE_RECOMBINATION") {
-    return new H_recombination(name, HE, HEPLUS, ELEC);
+    return new HeliumRecombination(name, {He, HeII, ELEC}, {+1, -1, -1});
+
   } else if (name == "HE23S_RECOMBINATION") {
-    return new He_23S_recombination(name, HETRIP, HEPLUS, ELEC);
+    return new HeliumTripletRecombination(name, {He23S, HeII, ELEC}, {+1, -1, -1});
+
   } else if (name == "HE_E_COLLISIONS") {
     std::string collisions_file_name = pin->GetString("reaction", "HE_COLLISIONS_FILE");
 
-    return new He_e_collisions(collisions_file_name, name, HE, HETRIP, ELEC);
+    return new He_e_collisions(collisions_file_name, name, He, He23S, ELEC);
+
   } else if (name == "HE23S_RADIO_DECAY") {
-    Real HEPLUS_energy = pin->GetReal("reaction", "HELIUM_IONIZATION_ENERGY");
-    Real HETRIP_ion_energy = pin->GetReal("reaction", "HELIUM_TRIPLET_IONIZATION_ENERGY");
-    Real HETRIP_energy = HEPLUS_energy - HETRIP_ion_energy;
+    return new HeliumTripletDecay(name, {He23S, He}, {-1, +1});
 
-    return new He_triplet_decay(name, HETRIP, HE, HETRIP_energy);
   } else if (name == "CHARGE_EXCHANGE_HE_H") {
-    Real HPLUS_energy = pin->GetReal("reaction", "HYDROGEN_IONIZATION_ENERGY");
-    Real HEPLUS_energy = pin->GetReal("reaction", "HELIUM_IONIZATION_ENERGY");
+    return new ChargeExchangeHeliumToHyd(name, {HeII, H, He, HII}, {-1, -1, +1, +1});
 
-    return new ChargeExchange_HeToH(name, HEPLUS, HYD, HE, HPLUS, HEPLUS_energy, HPLUS_energy);
   } else if (name == "CHARGE_EXCHANGE_H_HE") {
-    Real HPLUS_energy = pin->GetReal("reaction", "HYDROGEN_IONIZATION_ENERGY");
-    Real HEPLUS_energy = pin->GetReal("reaction", "HELIUM_IONIZATION_ENERGY");
+    return new ChargeExchangeHydToHelium(name,  {He, HII, HeII, H}, {-1, -1, +1, +1});
 
-    return new ChargeExchange_HToHe(name, HE, HPLUS, HEPLUS, HYD, HPLUS_energy, HEPLUS_energy);
   } else if (name == "TRIPLET_COLLISIONAL_RELAXATION") {
-    Real HPLUS_energy = pin->GetReal("reaction", "HYDROGEN_IONIZATION_ENERGY");
-    Real HEPLUS_energy = pin->GetReal("reaction", "HELIUM_IONIZATION_ENERGY");
-    Real HETRIP_ion_energy = pin->GetReal("reaction", "HELIUM_TRIPLET_IONIZATION_ENERGY");
-    Real HETRIP_energy = HEPLUS_energy - HETRIP_ion_energy;
+    return new TripletHydrogenCollision(name, {He23S, H, He, HII, ELEC}, {-1, -1, +1, +1, +1});
 
-    return new CollisionalRelaxation_HeH(name, HETRIP, HYD, HE, HPLUS, ELEC, HETRIP_energy, HPLUS_energy);
   } else if (name == "HE_DOUBLE_RECOMBINATION") {
-    Real He_PP_energy = pin->GetReal("reaction", "HELIUM_DOUBLE_IONIZATION_ENERGY");
-    Real He_P_energy = pin->GetReal("reaction", "HELIUM_IONIZATION_ENERGY");
+    // a, b, T0, T1
+    VernerRecombinationParams *vr_params = new VernerRecombinationParams(1.891e-10, 0.7524, 9.370, 2.774e6);
+    return new VernerRecombination(name, {HeII, HeIII, ELEC}, {+1, -1, -1}, vr_params);
 
-    // std::string name, int neu_num, int ion_num, int elec_num, Real a_in, Real b_in, Real T0_in, Real T1_in, Real E_ion_in, Real E_neutral_in
-    return new VernerRecombination(name, HEPLUS, HE2PLUS, ELEC, 1.891e-10, 0.7524, 0.370, 2.774e6, He_PP_energy, He_P_energy);
   } else {
     std::stringstream msg;
     msg << "### FATAL ERROR in ReactionNetwork::GetReactionByName"
@@ -256,30 +257,31 @@ Absorber* RadiationBand::GetAbsorberByName(std::string name, std::string band_na
   std::string rxn_name = band_name + "_" + name;
 
   if (name == "HYDROGEN_IONIZATION") {
-    HydrogenIonization *a = new HydrogenIonization(this, HYD, name, pin);
+    HydrogenIonization *a = new HydrogenIonization(this, name, H, HII, pin);
 
-    pnetwork->AddReaction(new Photoionization(rxn_name, a, HPLUS, ELEC));
+    pnetwork->AddReaction(new Photoionization(rxn_name, a, ELEC));
     return a;
   }
   else if (name == "HELIUM_IONIZATION") {
     std::string xc_file = pin->GetString("radiation", "Helium_1(1)S_file");
-    HeliumIonization *a = new HeliumIonization(this, HE, name, pin, xc_file);
+    HeliumIonization *a = new HeliumIonization(this, name, He, HeII, pin, xc_file);
 
-    pnetwork->AddReaction(new Photoionization(rxn_name, a, HEPLUS, ELEC));
+    pnetwork->AddReaction(new Photoionization(rxn_name, a, ELEC));
     return a;
   }
   else if (name == "HELIUM_TRIPLET_IONIZATION") {
     std::string xc_file = pin->GetString("radiation", "Helium_2(3)S_file");
-    HeliumIonization *a = new HeliumIonization(this, HETRIP, name, pin, xc_file);
+    HeliumIonization *a = new HeliumIonization(this, name, He23S, HeII, pin, xc_file);
 
-    pnetwork->AddReaction(new Photoionization(rxn_name, a, HEPLUS, ELEC));
+    pnetwork->AddReaction(new Photoionization(rxn_name, a, ELEC));
     return a; 
   }
   else if (name == "HELIUM_DOUBLE_IONIZATION") {
-    // Real Eth_in, Real Emax_in, Real E0_in, Real sigma0_in, Real ya_in, Real P_in, Real yw_in, Real y0_in, Real y1_in
-    VernerIonization *a = new VernerIonization(this, HEPLUS, name, pin, 54.42, 50000, 1.72, 13690, 32.88, 2.963,0.,0.,0.);
+    // Real Eth, Real Emax, Real E0, Real sigma0, Real ya, Real P, Real yw, Real y0, Real y1
+    VernerIonizationParams *vi_params = new VernerIonizationParams(54.42, 50000, 1.72, 13690, 32.88, 2.963, 0., 0., 0.);
+    VernerIonization *a = new VernerIonization(this, name, HeII, HeIII, pin, vi_params);
 
-    pnetwork->AddReaction(new Photoionization(rxn_name, a, HE2PLUS, ELEC));
+    pnetwork->AddReaction(new Photoionization(rxn_name, a, ELEC));
     return a;
   }
   else {
@@ -414,8 +416,8 @@ void SetInitialAbundances(MeshBlock *pmb, PassiveScalars *ps) {
   int il, iu, jl, ju, kl, ku;
   Real rad;
   Real me  = ps->mass(ELEC);
-  Real mh  = ps->mass(HYD);
-  Real mhe = ps->mass(HE);
+  Real mh  = ps->mass(H);
+  Real mhe = ps->mass(He);
 
   // validate H/He ratio
   bool ratio_error = false;
@@ -454,20 +456,22 @@ void SetInitialAbundances(MeshBlock *pmb, PassiveScalars *ps) {
         rad = getRad(pmb->pcoord, i, j, k);
 
         if (rad <= r_e) {
-          initial_abundances(HYD,k,j,i)   = q;
-          initial_abundances(ELEC,k,j,i)  = 2*epsilon_concentration;
-          initial_abundances(HPLUS,k,j,i) = epsilon_concentration;
-          initial_abundances(HE,k,j,i) = (1.-q);
-          initial_abundances(HETRIP,k,j,i) = epsilon_concentration;
-          initial_abundances(HEPLUS,k,j,i) = epsilon_concentration;
+          initial_abundances(H,k,j,i)   = q;
+          initial_abundances(ELEC,k,j,i)  = 4*epsilon_concentration;
+          initial_abundances(HII,k,j,i) = epsilon_concentration;
+          initial_abundances(He,k,j,i) = (1.-q);
+          initial_abundances(He23S,k,j,i) = epsilon_concentration;
+          initial_abundances(HeII,k,j,i) = epsilon_concentration;
+          initial_abundances(HeIII,k,j,i) = epsilon_concentration;
         }
         else {
-          initial_abundances(HYD,k,j,i)   = epsilon_concentration;
-          initial_abundances(ELEC,k,j,i)  = 1.;
-          initial_abundances(HPLUS,k,j,i) = q;
-          initial_abundances(HE,k,j,i) = epsilon_concentration;
-          initial_abundances(HETRIP,k,j,i) = epsilon_concentration;
-          initial_abundances(HEPLUS,k,j,i) = 1.-q;
+          initial_abundances(H,k,j,i)   = epsilon_concentration;
+          initial_abundances(ELEC,k,j,i)  = 1. + 2*epsilon_concentration;
+          initial_abundances(HII,k,j,i) = q;
+          initial_abundances(He,k,j,i) = epsilon_concentration;
+          initial_abundances(He23S,k,j,i) = epsilon_concentration;
+          initial_abundances(HeII,k,j,i) = 1.-q;
+          initial_abundances(HeIII,k,j,i) = epsilon_concentration; 
         }
 
         // add up accross n
