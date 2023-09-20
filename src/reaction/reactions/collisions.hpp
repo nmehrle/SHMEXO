@@ -6,28 +6,21 @@
 #include "../reaction_network.hpp"
 #include "../reaction.hpp"
 
-class HeliumRecombination: public ReactionTemplate {
-public:
-  using ReactionTemplate::ReactionTemplate;
-  Real alpha(Real T, int k, int j, int i);
-  Real beta(Real T, int k, int j, int i);
-};
-
-class HeliumTripletRecombination: public ReactionTemplate {
-public:
-  using ReactionTemplate::ReactionTemplate;
-  Real alpha(Real T, int k, int j, int i);
-  Real beta(Real T, int k, int j, int i);
-};
-
-class HeliumTripletDecay: public ReactionTemplate {
-public:
-  using ReactionTemplate::ReactionTemplate;
-  Real alpha(Real T, int k, int j, int i);
-  Real beta(Real T, int k, int j, int i);
-};
-
 class TripletHydrogenCollision: public ReactionTemplate {
+public:
+  using ReactionTemplate::ReactionTemplate;
+  Real alpha(Real T, int k, int j, int i);
+  // Real beta(Real T, int k, int j, int i);
+};
+
+class ChargeExchangeHeliumToHyd: public ReactionTemplate {
+public:
+  using ReactionTemplate::ReactionTemplate;
+  Real alpha(Real T, int k, int j, int i);
+  // Real beta(Real T, int k, int j, int i);
+};
+
+class ChargeExchangeHydToHelium: public ReactionTemplate {
 public:
   using ReactionTemplate::ReactionTemplate;
   Real alpha(Real T, int k, int j, int i);

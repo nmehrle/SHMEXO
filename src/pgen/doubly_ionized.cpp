@@ -30,10 +30,9 @@
 #include "../reaction/reaction.hpp"
 #include "../reaction/photoionization.hpp"
 
-#include "../reaction/reactions/hydrogen_reactions.hpp"
-#include "../reaction/reactions/helium_reactions.hpp"
-#include "../reaction/reactions/verner_recombination.hpp"
-#include "../reaction/reactions/twobody_reactions.hpp"
+#include "../reaction/reactions/misc_reactions.hpp"
+#include "../reaction/reactions/recombination.hpp"
+#include "../reaction/reactions/collisions.hpp"
 
 void FixedBoundary(MeshBlock *pmb, Coordinates *pcoord, AthenaArray<Real> &prim,
                    FaceField &bb, Real time, Real dt,

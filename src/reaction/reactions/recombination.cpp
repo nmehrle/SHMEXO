@@ -6,7 +6,7 @@
 #include "../../scalars/scalars.hpp"
 #include "../reaction_network.hpp"
 #include "../reaction.hpp"
-#include "verner_recombination.hpp"
+#include "recombination.hpp"
 
 VernerRecombination::VernerRecombination(std::string name, std::vector<int> species, std::vector<Real> stoichiometry, VernerRecombinationParams *params):
     ReactionTemplate(name, species, stoichiometry)
@@ -31,3 +31,27 @@ Real VernerRecombination::alpha(Real T, int k, int j, int i) {
 //   Real rxn_energy = ps->energy(ion_num_) - ps->energy(scalar_num_);
 //   return rxn_energy * this->alpha(T, k, j, i);
 // }
+
+Real HydrogenRecombination::alpha(Real T, int k, int j, int i) {
+  return 2.59E-13 * pow(T/1.E4,-0.7);
+}
+
+Real HydrogenRecombination::beta(Real T, int k, int j, int i) {
+  return -6.11E-10 * pow(T,-0.89) * (pmy_network->boltzmann * T);
+}
+
+Real HeliumRecombination::alpha(Real T, int k, int j, int i) {
+  return 1e-11 / (0.00217556 * pow(T, 1.12036526) + 0.32053997 * pow(T, 0.61526097));
+}
+
+Real HeliumRecombination::beta(Real T, int k, int j, int i) {
+  return -(1e-11 * pmy_network->boltzmann * T) / (0.00218954 * pow(T, 1.18645797) + 0.352778 * pow(T, 0.62645323));
+}
+
+Real HeliumTripletRecombination::alpha(Real T, int k, int j, int i) {
+  return 1e-11 / (0.00258173 * pow(T, 0.9848205) + 0.10883234 * pow(T, 0.58864659));
+}
+
+Real HeliumTripletRecombination::beta(Real T, int k, int j, int i) {
+  return -(1e-11 * pmy_network->boltzmann * T) / (0.00427277 * pow(T, 0.99204123) + 0.12332369 * pow(T, 0.57871911));
+}

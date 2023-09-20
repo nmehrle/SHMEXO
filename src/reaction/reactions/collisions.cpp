@@ -9,44 +9,37 @@
 #include "../../mesh/mesh.hpp"
 #include "../../utils/utils.hpp"
 #include "../../scalars/scalars.hpp"
-#include "../../radiation/radiation.hpp"
-#include "../../radiation/absorber/absorber.hpp"
 #include "../reaction_network.hpp"
 #include "../reaction.hpp"
-#include "helium_reactions.hpp"
+#include "collisions.hpp"
 
-Real HeliumRecombination::alpha(Real T, int k, int j, int i) {
-  return 1e-11 / (0.00217556 * pow(T, 1.12036526) + 0.32053997 * pow(T, 0.61526097));
+Real ChargeExchangeHeliumToHyd::alpha(Real T, int k, int j, int i) {
+  return 1.25E-15 * pow(300.0/T, -0.25);
 }
 
-Real HeliumRecombination::beta(Real T, int k, int j, int i) {
-  return -(1e-11 * pmy_network->boltzmann * T) / (0.00218954 * pow(T, 1.18645797) + 0.352778 * pow(T, 0.62645323));
+Real ChargeExchangeHydToHelium::alpha(Real T, int k, int j, int i) {
+  Real t1 = 1.75E-11 * pow(300.0/T, 0.75);
+  Real t2 = exp(-128000.0/T);
+  return t1 * t2;
 }
 
-Real HeliumTripletRecombination::alpha(Real T, int k, int j, int i) {
-  return 1e-11 / (0.00258173 * pow(T, 0.9848205) + 0.10883234 * pow(T, 0.58864659));
-}
+// Real ChargeExchangeHeliumToHyd::beta(Real T, int k, int j, int i) {
+//   PassiveScalars *ps = pmy_network->pscalars;
 
-Real HeliumTripletRecombination::beta(Real T, int k, int j, int i) {
-  return -(1e-11 * pmy_network->boltzmann * T) / (0.00427277 * pow(T, 0.99204123) + 0.12332369 * pow(T, 0.57871911));
-}
+//   Real E_reactant = ps->energy(r1_num_) + ps->energy(r2_num_);
+//   Real E_product = ps->energy(p1_num_) + ps->energy(p2_num_);
 
-Real HeliumTripletDecay::alpha(Real T, int k, int j, int i) {
-  return 1.272E-4; // s^-1 Lampon+ 2020, Table 2
-}
+//   return this->alpha(T, k, j, i) * (E_reactant - E_product);
+// }
 
-// is it zero?
-// Energy released as 19eV photon
-// What does it do lol
-Real HeliumTripletDecay::beta(Real T, int k, int j, int i) {
-  // PassiveScalars *ps = pmy_network->pscalars;
+// Real ChargeExchangeHydToHelium::beta(Real T, int k, int j, int i) {
+//   PassiveScalars *ps = pmy_network->pscalars;
 
-  // Real E_reactant = ps->energy(r1_num_);
-  // Real E_product = ps->energy(p1_num_);
+//   Real E_reactant = ps->energy(r1_num_) + ps->energy(r2_num_);
+//   Real E_product = ps->energy(p1_num_) + ps->energy(p2_num_);
 
-  // return this->alpha(T, k, j, i) * (E_reactant - E_product);
-  return 0;
-}
+//   return this->alpha(T, k, j, i) * (E_reactant - E_product);
+// }
 
 Real TripletHydrogenCollision::alpha(Real T, int k, int j, int i) {
   return 5.0E-10;
@@ -124,9 +117,9 @@ void He_e_collisions::react(int k, int j, int i) {
   Real n_triplet = ps->s(triplet_scalar_num, k, j, i) / ps->mass(triplet_scalar_num);
   Real n_elec    = ps->s(electron_scalar_num, k, j, i)/ ps->mass(electron_scalar_num);
 
-  Real k_T = (pmy_network->boltzmann * T);
-  Real T_dependance = std::sqrt((pmy_network->ry_conversion * pmy_network->eV_conversion)/k_T);
-  T_dependance = T_dependance * exp(-1.0/k_T);
+  Real k_T_ev = (pmy_network->boltzmann * T) / pmy_network->eV_conversion;
+  Real T_dependance = std::sqrt((pmy_network->ry_conversion / k_T_ev));
+  T_dependance = T_dependance * exp(-1.0/k_T_ev);
 
   for (int ii = 0; ii < n_col_type; ++ii)
   {

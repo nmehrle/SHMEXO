@@ -27,3 +27,24 @@ public:
 protected:
   Real a,b,T0,T1;
 };
+
+class HydrogenRecombination: public ReactionTemplate {
+public:
+  using ReactionTemplate::ReactionTemplate;
+  Real alpha(Real T, int k, int j, int i);
+  Real beta(Real T, int k, int j, int i);
+};
+
+class HeliumRecombination: public ReactionTemplate {
+public:
+  using ReactionTemplate::ReactionTemplate;
+  Real alpha(Real T, int k, int j, int i);
+  Real beta(Real T, int k, int j, int i);
+};
+
+class HeliumTripletRecombination: public ReactionTemplate {
+public:
+  using ReactionTemplate::ReactionTemplate;
+  Real alpha(Real T, int k, int j, int i);
+  Real beta(Real T, int k, int j, int i);
+};
