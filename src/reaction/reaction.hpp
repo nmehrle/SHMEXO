@@ -51,4 +51,10 @@ protected:
   std::vector<Real> number_density_;
 };
 
+class NullReaction: public Reaction {
+public:
+  NullReaction();
+  void react(int k, int j, int i) {};
+};
+
 #endif

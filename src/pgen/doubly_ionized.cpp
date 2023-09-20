@@ -207,7 +207,10 @@ void MeshBlock::UserWorkBeforeOutput(ParameterInput *pin)
 
 Reaction* ReactionNetwork::GetReactionByName(std::string name, ParameterInput *pin)
 {
-  if (name == "H_RECOMBINATION") {
+  if (name == "NULL_REACTION") {
+    return new NullReaction();
+
+  } else if (name == "H_RECOMBINATION") {
     return new HydrogenRecombination(name, {H, HII, ELEC}, {+1, -1, -1});
     // return new HydrogenRecombination(name, H, HII, ELEC);
 

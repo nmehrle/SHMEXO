@@ -15,6 +15,11 @@ Reaction::Reaction(std::string name):
   prev = nullptr;
 }
 
+NullReaction::NullReaction():
+  Reaction("Null Reaction")
+{
+}
+
 ReactionTemplate::ReactionTemplate(std::string name, std::vector<int> species, std::vector<Real> stoichiometry):
   Reaction(name), num_species_(species.size()), number_density_(species.size(), 0.0),
   species_(species), stoichiometry_(stoichiometry)
