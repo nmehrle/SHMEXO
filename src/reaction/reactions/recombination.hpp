@@ -28,11 +28,16 @@ protected:
   Real a,b,T0,T1;
 };
 
-class HydrogenRecombination: public ReactionTemplate {
+class HydrogenicRecombination: public ReactionTemplate {
 public:
-  using ReactionTemplate::ReactionTemplate;
+  HydrogenicRecombination(std::string name, std::vector<int> species, std::vector<Real> stoichiometry, int Z_, std::string case_);
   Real alpha(Real T, int k, int j, int i);
   Real beta(Real T, int k, int j, int i);
+
+protected:
+  Real Z;
+  Real C1, C2, C3;
+  Real C1_beta, C2_beta;
 };
 
 class HeliumRecombination: public ReactionTemplate {

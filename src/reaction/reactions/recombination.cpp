@@ -32,12 +32,47 @@ Real VernerRecombination::alpha(Real T, int k, int j, int i) {
 //   return rxn_energy * this->alpha(T, k, j, i);
 // }
 
-Real HydrogenRecombination::alpha(Real T, int k, int j, int i) {
-  return 2.59E-13 * pow(T/1.E4,-0.7);
+HydrogenicRecombination::HydrogenicRecombination(std::string name, std::vector<int> species, std::vector<Real> stoichiometry, int Z_, std::string case_):
+  ReactionTemplate(name, species, stoichiometry)
+{
+  // Set Z
+  Z = Z_;
+
+  // Set Case coefficients following Draine "Physics of the Interstellar and Intergalactic Medium", 2011
+  // Coefficients for alpha (C1, C2, C3) taken from equations 14.5, 14.6
+  // Coefficients for beta (C1_beta, C2_beta) taken from equations 27.22, 27.23
+  if (case_ == "A") {
+    C1 = 4.13e-13;
+    C2 = -0.7131;
+    C3 = -0.0115;
+
+    C1_beta = 0.787;
+    C2_beta = -0.0230;
+  } else if (case_ == "B") {
+    C1 = 2.54e-13;
+    C2 = -0.8163;
+    C3 = -0.0208;
+
+    C1_beta = 0.684;
+    C2_beta = -0.0416;
+  } else {
+    std::stringstream msg;
+    msg << "### FATAL ERROR in HydrogenicRecombination::Constructor" << std::endl
+        << "Input case (" << case_ << ") must be either \"A\" or \"B\"" <<std::endl;
+    ATHENA_ERROR(msg);
+  }
 }
 
-Real HydrogenRecombination::beta(Real T, int k, int j, int i) {
-  return -6.11E-10 * pow(T,-0.89) * (pmy_network->boltzmann * T);
+Real HydrogenicRecombination::alpha(Real T, int k, int j, int i) {
+  Real Teff = T/1.e4 / (Z*Z);
+  Real exp = C2 + C3 * std::log(Teff);
+  return C1 * Z*Z * std::pow(Teff, exp);
+}
+
+Real HydrogenicRecombination::beta(Real T, int k, int j, int i) {
+  Real Teff = T/1.e4 / (Z*Z);
+  Real mean_energy = (C1_beta + C2_beta * std::log(Teff)) * (pmy_network->boltzmann * T);
+  return -1 * this->alpha(T, k, j, i) * mean_energy;
 }
 
 Real HeliumRecombination::alpha(Real T, int k, int j, int i) {

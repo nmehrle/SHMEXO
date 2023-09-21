@@ -209,9 +209,11 @@ Reaction* ReactionNetwork::GetReactionByName(std::string name, ParameterInput *p
   if (name == "NULL_REACTION") {
     return new NullReaction();
 
-  } else if (name == "H_RECOMBINATION") {
-    return new HydrogenRecombination(name, {H, HII, ELEC}, {+1, -1, -1});
-    // return new HydrogenRecombination(name, H, HII, ELEC);
+  } else if (name == "H_RECOMBINATION_CASE_A") {
+    return new HydrogenicRecombination(name, {H, HII, ELEC}, {+1, -1, -1}, 1, "A");
+
+  } else if (name == "H_RECOMBINATION_CASE_B") {
+    return new HydrogenicRecombination(name, {H, HII, ELEC}, {+1, -1, -1}, 1, "B");
 
   } else if (name == "LYA_COOLING") {
     return new LyaCooling(name, H, HII);
@@ -239,10 +241,15 @@ Reaction* ReactionNetwork::GetReactionByName(std::string name, ParameterInput *p
   } else if (name == "TRIPLET_COLLISIONAL_RELAXATION") {
     return new TripletHydrogenCollision(name, {He23S, H, He, HII, ELEC}, {-1, -1, +1, +1, +1});
 
-  } else if (name == "HE_DOUBLE_RECOMBINATION") {
+  } else if (name == "HEIII_RECOMBINATION_CASE_A") {
     // a, b, T0, T1
-    VernerRecombinationParams *vr_params = new VernerRecombinationParams(1.891e-10, 0.7524, 9.370, 2.774e6);
-    return new VernerRecombination(name, {HeII, HeIII, ELEC}, {+1, -1, -1}, vr_params);
+    // VernerRecombinationParams *vr_params = new VernerRecombinationParams(1.891e-10, 0.7524, 9.370, 2.774e6);
+    // return new VernerRecombination(name, {HeII, HeIII, ELEC}, {+1, -1, -1}, vr_params);
+
+    return new HydrogenicRecombination(name, {HeII, HeIII, ELEC}, {+1, -1, -1}, 2, "A");
+
+  } else if (name == "HEIII_RECOMBINATION_CASE_B") {
+    return new HydrogenicRecombination(name, {HeII, HeIII, ELEC}, {+1, -1, -1}, 2, "B");
 
   } else {
     std::stringstream msg;
