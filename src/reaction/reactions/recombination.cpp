@@ -8,30 +8,6 @@
 #include "../reaction.hpp"
 #include "recombination.hpp"
 
-VernerRecombination::VernerRecombination(std::string name, std::vector<int> species, std::vector<Real> stoichiometry, VernerRecombinationParams *params):
-    ReactionTemplate(name, species, stoichiometry)
-{
-  a = params->a;
-  b = params->b;
-  T0 = params->T0;
-  T1 = params->T1;
-}
-
-Real VernerRecombination::alpha(Real T, int k, int j, int i) {
-  Real alpha_1 = sqrt(T/T0);
-  Real alpha_2 = pow(1+sqrt(T/T0), 1-b);
-  Real alpha_3 = pow(1+sqrt(T/T1), 1+b);
-  Real alpha = a * pow(alpha_1 * alpha_2 * alpha_3, -1.0); // cm3 s-1
-  return alpha;  
-}
-
-// Real VernerRecombination::beta(Real T, int k, int j, int i) {
-//   PassiveScalars *ps = pmy_network->pscalars;
-
-//   Real rxn_energy = ps->energy(ion_num_) - ps->energy(scalar_num_);
-//   return rxn_energy * this->alpha(T, k, j, i);
-// }
-
 HydrogenicRecombination::HydrogenicRecombination(std::string name, std::vector<int> species, std::vector<Real> stoichiometry, int Z_, std::string case_):
   ReactionTemplate(name, species, stoichiometry)
 {
@@ -90,3 +66,27 @@ Real HeliumTripletRecombination::alpha(Real T, int k, int j, int i) {
 Real HeliumTripletRecombination::beta(Real T, int k, int j, int i) {
   return -(1e-11 * pmy_network->boltzmann * T) / (0.00427277 * pow(T, 0.99204123) + 0.12332369 * pow(T, 0.57871911));
 }
+
+VernerRecombination::VernerRecombination(std::string name, std::vector<int> species, std::vector<Real> stoichiometry, VernerRecombinationParams *params):
+    ReactionTemplate(name, species, stoichiometry)
+{
+  a = params->a;
+  b = params->b;
+  T0 = params->T0;
+  T1 = params->T1;
+}
+
+Real VernerRecombination::alpha(Real T, int k, int j, int i) {
+  Real alpha_1 = sqrt(T/T0);
+  Real alpha_2 = pow(1+sqrt(T/T0), 1-b);
+  Real alpha_3 = pow(1+sqrt(T/T1), 1+b);
+  Real alpha = a * pow(alpha_1 * alpha_2 * alpha_3, -1.0); // cm3 s-1
+  return alpha;  
+}
+
+// Real VernerRecombination::beta(Real T, int k, int j, int i) {
+//   PassiveScalars *ps = pmy_network->pscalars;
+
+//   Real rxn_energy = ps->energy(ion_num_) - ps->energy(scalar_num_);
+//   return rxn_energy * this->alpha(T, k, j, i);
+// }

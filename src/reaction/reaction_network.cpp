@@ -49,7 +49,7 @@ ReactionNetwork::ReactionNetwork(MeshBlock *pmb, ParameterInput *pin){
     sprintf(key, "rxn%d", rxn_num);
     rxn_name = pin->GetOrAddString("reaction", key, null_name);
   }
-  // InitUserReactions(pin);
+  
 }
 
 ReactionNetwork::~ReactionNetwork() {
@@ -139,8 +139,7 @@ void ReactionNetwork::ComputeReactionForcing(const Real dt, const AthenaArray<Re
 
           ComputeScalarDensityChange(dt, drho, k, j, i);
           for (int n = 0; n < NSCALARS; ++n)
-          { 
-
+          {
             // check this drho isnt in error
             if (drho[n] < 0 && -drho[n] > cons_scalar(n,k,j,i)) {
               Real s_rho = cons_scalar(n,k,j,i);

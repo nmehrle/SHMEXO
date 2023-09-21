@@ -29,7 +29,7 @@ void Photoionization::react(int k, int j, int i) {
   Real reaction_energy, contribution;
 
   Real dn = 0;
-  Real d_energy   = 0;
+  Real d_energy = 0;
   Spectrum *spec = pmy_abs->pmy_band->spec;
   for (int n = 0; n < pmy_abs->pmy_band->nspec; ++n)
   {
@@ -37,7 +37,7 @@ void Photoionization::react(int k, int j, int i) {
     contribution = reaction_energy * pmy_abs->h(n)/ionization_energy;
 
     dn += contribution;
-    d_energy   += reaction_energy * pmy_abs->q(n);
+    d_energy += reaction_energy * pmy_abs->q(n);
   }
 
   pmy_network->dn_rate(my_rxn_num, scalar_num_, k, j, i) -= dn;
