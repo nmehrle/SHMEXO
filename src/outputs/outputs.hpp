@@ -170,7 +170,7 @@ class ATHDF5Output : public OutputType {
 
  private:
   // Parameters
-  static const int max_name_length = 20;  // maximum length of names excluding \0
+  static const int max_name_length = 40;  // maximum length of names excluding \0
 
   // Metadata
   std::string filename;                       // name of athdf file
