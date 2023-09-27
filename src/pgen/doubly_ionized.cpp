@@ -28,9 +28,9 @@
 
 #include "../reaction/reaction_network.hpp"
 #include "../reaction/reaction.hpp"
-#include "../reaction/photoionization.hpp"
 
-#include "../reaction/reactions/misc_reactions.hpp"
+#include "../reaction/reactions/photoionization.hpp"
+#include "../reaction/reactions/additional_reactions.hpp"
 #include "../reaction/reactions/recombination.hpp"
 #include "../reaction/reactions/collisions.hpp"
 

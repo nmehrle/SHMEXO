@@ -2,8 +2,8 @@
 #include <string>
 
 // Athena++ headers
-#include "../athena.hpp"
-#include "reaction.hpp"
+#include "../../athena.hpp"
+#include "../reaction.hpp"
 
 class Reaction;
 class Absorber;

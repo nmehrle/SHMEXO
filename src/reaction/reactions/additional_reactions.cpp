@@ -5,7 +5,7 @@
 // Athena++ header
 #include "../reaction_network.hpp"
 #include "../reaction.hpp"
-#include "misc_reactions.hpp"
+#include "additional_reactions.hpp"
 
 LyaCooling::LyaCooling(std::string name, int scalar_num, int ion_num):
     ReactionTemplate(name, {scalar_num, ion_num}, {-1, -1})

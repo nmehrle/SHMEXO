@@ -3,13 +3,13 @@
 #include <string>
 
 // Athena++ header
-#include "../mesh/mesh.hpp"
-#include "../scalars/scalars.hpp"
-#include "../radiation/radiation.hpp"
-#include "../radiation/absorber/absorber.hpp"
-#include "../radiation/absorber/ionizing_absorber.hpp"
-#include "reaction_network.hpp"
-#include "reaction.hpp"
+#include "../../mesh/mesh.hpp"
+#include "../../scalars/scalars.hpp"
+#include "../../radiation/radiation.hpp"
+#include "../../radiation/absorber/absorber.hpp"
+#include "../../radiation/absorber/ionizing_absorber.hpp"
+#include "../reaction_network.hpp"
+#include "../reaction.hpp"
 #include "photoionization.hpp"
 
 Photoionization::Photoionization(std::string name, IonizingAbsorber *pabs,
