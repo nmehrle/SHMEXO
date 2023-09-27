@@ -17,14 +17,12 @@
 #include "ionizing_absorber.hpp"
 
 IonizingAbsorber::IonizingAbsorber(RadiationBand *pband, std::string name, int my_scalar_number, int my_ion_number, ParameterInput *pin):
-  Absorber(pband, my_scalar_number, pin)
+  Absorber(pband, name, my_scalar_number, pin)
 {
   ion_num = my_ion_number;
   ionization_energy = ps->energy(my_ion_number) - ps->energy(my_scalar_number);
   nu_0 = ionization_energy/planck_constant;
   lambda_0 = speed_of_light/nu_0;
-
-  my_name = name;
 
   Spectrum *spec = pband->spec;
   int nspec = pband->nspec;

@@ -10,7 +10,6 @@ class IonizingAbsorber: public Absorber {
 public:
   IonizingAbsorber(RadiationBand *pband, std::string name, int my_scalar_number, int my_ion_number, ParameterInput *pin);
 
-  std::string my_name;
   int ion_num;
 
   Real ionization_energy;

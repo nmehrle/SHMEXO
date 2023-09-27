@@ -10,10 +10,12 @@
 #include "../radiation.hpp"
 #include "absorber.hpp"
 
-Absorber::Absorber(RadiationBand *pband, int my_scalar_number, ParameterInput *pin) {
+Absorber::Absorber(RadiationBand *pband, std::string name, int my_scalar_number, ParameterInput *pin) {
   pmy_band = pband;
   MeshBlock *pmb = pmy_band->pmy_rad->pmy_block;
   ps = pmb->pscalars;
+
+  my_name = name;
 
   // associate a scalar to get number densities
   SetScalar(my_scalar_number);

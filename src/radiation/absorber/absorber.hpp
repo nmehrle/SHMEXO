@@ -21,6 +21,7 @@ public:
   Reaction *pmy_rxn;
 
   int scalar_num;
+  std::string my_name;
 
   // set by constructor, fixed
   // dims -- [nspec]
@@ -33,8 +34,8 @@ public:
   AthenaArray<Real> absorptionCoefficient;
   AthenaArray<Real> energyAbsorbed;
 
-  Absorber(RadiationBand *pband, int my_scalar_number, ParameterInput *pin);
-  Absorber(RadiationBand *pband, ParameterInput *pin): Absorber(pband, -1, pin) {};
+  Absorber(RadiationBand *pband, std::string name, int my_scalar_number, ParameterInput *pin);
+  Absorber(RadiationBand *pband, std::string name, ParameterInput *pin): Absorber(pband, name, -1, pin) {};
   virtual ~Absorber();
 
   // should take in scalars as well
