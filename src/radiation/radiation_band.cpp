@@ -116,19 +116,6 @@ RadiationBand::RadiationBand(Radiation *prad, std::string band_id, ParameterInpu
   nabs = abs_num;
   absorbers.NewAthenaArray(nabs);
 
-  std::string abs_name;
-  for (int i = 0; i < nabs; ++i)
-  {
-    sprintf(key, "%s.abs%d", my_id.c_str(), i);
-    abs_name = pin->GetString("radiation", key);
-    // sprintf(scalar_key, "%s.scalar", key);
-    // abs_scalar_num = pin->GetOrAddInteger("radiation", scalar_key, -1);
-
-    Absorber* pabs = GetAbsorberByName(abs_name, my_name, pin);
-
-    absorbers(i) = pabs;
-  }
-
   MeshBlock *pmb = pmy_rad->pmy_block;
   band_flux.NewAthenaArray(pmb->ncells3, pmb->ncells2, pmb->ncells1+1);
   band_tau.NewAthenaArray(pmb->ncells3, pmb->ncells2, pmb->ncells1);
@@ -207,6 +194,23 @@ void RadiationBand::ConstructRTSolver(std::string name, ParameterInput *pin) {
         << "Radiation Band " << my_id << " found unknown rtsolver " << name
         << std::endl;
     ATHENA_ERROR(msg);
+  }
+}
+
+void RadiationBand::InitAbsorbers(ParameterInput *pin) {
+  std::string abs_name;
+  char key[100];
+
+  for (int i = 0; i < nabs; ++i)
+  {
+    sprintf(key, "%s.abs%d", my_id.c_str(), i);
+    abs_name = pin->GetString("radiation", key);
+    // sprintf(scalar_key, "%s.scalar", key);
+    // abs_scalar_num = pin->GetOrAddInteger("radiation", scalar_key, -1);
+
+    Absorber* pabs = GetAbsorberByName(abs_name, my_name, pin);
+
+    absorbers(i) = pabs;
   }
 }
 

@@ -89,6 +89,7 @@ public:
   void LoadInputSpectrum(std::string file);
   void ConstructRTSolver(std::string name, ParameterInput *pin);
 
+  void InitAbsorbers(ParameterInput *pin);
   Absorber* GetAbsorberByName(std::string name, std::string band_name, ParameterInput *pin);
 
   void SetSpectralProperties(MeshBlock *pmb, AthenaArray<Real> const& w, AthenaArray<Real> const& cons_scalar, int k, int j);

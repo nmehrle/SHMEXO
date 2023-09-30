@@ -16,6 +16,7 @@ class ParameterInput;
 class PassiveScalars;
 class ReactionNetwork;
 class Reaction;
+class Radiation;
 
 class ReactionNetwork {
   friend class Reaction;
@@ -23,6 +24,7 @@ public:
   // data
   MeshBlock *pmy_block;
   PassiveScalars *pscalars;
+  Radiation *prad;
   Reaction *pfirst, *plast;
 
   AthenaArray<Reaction*> my_reactions;
@@ -37,7 +39,7 @@ public:
   ReactionNetwork(MeshBlock *pmb, ParameterInput *pin);
   ~ReactionNetwork();
 
-  Real boltzmann;
+  Real boltzmann, speed_of_light, planck_constant;
   Real eV_conversion, ry_conversion;
   AthenaArray<Real> temperature_;
 
@@ -53,6 +55,7 @@ public:
   void ComputeReactionForcing(const Real dt, const AthenaArray<Real> prim, const AthenaArray<Real> cons, const AthenaArray<Real> cons_scalar, AthenaArray<Real> &du, AthenaArray<Real> &ds);
 
   int num_reactions;
+
 protected:
   Real consumption_tolerance;
   Real sfloor;

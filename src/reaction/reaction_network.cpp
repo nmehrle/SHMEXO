@@ -16,6 +16,7 @@
 ReactionNetwork::ReactionNetwork(MeshBlock *pmb, ParameterInput *pin){
   pmy_block = pmb;
   pscalars = pmb->pscalars;
+  prad = pmb->prad;
 
   pfirst = nullptr;
   plast = nullptr;
@@ -50,6 +51,8 @@ ReactionNetwork::ReactionNetwork(MeshBlock *pmb, ParameterInput *pin){
     rxn_name = pin->GetOrAddString("reaction", key, null_name);
   }
   
+  speed_of_light = pin->GetReal("problem", "speed_of_light");
+  planck_constant = pin->GetReal("problem", "planck_constant");
 }
 
 ReactionNetwork::~ReactionNetwork() {

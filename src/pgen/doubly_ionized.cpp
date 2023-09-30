@@ -547,14 +547,19 @@ void MeshBlock::ProblemGenerator(ParameterInput *pin)
   }
   //-- end file loading
 
+  for (int b = 0; b < prad->nbands; ++b)
+  {
+    prad->my_bands(b)->InitAbsorbers(pin);
+  }
+
+  pnetwork->Initialize();
+
   // set spectral properties
   for (int k = kl; k <= ku; ++k)
     for (int j = jl; j <= ju; ++j)
       prad->CalculateRadiativeTransfer(phydro->w, pscalars->s, pmy_mesh->time, k, j);
 
   peos->PrimitiveToConserved(phydro->w, pfield->bcc, phydro->u, pcoord, is, ie, js, je, ks, ke);
-
-  pnetwork->Initialize();
 }
 
 // resets things inside r_replenish
