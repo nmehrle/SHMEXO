@@ -281,3 +281,25 @@ void RadiationBand::RadiativeTransfer(MeshBlock *pmb, Real radiation_scaling, in
     my_rtsolver->RadiativeTransfer(pmb, n, k, j);
   }
 }
+
+int RadiationBand::AssignWavelengthToBin(Real wave) {
+  Real half_bin_width = (spec[1].wave - spec[0].wave)/2.0;
+
+  Real left = spec[0].wave - half_bin_width;
+  Real right;
+
+  // If wave below leftmost edge return -1 (no bin)
+  if (wave < left)
+    return -1;
+
+  // Loop bins, if wave is in this bin return its value
+  for (int i = 0; i < nspec; ++i)
+  {
+    right = spec[i].wave + half_bin_width;
+    if (wave < right)
+      return i;
+  }
+
+  // If no bin has been returned by now, wave is too high for this band
+  return -1;
+}

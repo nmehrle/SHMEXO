@@ -95,6 +95,7 @@ public:
   void SetSpectralProperties(MeshBlock *pmb, AthenaArray<Real> const& w, AthenaArray<Real> const& cons_scalar, int k, int j);
   void RadiativeTransfer(MeshBlock *pmb, Real radiation_scaling, int k, int j);
 
+  int AssignWavelengthToBin(Real wave);
 protected:
   std::string my_id;
 };
