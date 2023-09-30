@@ -215,6 +215,14 @@ Reaction* ReactionNetwork::GetReactionByName(std::string name, ParameterInput *p
   } else if (name == "H_RECOMBINATION_CASE_B") {
     return new HydrogenicRecombination(name, {H, HII, ELEC}, {+1, -1, -1}, 1, "B");
 
+  } else if (name == "H_RECOMBINATION_CASE_1S") {
+    AthenaArray<Real> wave_temp, frac_temp;
+    wave_temp.NewAthenaArray(1);
+    frac_temp.NewAthenaArray(1);
+    wave_temp(0) = 91.16;
+    frac_temp(0) = 1;
+    return new HydrogenicRecombination(name, {H, HII, ELEC}, {+1, -1, -1}, 1, "1S", this, wave_temp, frac_temp);
+
   } else if (name == "LYA_COOLING") {
     return new LyaCooling(name, H, HII);
 

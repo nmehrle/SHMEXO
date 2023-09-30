@@ -14,6 +14,12 @@ HydrogenicRecombination::HydrogenicRecombination(std::string name, std::vector<i
   Initialize(Z_, case_);
 }
 
+HydrogenicRecombination::HydrogenicRecombination(std::string name, std::vector<int> species, std::vector<Real> stoichiometry, int Z_, std::string case_, ReactionNetwork *pnetwork, AthenaArray<Real> wave, AthenaArray<Real> frac):
+  ReactionTemplate(name, species, stoichiometry, pnetwork, wave, frac)
+{
+  Initialize(Z_, case_);
+}
+
 void HydrogenicRecombination::Initialize(int Z_, std::string case_) {
   // Set Z
   Z = Z_;
