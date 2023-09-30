@@ -122,6 +122,7 @@ RadiationBand::RadiationBand(Radiation *prad, std::string band_id, ParameterInpu
   band_tau_cell.NewAthenaArray(pmb->ncells3, pmb->ncells2, pmb->ncells1);
 
   flux_density.NewAthenaArray(nspec, pmb->ncells3, pmb->ncells2, pmb->ncells1+1);
+  source_energy_density.NewAthenaArray(nspec, pmb->ncells3, pmb->ncells2, pmb->ncells1);
   tau.NewAthenaArray(nspec, pmb->ncells3, pmb->ncells2, pmb->ncells1);
   tau_cell.NewAthenaArray(nspec, pmb->ncells3, pmb->ncells2, pmb->ncells1);
 }

@@ -70,9 +70,14 @@ public:
   AthenaArray<Real> band_tau, band_tau_cell;
 
   // spectral flux density at bottom of cells
-  // units -- [energy / time * area]
+  // units -- [energy / area / time]
   // length -- nspec, ncells3, ncells2, ncells1+1
   AthenaArray<Real> flux_density;
+
+  // Additional flux generated in cells (due to reactions emitting phtons)
+  // units -- [energy / volume / time]
+  // length -- nspec, ncells3, ncells2, ncells1
+  AthenaArray<Real> source_energy_density;
 
   // tau_cell -- optical depth inside one cell
   // tau -- optical depth of all cells above this cell including this cell

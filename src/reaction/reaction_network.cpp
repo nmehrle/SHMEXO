@@ -106,6 +106,11 @@ void ReactionNetwork::ResetRates() {
   dn_rate.ZeroClear();
   de_rate.ZeroClear();
   jacobian.ZeroClear();
+  
+  for (int i = 0; i < prad->nbands; ++i)
+  {
+    prad->my_bands(i)->source_energy_density.ZeroClear();
+  }
 }
 
 void ReactionNetwork::ComputeReactionForcing(const Real dt, const AthenaArray<Real> prim, const AthenaArray<Real> cons, const AthenaArray<Real> cons_scalar, AthenaArray<Real> &du, AthenaArray<Real> &ds) {
