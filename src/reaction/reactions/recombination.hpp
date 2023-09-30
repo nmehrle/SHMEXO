@@ -9,6 +9,9 @@
 class HydrogenicRecombination: public ReactionTemplate {
 public:
   HydrogenicRecombination(std::string name, std::vector<int> species, std::vector<Real> stoichiometry, int Z_, std::string case_);
+
+  void Initialize(int Z_, std::string case_);
+
   Real alpha(Real T, int k, int j, int i);
   Real beta(Real T, int k, int j, int i);
 

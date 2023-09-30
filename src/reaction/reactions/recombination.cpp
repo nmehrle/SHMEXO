@@ -11,6 +11,10 @@
 HydrogenicRecombination::HydrogenicRecombination(std::string name, std::vector<int> species, std::vector<Real> stoichiometry, int Z_, std::string case_):
   ReactionTemplate(name, species, stoichiometry)
 {
+  Initialize(Z_, case_);
+}
+
+void HydrogenicRecombination::Initialize(int Z_, std::string case_) {
   // Set Z
   Z = Z_;
 
@@ -21,22 +25,23 @@ HydrogenicRecombination::HydrogenicRecombination(std::string name, std::vector<i
     C1 = 4.13e-13;
     C2 = -0.7131;
     C3 = -0.0115;
-
-    C1_beta = 0.787;
-    C2_beta = -0.0230;
   } else if (case_ == "B") {
     C1 = 2.54e-13;
     C2 = -0.8163;
     C3 = -0.0208;
-
-    C1_beta = 0.684;
-    C2_beta = -0.0416;
+  } else if (case_ == "1S") {
+    C1 = 1.58e-13;
+    C2 = -0.5334;
+    C3 = -0.0071;
   } else {
     std::stringstream msg;
-    msg << "### FATAL ERROR in HydrogenicRecombination::Constructor" << std::endl
-        << "Input case (" << case_ << ") must be either \"A\" or \"B\"" <<std::endl;
+    msg << "### FATAL ERROR in HydrogenicRecombination::Initialize" << std::endl
+        << "Input case (" << case_ << ") must be either \"A\", \"B\", or \"1S\"" <<std::endl;
     ATHENA_ERROR(msg);
   }
+
+  C1_beta = 1.5+C2;
+  C2_beta = 2*C3;
 }
 
 Real HydrogenicRecombination::alpha(Real T, int k, int j, int i) {
