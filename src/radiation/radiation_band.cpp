@@ -48,13 +48,13 @@ RadiationBand::RadiationBand(Radiation *prad, std::string band_id, ParameterInpu
     nspec +=1;
   }
 
-  Real bin_width = (v[1]-v[0]) / nspec;
+  spec_bin_width = (v[1]-v[0]) / nspec;
 
   // wave is midpoint of bin
   spec = new Spectrum [nspec];
   for (int i = 0; i < nspec; ++i) {
-    spec[i].wave = v[0] + bin_width*(i+1.0/2.0);
-    spec[i].wgt = bin_width;
+    spec[i].wave = v[0] + spec_bin_width*(i+1.0/2.0);
+    spec[i].wgt = spec_bin_width;
   }
 
   // Gather wavelength unit
@@ -152,7 +152,7 @@ void RadiationBand::LoadInputSpectrum(std::string file) {
 
   int ii = -1;
   Real spline_dx;
-  Real half_bin_width = (spec[1].wave - spec[0].wave)/2.0;
+  Real half_bin_width = spec_bin_width/2.0;
   Real bin_start;
 
   Real subbin_dx = (half_bin_width * 2.0) / integration_subbins;
@@ -284,7 +284,7 @@ void RadiationBand::RadiativeTransfer(MeshBlock *pmb, Real radiation_scaling, in
 }
 
 int RadiationBand::AssignWavelengthToBin(Real wave) {
-  Real half_bin_width = (spec[1].wave - spec[0].wave)/2.0;
+  Real half_bin_width = spec_bin_width/2.0;
 
   Real left = spec[0].wave - half_bin_width;
   Real right;

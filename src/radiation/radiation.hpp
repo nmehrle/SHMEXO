@@ -64,6 +64,7 @@ public:
 
   int nspec;
   Spectrum *spec;
+  Real spec_bin_width;
 
   // band-integrated quantities
   AthenaArray<Real> band_flux;
