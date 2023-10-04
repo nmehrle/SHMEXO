@@ -36,33 +36,14 @@ ReactionTemplate::ReactionTemplate(std::string name, std::vector<int> species, s
   }
 }
 
-ReactionTemplate:: ReactionTemplate(std::string name, std::vector<int> species, std::vector<Real> stoichiometry, ReactionNetwork *pnetwork, AthenaArray<Real> reemission_wave, AthenaArray<Real> reemission_frac):
+ReactionTemplate:: ReactionTemplate(std::string name, std::vector<int> species, std::vector<Real> stoichiometry, ReactionReemissionFunction reemission_func):
   ReactionTemplate(name, species, stoichiometry)
 {
-  Radiation* prad = pnetwork->prad;
+  reemission_func_ = reemission_func;
+}
 
-  nwave_ = reemission_wave.GetDim1();
-  reemission_coordinates_.NewAthenaArray(nwave_);
-
-  int spec_bin, b;
-
-  for (int i = 0; i < nwave_; ++i) {
-    // loop through bands, assign this wavelength to band/wavebin pair
-    for (b = 0; b < prad->nbands; ++b) {
-      spec_bin = prad->my_bands(b)->AssignWavelengthToBin(reemission_wave(i));
-      if (spec_bin >= 0)
-        break;
-    }
-
-    if (spec_bin == -1)
-      b = -1;
-
-    ReemissionCoordinate this_coordinate;
-    this_coordinate.band = b;
-    this_coordinate.spec_bin = spec_bin;
-    this_coordinate.frac = reemission_frac(i);
-    reemission_coordinates_(i) = this_coordinate;
-  }
+void ReactionTemplate::AssignReemissionFunction(ReactionReemissionFunction reemission_func) {
+  reemission_func_ = reemission_func; 
 }
 
 void ReactionTemplate::react(int k, int j, int i) {
@@ -99,28 +80,49 @@ void ReactionTemplate::react(int k, int j, int i) {
 
   pmy_network->de_rate(my_rxn_num, k, j, i) += e_rxn;
 
-  if (nwave_ > 0)
-    this->ProducePhotons(n_rxn, k, j, i);
+  if (this->reemission_func_ != nullptr)
+    this->ProducePhotons(n_rxn, T, k, j, i);
 }
 
-void ReactionTemplate::ProducePhotons(Real n_rxn, int k, int j, int i) {
-  Radiation* prad = pmy_network->prad;
-  Real wave, energy;
-  ReemissionCoordinate coord;
+void ReactionTemplate::ProducePhotons(Real n_rxn, Real T, int k, int j, int i) {
+  Radiation *prad = pmy_network->prad;
+  RadiationBand *pband;
+  Real wave, energy, frac;
 
-  for (int i = 0; i < nwave_; ++i)
+  for (int b = 0; b < prad->nbands; ++b)
   {
-    coord = reemission_coordinates_(i);
-    wave = prad->my_bands(coord.band)->spec[coord.spec_bin].wave;
+    pband = prad->my_bands(b);
+    for (int n = 0; n < pband->nspec; ++n)
+    {
+      wave = pband->spec[n].wave;
+      frac = reemission_func_(pmy_network->pmy_block, T, wave, pband->spec_bin_width, k, j, i);
 
-    // photon energy
-    energy = (pmy_network->planck_constant * pmy_network->speed_of_light)/wave;
+      // photon energy
+      energy = (pmy_network->planck_constant * pmy_network->speed_of_light)/wave;
 
-    // energy converted to photons
-    energy = energy * n_rxn * coord.frac;
+      // energy converted to photons
+      energy = energy * n_rxn * frac;
 
-    pmy_network->prad->my_bands(coord.band)->source_energy_density(coord.spec_bin, k, j, i) += energy;
+      pband->source_energy_density(n, k, j, i) += energy;
+    }
   }
+  // Radiation* prad = pmy_network->prad;
+  // Real wave, energy;
+  // ReemissionCoordinate coord;
+
+  // for (int i = 0; i < nwave_; ++i)
+  // {
+  //   coord = reemission_coordinates_(i);
+  //   wave = prad->my_bands(coord.band)->spec[coord.spec_bin].wave;
+
+  //   // photon energy
+  //   energy = (pmy_network->planck_constant * pmy_network->speed_of_light)/wave;
+
+  //   // energy converted to photons
+  //   energy = energy * n_rxn * coord.frac;
+
+  //   pmy_network->prad->my_bands(coord.band)->source_energy_density(coord.spec_bin, k, j, i) += energy;
+  // }
 }
 
 Real ReactionTemplate::beta(Real T, int k, int j, int i) {

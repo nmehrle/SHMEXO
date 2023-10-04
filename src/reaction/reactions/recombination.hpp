@@ -9,7 +9,6 @@
 class HydrogenicRecombination: public ReactionTemplate {
 public:
   HydrogenicRecombination(std::string name, std::vector<int> species, std::vector<Real> stoichiometry, int Z_, std::string case_);
-  HydrogenicRecombination(std::string name, std::vector<int> species, std::vector<Real> stoichiometry, int Z_, std::string case_, ReactionNetwork *pnetwork, AthenaArray<Real> wave, AthenaArray<Real> frac);
 
   void Initialize(int Z_, std::string case_);
 

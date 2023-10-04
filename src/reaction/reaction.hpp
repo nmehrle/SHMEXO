@@ -9,12 +9,6 @@
 #include "../athena.hpp"
 #include "reaction_network.hpp"
 
-struct ReemissionCoordinate {
-  int band;
-  int spec_bin;
-  Real frac;
-};
-
 class ReactionNetwork;
 class PassiveScalars;
 
@@ -44,10 +38,12 @@ protected:
 class ReactionTemplate: public Reaction {
 public:
   ReactionTemplate(std::string name, std::vector<int> species, std::vector<Real> stoichiometry);
-  ReactionTemplate(std::string name, std::vector<int> species, std::vector<Real> stoichiometry, ReactionNetwork *pnetwork, AthenaArray<Real> reemission_wave, AthenaArray<Real> reemission_frac);
+  ReactionTemplate(std::string name, std::vector<int> species, std::vector<Real> stoichiometry, ReactionReemissionFunction reemission_func);
+
+  void AssignReemissionFunction(ReactionReemissionFunction reemission_func);
 
   void react(int k, int j, int i);
-  void ProducePhotons(Real n_rxn, int k, int j, int i);
+  void ProducePhotons(Real n_rxn, Real T, int k, int j, int i);
 
   // Heating (Cooling) Rate Coefficient
   virtual Real beta(Real T, int k, int j, int i);
@@ -59,8 +55,7 @@ protected:
 
   std::vector<Real> number_density_;
 
-  int nwave_ = 0;
-  AthenaArray<ReemissionCoordinate> reemission_coordinates_;
+  ReactionReemissionFunction reemission_func_ = nullptr;
 };
 
 class NullReaction: public Reaction {

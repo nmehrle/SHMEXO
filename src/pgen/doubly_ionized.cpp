@@ -41,6 +41,7 @@ void FixedBoundary(MeshBlock *pmb, Coordinates *pcoord, AthenaArray<Real> &prim,
 namespace {
   // user set variables
   Real G, Mp, Ms, Rp, period, semi_major_axis;
+  Real planck, speed_of_light;
   Real dfloor, pfloor, sfloor;
   Real gas_gamma, boltzmann;
   Real wave_to_meters_conversion;
@@ -80,6 +81,8 @@ namespace {
     const AthenaArray<Real> &bcc,
     AthenaArray<Real> &du, AthenaArray<Real> &ds);
   Real RadiationTime(RadiationBand *band, AthenaArray<Real> const &prim, Real time, int k, int j);
+  Real HydrogenRecombinationReemission(MeshBlock *pmb, Real T, Real wave, Real wave_bin_width, int k, int j, int i);
+  Real HeliumRecombinationReemission(MeshBlock *pmb, Real T, Real wave, Real wave_bin_width, int k, int j, int i);
 
   // mesh generators
   MeshGenerator meshgen_x1, meshgen_x2, meshgen_x3;
@@ -111,6 +114,9 @@ void Mesh::InitUserMeshData(ParameterInput *pin)
   Ms = pin->GetReal("problem","Ms");
   Rp = pin->GetReal("problem","Rp");
   period = pin->GetReal("problem","period");
+
+  planck = pin->GetReal("problem","planck_constant");
+  speed_of_light = pin->GetReal("problem", "speed_of_light");
 
   Real x = 4. * pow(M_PI,2.) / (G * Ms);
   semi_major_axis = pow( pow(period*86400.,2.)/x ,(1./3));
@@ -204,6 +210,21 @@ void MeshBlock::UserWorkBeforeOutput(ParameterInput *pin)
   }
 }
 
+Real HydrogenRecombinationReemission(MeshBlock *pmb, Real T, Real wave, Real wave_bin_width, int k, int j, int i)
+{
+  Real critical_wave = (planck * speed_of_light)/pmb->pscalars->energy(HII);
+  if (wave - wave_bin_width/2.0 > critical_wave)
+    return 0.;
+  if (wave + wave_bin_width/2.0 < critical_wave)
+    return 0.;
+  return 1.;
+}
+
+Real HeliumRecombinationReemission(MeshBlock *pmb, Real T, Real wave, Real wave_bin_width, int k, int j, int i)
+{
+  return 0;
+}
+
 Reaction* ReactionNetwork::GetReactionByName(std::string name, ParameterInput *pin)
 {
   if (name == "NULL_REACTION") {
@@ -216,12 +237,9 @@ Reaction* ReactionNetwork::GetReactionByName(std::string name, ParameterInput *p
     return new HydrogenicRecombination(name, {H, HII, ELEC}, {+1, -1, -1}, 1, "B");
 
   } else if (name == "H_RECOMBINATION_CASE_1S") {
-    AthenaArray<Real> wave_temp, frac_temp;
-    wave_temp.NewAthenaArray(1);
-    frac_temp.NewAthenaArray(1);
-    wave_temp(0) = 91.16;
-    frac_temp(0) = 1;
-    return new HydrogenicRecombination(name, {H, HII, ELEC}, {+1, -1, -1}, 1, "1S", this, wave_temp, frac_temp);
+    ReactionTemplate *r = new HydrogenicRecombination(name, {H, HII, ELEC}, {+1, -1, -1}, 1, "1S");
+    r->AssignReemissionFunction(HydrogenRecombinationReemission);
+    return r;
 
   } else if (name == "LYA_COOLING") {
     return new LyaCooling(name, H, HII);
