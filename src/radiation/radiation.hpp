@@ -102,6 +102,7 @@ public:
   void RadiativeTransfer(MeshBlock *pmb, Real radiation_scaling, int k, int j);
 
   int AssignWavelengthToBin(Real wave);
+  void ReadTableOntoBand(int ntable, float_triplet *table, AthenaArray<Real> &output);
 protected:
   std::string my_id;
 };

@@ -148,35 +148,13 @@ void RadiationBand::LoadInputSpectrum(std::string file) {
     file_spec[i].y = file_data(i,1);
   }
 
-  spline(n_file, file_spec, 0., 0.);
+  AthenaArray<Real> tmp_flx;
+  tmp_flx.NewAthenaArray(nspec);
+  ReadTableOntoBand(n_file, file_spec, tmp_flx);
 
-  int ii = -1;
-  Real spline_dx;
-  Real half_bin_width = spec_bin_width/2.0;
-  Real bin_start;
-
-  Real subbin_dx = (half_bin_width * 2.0) / integration_subbins;
-  Real integrated_value, weight, int_x, int_y;
-
-  for (int n = 0; n < nspec; ++n) {
-    integrated_value=0;
-    bin_start = spec[n].wave - half_bin_width;
-
-    for (int i = 0; i <= integration_subbins; ++i)
-    {
-      int_x = bin_start + (i * subbin_dx);
-
-      weight = 2.0;
-      if (i == 0 || i == integration_subbins) {
-        weight = 1.0;
-      }
-
-      ii = find_place_in_table(n_file, file_spec, int_x, &spline_dx, ii);
-      int_y = splint(int_x, file_spec+ii, spline_dx);
-      integrated_value += weight * int_y;
-    }
-    integrated_value = integrated_value * subbin_dx / 2.0;
-    spec[n].flux = integrated_value / (2.0*half_bin_width);
+  for (int n = 0; n < nspec; ++n)
+  {
+    spec[n].flux = tmp_flx(n);
   }
 }
 
@@ -303,4 +281,37 @@ int RadiationBand::AssignWavelengthToBin(Real wave) {
 
   // If no bin has been returned by now, wave is too high for this band
   return -1;
+}
+
+void RadiationBand::ReadTableOntoBand(int ntable, float_triplet *table, AthenaArray<Real> &output) {
+  spline(ntable, table, 0., 0.);
+
+  int ii = -1;
+  Real spline_dx;
+  Real half_bin_width = spec_bin_width/2.0;
+  Real bin_start;
+
+  Real subbin_dx = spec_bin_width / integration_subbins;
+  Real integrated_value, weight, int_x, int_y;
+
+  for (int n = 0; n < nspec; ++n) {
+    integrated_value = 0;
+    bin_start = spec[n].wave - half_bin_width;
+
+    for (int i = 0; i <= integration_subbins; ++i)
+    {
+      int_x = bin_start + (i * subbin_dx);
+
+      weight = 2.0;
+      if (i == 0 || i == integration_subbins) {
+        weight = 1.0;
+      }
+
+      ii = find_place_in_table(ntable, table, int_x, &spline_dx, ii);
+      int_y = splint(int_x, table+ii, spline_dx);
+      integrated_value += weight * int_y;
+    }
+    integrated_value = integrated_value * subbin_dx / 2.0;
+    output(n) = integrated_value / spec_bin_width;
+  }
 }
