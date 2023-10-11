@@ -365,7 +365,6 @@ void OutputType::LoadOutputData(MeshBlock *pmb) {
   PassiveScalars *psclr = pmb->pscalars;
   Gravity *pgrav = pmb->pgrav;
   Diagnostics *pdiag = pmb->pdiag;
-  Radiation *prad = pmb->prad;
   num_vars_ = 0;
   OutputData *pod;
 

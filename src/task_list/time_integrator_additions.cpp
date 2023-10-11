@@ -73,35 +73,39 @@ TaskStatus TimeIntegratorTaskList::IntegrateChemistry(MeshBlock *pmb, int stage)
 //----------------------------------------------------------------------------------------
 
 // Functions to calculate radiation flux
-TaskStatus TimeIntegratorTaskList::CalculateRadiationFlux(MeshBlock *pmb, int stage) {
-  Radiation *prad = pmb->prad;
-  PassiveScalars *pscalars = pmb->pscalars;
-  Hydro *phydro=pmb->phydro;
+TaskStatus TimeIntegratorTaskList::CalculateRadiationFlux(MeshBlock *pmb, int stage)
+{
+  #if RADIATION_ENABLED
+    Radiation *prad = pmb->prad;
+    PassiveScalars *pscalars = pmb->pscalars;
+    Hydro *phydro=pmb->phydro;
 
-  if (stage != nstages) return TaskStatus::next;
+    if (stage != nstages) return TaskStatus::next;
 
-  int js = pmb->js; int ks = pmb->ks;
-  int je = pmb->je; int ke = pmb->ke;
+    int js = pmb->js; int ks = pmb->ks;
+    int je = pmb->je; int ke = pmb->ke;
 
-  for (int k = ks; k <= ke; ++k) {
-    for (int j = js; j <= je; ++j) {
-      Real t_start_stage = pmb->pmy_mesh->time;
-      prad->CalculateRadiativeTransfer(phydro->w, pscalars->s, t_start_stage, k, j);
+    for (int k = ks; k <= ke; ++k) {
+      for (int j = js; j <= je; ++j) {
+        Real t_start_stage = pmb->pmy_mesh->time;
+        prad->CalculateRadiativeTransfer(phydro->w, pscalars->s, t_start_stage, k, j);
+      }
     }
-  }
-
+  #endif
   return TaskStatus::next;
 }
 
-TaskStatus TimeIntegratorTaskList::IntegrateReactions(MeshBlock *pmb, int stage) {
-  ReactionNetwork *pnetwork = pmb->pnetwork;
-  PassiveScalars *pscalars = pmb->pscalars;
-  Hydro *phydro = pmb->phydro;
+TaskStatus TimeIntegratorTaskList::IntegrateReactions(MeshBlock *pmb, int stage)
+{
+  #if REACTION_ENABLED
+    ReactionNetwork *pnetwork = pmb->pnetwork;
+    PassiveScalars *pscalars = pmb->pscalars;
+    Hydro *phydro = pmb->phydro;
 
-  if (stage != nstages) return TaskStatus::next;
+    if (stage != nstages) return TaskStatus::next;
 
-  Real dt = pmb->pmy_mesh->dt;
-  pnetwork->ComputeReactionForcing(dt, phydro->w, phydro->u, pscalars->s, phydro->u, pscalars->s);
-
+    Real dt = pmb->pmy_mesh->dt;
+    pnetwork->ComputeReactionForcing(dt, phydro->w, phydro->u, pscalars->s, phydro->u, pscalars->s);
+  #endif
   return TaskStatus::next;
 }

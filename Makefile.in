@@ -13,6 +13,8 @@ MPIFFT_FILE = @MPIFFT_FILE@
 MATH_DIR = src/math/
 MATH_LIBRARY = $(MATH_DIR)libclimath.a
 MAKE_DISORT=@MAKE_DISORT@
+MAKE_REACTION=@MAKE_REACTION@
+MAKE_RADIATION=@MAKE_RADIATION@
 DISORT_DIR = src/radiation/rtsolver/cdisort213/
 DISORT_LIBRARY = $(DISORT_DIR)libcdisort.a
 
@@ -64,12 +66,21 @@ SRC_FILES := $(wildcard src/*.cpp) \
        $(wildcard src/chemistry/*.cpp) \
        $(wildcard src/diagnostics/*.cpp) \
        $(wildcard src/astronomy/*.cpp) \
-       $(wildcard src/radiation/*.cpp) \
-       $(wildcard src/radiation/absorber/*.cpp) \
-       $(wildcard src/radiation/rtsolver/*.cpp) \
-       $(wildcard src/reaction/*.cpp) \
-       $(wildcard src/reaction/reactions/*.cpp) \
 	     $(MPIFFT_FILE)
+
+ifeq ($(MAKE_RADIATION), 1)
+	SRC_FILES := $(SRC_FILES) \
+			 	$(wildcard src/radiation/*.cpp) \
+        $(wildcard src/radiation/absorber/*.cpp) \
+        $(wildcard src/radiation/rtsolver/*.cpp)
+endif
+
+ifeq ($(MAKE_REACTION), 1)
+	SRC_FILES := $(SRC_FILES) \
+			 	$(wildcard src/reaction/*.cpp) \
+       	$(wildcard src/reaction/reactions/*.cpp)
+endif
+
 OBJ_DIR := obj/
 OBJ_FILES := $(addprefix $(OBJ_DIR),$(notdir $(SRC_FILES:.cpp=.o)))
 GCOV_FILES := $(notdir $(addsuffix .gcov,$(SRC_FILES)))

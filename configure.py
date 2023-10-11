@@ -679,16 +679,22 @@ if args['cxx'] == 'clang++-apple':
     makefile_options['LIBRARY_FLAGS'] = '-lclimath'
 
 # --rt=[name] argument
-makefile_options['MAKE_DISORT'] = '0'
 definitions['RADIATION_ENABLED'] = '0'
 definitions['REACTION_ENABLED'] = '0'
+
+makefile_options['MAKE_DISORT'] = '0'
+makefile_options['MAKE_RADIATION'] = '0'
+makefile_options['MAKE_REACTION'] = '0'
 
 if args['radiation']:
   definitions['RADIATION_ENABLED'] = '1'
   definitions['REACTION_ENABLED'] = '1'
+  makefile_options['MAKE_RADIATION'] = '1'
+  makefile_options['MAKE_REACTION'] = '1'
 
 if args['reaction']:
   definitions['REACTION_ENABLED'] = '1'
+  makefile_options['MAKE_REACTION'] = '1'
 
 if args['disort']:
   makefile_options['MAKE_DISORT'] = '1'
