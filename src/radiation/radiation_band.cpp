@@ -137,20 +137,9 @@ RadiationBand::~RadiationBand() {
 }
 
 void RadiationBand::LoadInputSpectrum(std::string file) {
-  AthenaArray<Real> file_data;
-  ReadDataTable(file_data, file);
-
-  int n_file = file_data.GetDim2();
-  float_triplet *file_spec = new float_triplet[n_file];
-  for (int i = 0; i < n_file; ++i)
-  {
-    file_spec[i].x = file_data(i,0);
-    file_spec[i].y = file_data(i,1);
-  }
-
   AthenaArray<Real> tmp_flx;
   tmp_flx.NewAthenaArray(nspec);
-  ReadTableOntoBand(n_file, file_spec, tmp_flx);
+  ReadFileOntoBand(file, tmp_flx);
 
   for (int n = 0; n < nspec; ++n)
   {
@@ -314,4 +303,19 @@ void RadiationBand::ReadTableOntoBand(int ntable, float_triplet *table, AthenaAr
     integrated_value = integrated_value * subbin_dx / 2.0;
     output(n) = integrated_value / spec_bin_width;
   }
+}
+
+void RadiationBand::ReadFileOntoBand(std::string file, AthenaArray<Real> &output) {
+  AthenaArray<Real> file_data;
+  ReadDataTable(file_data, file);
+
+  int n_file = file_data.GetDim2();
+  float_triplet *file_spec = new float_triplet[n_file];
+  for (int i = 0; i < n_file; ++i)
+  {
+    file_spec[i].x = file_data(i,0);
+    file_spec[i].y = file_data(i,1);
+  }
+
+  ReadTableOntoBand(n_file, file_spec, output);
 }

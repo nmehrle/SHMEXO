@@ -103,6 +103,7 @@ public:
 
   int AssignWavelengthToBin(Real wave);
   void ReadTableOntoBand(int ntable, float_triplet *table, AthenaArray<Real> &output);
+  void ReadFileOntoBand(std::string file, AthenaArray<Real> &output);
 protected:
   std::string my_id;
 };
