@@ -95,7 +95,7 @@ void ReactionTemplate::ProducePhotons(Real n_rxn, Real T, int k, int j, int i) {
     for (int n = 0; n < pband->nspec; ++n)
     {
       wave = pband->spec[n].wave;
-      frac = reemission_func_(pmy_network->pmy_block, T, wave, pband->spec_bin_width, k, j, i);
+      frac = reemission_func_(prad, b, n, T, k, j, i);
 
       // photon energy
       energy = (pmy_network->planck_constant * pmy_network->speed_of_light)/wave;

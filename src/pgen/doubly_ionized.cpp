@@ -81,8 +81,8 @@ namespace {
     const AthenaArray<Real> &bcc,
     AthenaArray<Real> &du, AthenaArray<Real> &ds);
   Real RadiationTime(RadiationBand *band, AthenaArray<Real> const &prim, Real time, int k, int j);
-  Real HydrogenRecombinationReemission(MeshBlock *pmb, Real T, Real wave, Real wave_bin_width, int k, int j, int i);
-  Real HeliumRecombinationReemission(MeshBlock *pmb, Real T, Real wave, Real wave_bin_width, int k, int j, int i);
+  Real HydrogenRecombinationReemission(Radiation *prad, int b, int n, Real T, int k, int j, int i);
+  Real HeliumRecombinationReemission(Radiation *prad, int b, int n, Real T, int k, int j, int i);
 
   // mesh generators
   MeshGenerator meshgen_x1, meshgen_x2, meshgen_x3;
@@ -210,17 +210,22 @@ void MeshBlock::UserWorkBeforeOutput(ParameterInput *pin)
   }
 }
 
-Real HydrogenRecombinationReemission(MeshBlock *pmb, Real T, Real wave, Real wave_bin_width, int k, int j, int i)
+Real HydrogenRecombinationReemission(Radiation *prad, int b, int n, Real T, int k, int j, int i)
 {
-  Real critical_wave = (planck * speed_of_light)/pmb->pscalars->energy(HII);
-  if (wave - wave_bin_width/2.0 > critical_wave)
+  RadiationBand *pband = prad->my_bands(b);
+  Real left = pband->spec[n].wave - pband->spec_bin_width/2.0;
+  Real right = pband->spec[n].wave + pband->spec_bin_width/2.0;
+
+  Real critical_wave = (planck * speed_of_light)/prad->pmy_block->pscalars->energy(HII);
+
+  if (left > critical_wave)
     return 0.;
-  if (wave + wave_bin_width/2.0 < critical_wave)
+  if (right < critical_wave)
     return 0.;
   return 1.;
 }
 
-Real HeliumRecombinationReemission(MeshBlock *pmb, Real T, Real wave, Real wave_bin_width, int k, int j, int i)
+Real HeliumRecombinationReemission(Radiation *prad, int b, int n, Real T, int k, int j, int i)
 {
   return 0;
 }

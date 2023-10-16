@@ -50,6 +50,7 @@ class Coordinates;
 class ParameterInput;
 class HydroDiffusion;
 class FieldDiffusion;
+class Radiation;
 class RadiationBand;
 
 //--------------------------------------------------------------------------------------
@@ -204,6 +205,6 @@ using FieldDiffusionCoeffFunc = void (*)(
     const AthenaArray<Real> &bmag,
     int is, int ie, int js, int je, int ks, int ke);
 using RadiationScalingFunc = Real (*)(RadiationBand *band, AthenaArray<Real> const &prim, Real time, int k, int j);
-using ReactionReemissionFunction = Real (*)(MeshBlock *pmb, Real T, Real wave, Real wave_bin_width, int k, int j, int i);
+using ReactionReemissionFunction = Real (*)(Radiation *prad, int b, int n, Real T, int k, int j, int i);
 
 #endif // ATHENA_HPP_
