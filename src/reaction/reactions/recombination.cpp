@@ -93,5 +93,5 @@ Real VernerRecombination::alpha(Real T, int k, int j, int i) {
 //   PassiveScalars *ps = pmy_network->pscalars;
 
 //   Real rxn_energy = ps->energy(ion_num_) - ps->energy(scalar_num_);
-//   return rxn_energy * this->alpha(T, k, j, i);
+//   return -1 * rxn_energy * this->alpha(T, k, j, i);
 // }

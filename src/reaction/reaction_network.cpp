@@ -98,9 +98,14 @@ void ReactionNetwork::Initialize() {
   }
 }
 
-bool __attribute__((weak)) DoRunReactions(int k, int j, int i) { 
+bool __attribute__((weak)) ReactionNetwork::DoRunReactions(int k, int j, int i) { 
   return true;
 }
+
+Reaction* __attribute__((weak)) ReactionNetwork::GetReactionByName(std::string name, ParameterInput *pin) {
+  return nullptr;
+}
+
 
 void ReactionNetwork::ResetRates() {
   dn_rate.ZeroClear();

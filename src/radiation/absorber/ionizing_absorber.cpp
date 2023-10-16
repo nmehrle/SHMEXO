@@ -8,6 +8,7 @@
 #include <cassert>  // assert
 
 // Athena++ headers
+#include "../../math/core.h"
 #include "../../athena_arrays.hpp"
 #include "../../parameter_input.hpp"
 #include "../../globals.hpp"
