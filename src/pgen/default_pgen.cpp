@@ -90,6 +90,17 @@ void __attribute__((weak)) MeshBlock::ProblemGenerator(ParameterInput *pin) {
 }
 
 //========================================================================================
+//! \fn void Mesh::UserAdjustBlockBCs(LogicalLocation loc,
+//         RegionSize &block_size, BoundaryFlag *block_bcs)
+//  \brief Adjusts boundary conditions between MeshBlocks.
+//========================================================================================
+
+void Mesh::UserAdjustBlockBCs(LogicalLocation loc, RegionSize &block_size, BoundaryFlag *block_bcs) {
+  // do nothing
+  return;
+}
+
+//========================================================================================
 //! \fn void MeshBlock::UserWorkInLoop()
 //  \brief Function called once every time step for user-defined work.
 //========================================================================================
@@ -108,3 +119,5 @@ void __attribute__((weak)) MeshBlock::UserWorkBeforeOutput(ParameterInput *pin) 
   // do nothing
   return;
 }
+
+

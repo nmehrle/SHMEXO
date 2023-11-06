@@ -258,6 +258,9 @@ class Mesh {
   void Initialize(int res_flag, ParameterInput *pin);
   void SetBlockSizeAndBoundaries(LogicalLocation loc, RegionSize &block_size,
                                  BoundaryFlag *block_bcs);
+
+  void UserAdjustBlockBCs(LogicalLocation loc, RegionSize &block_size,
+                                 BoundaryFlag *block_bcs);
   void NewTimeStep();
   void EndTimeIntegration();
   void OutputCycleDiagnostics();

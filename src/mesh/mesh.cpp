@@ -502,6 +502,8 @@ Mesh::Mesh(ParameterInput *pin, int mesh_test) :
   // create MeshBlock list for this process
   for (int i=nbs; i<=nbe; i++) {
     SetBlockSizeAndBoundaries(loclist[i], block_size, block_bcs);
+    UserAdjustBlockBCs(loclist[i], block_size, block_bcs);
+
     // create a block and add into the link list
     if (i == nbs) {
       pblock = new MeshBlock(i, i-nbs, loclist[i], block_size, block_bcs, this,
@@ -836,6 +838,8 @@ Mesh::Mesh(ParameterInput *pin, IOWrapper& resfile, int mesh_test) :
     // Match fixed-width integer precision of IOWrapperSizeT datasize
     std::uint64_t buff_os = datasize * (i-nbs);
     SetBlockSizeAndBoundaries(loclist[i], block_size, block_bcs);
+    UserAdjustBlockBCs(loclist[i], block_size, block_bcs);
+
     // create a block and add into the link list
     if (i == nbs) {
       pblock = new MeshBlock(i, i-nbs, this, pin, loclist[i], block_size,
