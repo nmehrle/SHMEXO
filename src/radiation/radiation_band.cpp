@@ -145,6 +145,8 @@ void RadiationBand::LoadInputSpectrum(std::string file) {
   {
     spec[n].flux = tmp_flx(n);
   }
+
+  tmp_flx.DeleteAthenaArray();
 }
 
 void RadiationBand::ConstructRTSolver(std::string name, ParameterInput *pin) {
@@ -317,5 +319,6 @@ void RadiationBand::ReadFileOntoBand(std::string file, AthenaArray<Real> &output
     file_spec[i].y = file_data(i,1);
   }
 
+  file_data.DeleteAthenaArray();
   ReadTableOntoBand(n_file, file_spec, output);
 }
