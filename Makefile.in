@@ -72,7 +72,8 @@ ifeq ($(MAKE_RADIATION), 1)
 	SRC_FILES := $(SRC_FILES) \
 			 	$(wildcard src/radiation/*.cpp) \
         $(wildcard src/radiation/absorber/*.cpp) \
-        $(wildcard src/radiation/rtsolver/*.cpp)
+        $(wildcard src/radiation/rtsolver/*.cpp) \
+        $(wildcard src/reemission/*.cpp)
 endif
 
 ifeq ($(MAKE_REACTION), 1)
