@@ -34,6 +34,8 @@
 #include "../reaction/reactions/recombination.hpp"
 #include "../reaction/reactions/collisions.hpp"
 
+#include "../reemission/reemission.hpp"
+
 void FixedBoundary(MeshBlock *pmb, Coordinates *pcoord, AthenaArray<Real> &prim,
                    FaceField &bb, Real time, Real dt,
                    int il, int iu, int jl, int ju, int kl, int ku, int ngh);
@@ -49,9 +51,10 @@ namespace {
   // radiation variables
   Real global_rad_scaling;
 
-  // tripathi conditions variables
+  // initial conditions
   Real rho_0, Teq;
   Real r_e, r_replenish, r_inner;
+  AthenaArray<Real> initial_abundances;
 
   // species variables
   Real H_He_ratio, H_He_mass_ratio, mu;
@@ -61,12 +64,12 @@ namespace {
                 HeII = 5, HeIII = 6};
   Real epsilon_concentration;
 
-  AthenaArray<Real> initial_abundances;
-
+  //convergence checking
   bool check_convergence;
   Real convergence_level;
   AthenaArray<Real> last_step_cons;
   AthenaArray<Real> last_step_cons_scalar;
+
 } //namespace
 
   // Function declarations
@@ -76,13 +79,11 @@ namespace {
   void getMBBounds(MeshBlock *pmb, int &il, int &iu, int &jl, int &ju, int &kl, int &ku);
   void gravity_func(MeshBlock *pmb, AthenaArray<Real> &g1, AthenaArray<Real> &g2, AthenaArray<Real> &g3);
 
-  void SourceTerms(MeshBlock *pmb, const Real time, const Real dt,
-    const AthenaArray<Real> &w, const AthenaArray<Real> &r,
-    const AthenaArray<Real> &bcc,
-    AthenaArray<Real> &du, AthenaArray<Real> &ds);
+  // void SourceTerms(MeshBlock *pmb, const Real time, const Real dt,
+  //   const AthenaArray<Real> &w, const AthenaArray<Real> &r,
+  //   const AthenaArray<Real> &bcc,
+  //   AthenaArray<Real> &du, AthenaArray<Real> &ds);
   Real RadiationTime(RadiationBand *band, AthenaArray<Real> const &prim, Real time, int k, int j);
-  Real HydrogenRecombinationReemission(Radiation *prad, int b, int n, Real T, int k, int j, int i);
-  Real HeliumRecombinationReemission(Radiation *prad, int b, int n, Real T, int k, int j, int i);
 
   // mesh generators
   MeshGenerator meshgen_x1, meshgen_x2, meshgen_x3;
@@ -210,25 +211,10 @@ void MeshBlock::UserWorkBeforeOutput(ParameterInput *pin)
   }
 }
 
-Real HydrogenRecombinationReemission(Radiation *prad, int b, int n, Real T, int k, int j, int i)
-{
-  RadiationBand *pband = prad->my_bands(b);
-  Real left = pband->spec[n].wave - pband->spec_bin_width/2.0;
-  Real right = pband->spec[n].wave + pband->spec_bin_width/2.0;
-
-  Real critical_wave = (planck * speed_of_light)/prad->pmy_block->pscalars->energy(HII);
-
-  if (left > critical_wave)
-    return 0.;
-  if (right < critical_wave)
-    return 0.;
-  return 1.;
-}
-
-Real HeliumRecombinationReemission(Radiation *prad, int b, int n, Real T, int k, int j, int i)
-{
-  return 0;
-}
+// Real HeliumRecombinationReemission(Radiation *prad, int b, int n, Real T, int k, int j, int i)
+// {
+//   return 0;
+// }
 
 Reaction* ReactionNetwork::GetReactionByName(std::string name, ParameterInput *pin)
 {
@@ -243,7 +229,8 @@ Reaction* ReactionNetwork::GetReactionByName(std::string name, ParameterInput *p
 
   } else if (name == "H_RECOMBINATION_CASE_1S") {
     ReactionTemplate *r = new HydrogenicRecombination(name, {H, HII, ELEC}, {+1, -1, -1}, 1, "1S");
-    r->AssignReemissionFunction(HydrogenRecombinationReemission);
+    HydrogenReemission *hreemission = new HydrogenReemission(pin, prad, pmy_block->pscalars->energy(HII));
+    r->AssignReemission(hreemission);
     return r;
 
   } else if (name == "LYA_COOLING") {
@@ -335,31 +322,6 @@ Absorber* RadiationBand::GetAbsorberByName(std::string name, std::string band_na
 //----------------------------------------------------------------------------------------
 // Additional Physics
 //----------------------------------------------------------------------------------------
-
-
-// void SourceTerms(MeshBlock *pmb, const Real time, const Real dt,
-//   const AthenaArray<Real> &w, const AthenaArray<Real> &r,
-//   const AthenaArray<Real> &bcc,
-//   AthenaArray<Real> &du, AthenaArray<Real> &ds)
-// {
-//   int is = pmb->is, js = pmb->js, ks = pmb->ks;
-//   int ie = pmb->ie, je = pmb->je, ke = pmb->ke;
-
-//   AthenaArray<Real> vol;
-//   vol.NewAthenaArray(pmb->ncells1);
-
-//   PassiveScalars *ps = pmb->pscalars;
-
-//   for (int k = ks; k <= ke; ++k) {
-//     for (int j = js; j <= je; ++j) {
-//       pmb->pcoord->CellVolume(k,j,is,ie,vol);
-
-//       for (int i = is; i <= ie; ++i) {
-//       }
-//     }
-//   }
-// }
-
 // needs validation
 void gravity_func(MeshBlock *pmb, AthenaArray<Real> &g1, AthenaArray<Real> &g2, AthenaArray<Real> &g3) {
   Real x,y,z;
@@ -429,8 +391,9 @@ void gravity_func(MeshBlock *pmb, AthenaArray<Real> &g1, AthenaArray<Real> &g2, 
 
 Real RadiationTime(RadiationBand *band, AthenaArray<Real> const &prim, Real time, int k, int j) {
   // tripathi
-  Real time_factor = 5 * erf(time/8.e4 - 1.5)+5.1;
-  // Real time_factor = (std::tanh(time/2000. - 5.)+1.)/2.;
+  // Real time_factor = 5 * erf(time/8.e4 - 1.5)+5.1;
+  Real time_factor = (std::tanh(time/5e4 - 5.)+1.)/2.;
+  // Real time_factor = 1;
   Real scaling = global_rad_scaling * band->band_scaling_factor;
 
   return scaling*time_factor;

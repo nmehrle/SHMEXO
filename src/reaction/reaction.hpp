@@ -11,6 +11,7 @@
 
 class ReactionNetwork;
 class PassiveScalars;
+class Reemission;
 
 // Generic reaction class to be overridden by individual reactions
 class Reaction {
@@ -38,9 +39,9 @@ protected:
 class ReactionTemplate: public Reaction {
 public:
   ReactionTemplate(std::string name, std::vector<int> species, std::vector<Real> stoichiometry);
-  ReactionTemplate(std::string name, std::vector<int> species, std::vector<Real> stoichiometry, ReactionReemissionFunction reemission_func);
+  ~ReactionTemplate();
 
-  void AssignReemissionFunction(ReactionReemissionFunction reemission_func);
+  void AssignReemission(Reemission *reemission_);
 
   void react(int k, int j, int i);
   void ProducePhotons(Real n_rxn, Real T, int k, int j, int i);
@@ -55,7 +56,7 @@ protected:
 
   std::vector<Real> number_density_;
 
-  ReactionReemissionFunction reemission_func_ = nullptr;
+  Reemission *my_reemission = nullptr;
 };
 
 class NullReaction: public Reaction {
