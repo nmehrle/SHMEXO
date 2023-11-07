@@ -26,20 +26,27 @@ void SimpleRTSolver::RadiativeTransfer(MeshBlock *pmb, int n, int k, int j)
   int nabs = pmy_band->nabs;
   Real Ftop = pmy_band->flux_density(n,k,j,ie+1);
 
-  Real Fbot, attenuation, tau_cell, dx;
+  Real Fsource, Fbot, attenuation, tau_cell, dx;
   Real delta_F, fraction_absorbed, J_i;
   for (int i = ie; i>=is; --i) {
     tau_cell = pmy_band->tau_cell(n,k,j,i);
     attenuation = exp(-tau_cell);
-    Fbot = Ftop * attenuation;
+
     dx = pmy_band->pmy_rad->pmy_block->pcoord->dx1f(i);
+    Fsource = pmy_band->source_energy_density(n,k,j,i)*dx;
+
+    Fbot = (Ftop) * attenuation;
+
+    // Fsource * (1 - e^(-tau above)) or something
+    // half local
+    // half with upstream approx
+    delta_F = (Ftop - Fbot) + (Fsource * attenuation);
 
     for (int a = 0; a < nabs; ++a) {
       Absorber *pabs = pmy_band->absorbers(a);
       //energy absorbed by this absorber
       // Ji = (F1-F0)/dx * (a1 * dx / tau)
 
-      delta_F = (Ftop - Fbot) + pmy_band->source_energy_density(n,k,j,i)*dx;
       fraction_absorbed = pabs->absorptionCoefficient(n,k,j,i)/tau_cell;
 
       J_i = delta_F * fraction_absorbed;
