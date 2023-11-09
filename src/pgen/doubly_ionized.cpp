@@ -406,8 +406,8 @@ void gravity_func(MeshBlock *pmb, AthenaArray<Real> &g1, AthenaArray<Real> &g2, 
 
 Real RadiationTime(RadiationBand *band, AthenaArray<Real> const &prim, Real time, int k, int j) {
   // tripathi
-  // Real time_factor = 5 * erf(time/8.e4 - 1.5)+5.1;
-  Real time_factor = (std::tanh(time/5e4 - 5.)+1.)/2.;
+  Real time_factor = 5 * erf(time/8.e4 - 1.5)+5.1;
+  // Real time_factor = (std::tanh(time/5e4 - 5.)+1.)/2.;
   // Real time_factor = 1;
   Real scaling = global_rad_scaling * band->band_scaling_factor;
 
