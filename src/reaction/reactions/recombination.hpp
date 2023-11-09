@@ -21,20 +21,6 @@ protected:
   Real C1_beta, C2_beta;
 };
 
-class HeliumRecombination: public ReactionTemplate {
-public:
-  using ReactionTemplate::ReactionTemplate;
-  Real alpha(Real T, int k, int j, int i);
-  Real beta(Real T, int k, int j, int i);
-};
-
-class HeliumTripletRecombination: public ReactionTemplate {
-public:
-  using ReactionTemplate::ReactionTemplate;
-  Real alpha(Real T, int k, int j, int i);
-  Real beta(Real T, int k, int j, int i);
-};
-
 // Recombination following Verner & Ferland 1996
 // https://ui.adsabs.harvard.edu/abs/1996ApJS..103..467V
 struct VernerRecombinationParams {

@@ -56,22 +56,6 @@ Real HydrogenicRecombination::beta(Real T, int k, int j, int i) {
   return -1 * this->alpha(T, k, j, i) * mean_energy;
 }
 
-Real HeliumRecombination::alpha(Real T, int k, int j, int i) {
-  return 1e-11 / (0.00217556 * pow(T, 1.12036526) + 0.32053997 * pow(T, 0.61526097));
-}
-
-Real HeliumRecombination::beta(Real T, int k, int j, int i) {
-  return -(1e-11 * pmy_network->boltzmann * T) / (0.00218954 * pow(T, 1.18645797) + 0.352778 * pow(T, 0.62645323));
-}
-
-Real HeliumTripletRecombination::alpha(Real T, int k, int j, int i) {
-  return 1e-11 / (0.00258173 * pow(T, 0.9848205) + 0.10883234 * pow(T, 0.58864659));
-}
-
-Real HeliumTripletRecombination::beta(Real T, int k, int j, int i) {
-  return -(1e-11 * pmy_network->boltzmann * T) / (0.00427277 * pow(T, 0.99204123) + 0.12332369 * pow(T, 0.57871911));
-}
-
 VernerRecombination::VernerRecombination(std::string name, std::vector<int> species, std::vector<Real> stoichiometry, VernerRecombinationParams *params):
     ReactionTemplate(name, species, stoichiometry)
 {

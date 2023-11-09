@@ -32,6 +32,7 @@
 #include "../reaction/reactions/photoionization.hpp"
 #include "../reaction/reactions/additional_reactions.hpp"
 #include "../reaction/reactions/recombination.hpp"
+#include "../reaction/reactions/helium_recombination.hpp"
 #include "../reaction/reactions/collisions.hpp"
 
 #include "../reemission/reemission.hpp"
@@ -50,6 +51,8 @@ namespace {
 
   // radiation variables
   Real global_rad_scaling;
+
+  std::string helium_alpha_file, helium_beta_file, helium_decay_file;
 
   // initial conditions
   Real rho_0, Teq;
@@ -145,7 +148,9 @@ void Mesh::InitUserMeshData(ParameterInput *pin)
   epsilon_concentration = pin->GetOrAddReal("reaction", "epsilon_concentration", 0);
 
 
-  // Tripathi initial conditions variables
+  helium_alpha_file = pin->GetOrAddString("reaction", "helium_recombination_alpha_file", "");
+  helium_beta_file = pin->GetOrAddString("reaction", "helium_recombination_beta_file", "");
+  helium_decay_file = pin->GetOrAddString("reaction", "helium_recombination_decay_file", "");
 
   // Domain logic
   if (mesh_size.x1rat == -1.0) {
@@ -236,11 +241,17 @@ Reaction* ReactionNetwork::GetReactionByName(std::string name, ParameterInput *p
   } else if (name == "LYA_COOLING") {
     return new LyaCooling(name, H, HII);
 
-  } else if (name == "HE_RECOMBINATION") {
-    return new HeliumRecombination(name, {He, HeII, ELEC}, {+1, -1, -1});
+  } else if (name == "HE_1S_RECOMBINATION") {
+    ReactionTemplate *r = new HeliumRecombination(name, {He, HeII, ELEC}, {+1, -1, -1}, helium_alpha_file, helium_beta_file, 1);
+    return r;
 
-  } else if (name == "HE23S_RECOMBINATION") {
-    return new HeliumTripletRecombination(name, {He23S, HeII, ELEC}, {+1, -1, -1});
+  } else if (name == "HE_SINGLET_RECOMBINATION") {
+    ReactionTemplate *r = new HeliumRecombination(name, {He, HeII, ELEC}, {+1, -1, -1}, helium_alpha_file, helium_beta_file, 2);
+    return r;
+
+  } else if (name == "HE_TRIPLET_RECOMBINATION") {
+    ReactionTemplate *r = new HeliumRecombination(name, {He, HeII, ELEC}, {+1, -1, -1}, helium_alpha_file, helium_beta_file, 3);
+    return r;
 
   } else if (name == "HE_E_COLLISIONS") {
     std::string collisions_file_name = pin->GetString("reaction", "HE_COLLISIONS_FILE");
