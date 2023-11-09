@@ -249,6 +249,8 @@ Reaction* ReactionNetwork::GetReactionByName(std::string name, ParameterInput *p
 
   } else if (name == "HE_SINGLET_RECOMBINATION") {
     ReactionTemplate *r = new HeliumRecombination(name, {He, HeII, ELEC}, {+1, -1, -1}, helium_alpha_file, helium_beta_file, 2);
+    HeliumReemisison *he_reemission = new HeliumReemisison(pin, prad, helium_decay_file, 1.,0.,0.);
+    r->AssignReemission(he_reemission);
     return r;
 
   } else if (name == "HE_TRIPLET_RECOMBINATION") {

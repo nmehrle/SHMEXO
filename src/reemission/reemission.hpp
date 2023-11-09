@@ -30,6 +30,24 @@ public:
 protected:
   Real ionization_energy;
 };
+
+class HeliumReemisison: public Reemission {
+public:
+  HeliumReemisison(ParameterInput *pin, Radiation *prad_, std::string decay_21S_file, Real branch_continuum_, Real branch_21S_, Real branch_21P_);
+  Real ReemissionFunction(int b, int n, Real T, int k, int j, int i);
+
+
+  void AssignDecayFile(std::string decay_21S_file);
+  Real Reemission21S(int b, int n);
+  Real Reemission21P(int b, int n);
+
+protected:
+  AthenaArray<Real> decay_21S_fraction;
+
+  Real branch_21S, branch_21P;
+  Real continuum_to_21S, continuum_to_21P, state21P_to_21S;
+
+  Real energy_21P, energy_21S;
 };
 
 #endif
