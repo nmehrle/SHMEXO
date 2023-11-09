@@ -263,7 +263,10 @@ Reaction* ReactionNetwork::GetReactionByName(std::string name, ParameterInput *p
     return new He_e_collisions(collisions_file_name, name, He, He23S, ELEC);
 
   } else if (name == "HE23S_RADIO_DECAY") {
-    return new HeliumTripletDecay(name, {He23S, He}, {-1, +1});
+    ReactionTemplate *r = new HeliumTripletDecay(name, {He23S, He}, {-1, +1});
+    GroundStateReemission *he_reemission = new GroundStateReemission(pin, prad, pmy_block->pscalars->energy(He23S));
+    r->AssignReemission(he_reemission);
+    return r;
 
   } else if (name == "CHARGE_EXCHANGE_HE_H") {
     return new ChargeExchangeHeliumToHyd(name, {HeII, H, He, HII}, {-1, -1, +1, +1});
@@ -274,15 +277,12 @@ Reaction* ReactionNetwork::GetReactionByName(std::string name, ParameterInput *p
   } else if (name == "TRIPLET_COLLISIONAL_RELAXATION") {
     return new TripletHydrogenCollision(name, {He23S, H, He, HII, ELEC}, {-1, -1, +1, +1, +1});
 
-  } else if (name == "HEIII_RECOMBINATION_CASE_A") {
-    // a, b, T0, T1
-    // VernerRecombinationParams *vr_params = new VernerRecombinationParams(1.891e-10, 0.7524, 9.370, 2.774e6);
-    // return new VernerRecombination(name, {HeII, HeIII, ELEC}, {+1, -1, -1}, vr_params);
-
-    return new HydrogenicRecombination(name, {HeII, HeIII, ELEC}, {+1, -1, -1}, 2, "A");
-
-  } else if (name == "HEIII_RECOMBINATION_CASE_B") {
-    return new HydrogenicRecombination(name, {HeII, HeIII, ELEC}, {+1, -1, -1}, 2, "B");
+  } else if (name == "HEIII_RECOMBINATION") {
+    ReactionTemplate *r = new HydrogenicRecombination(name, {HeII, HeIII, ELEC}, {+1, -1, -1}, 2, "A");
+    Real energy_difference = pmy_block->pscalars->energy(HeIII) - pmy_block->pscalars->energy(HeII);
+    GroundStateReemission *he_reemission = new GroundStateReemission(pin, prad, energy_difference);
+    r->AssignReemission(he_reemission);
+    return r;
 
   } else {
     std::stringstream msg;
