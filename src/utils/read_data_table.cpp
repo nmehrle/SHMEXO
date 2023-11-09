@@ -82,4 +82,5 @@ void ReadDataTableForInterp(std::string fname, std::vector<Real>& file_x, std::v
       ATHENA_ERROR(msg);
     }
   }
+  file_data.DeleteAthenaArray();
 }
