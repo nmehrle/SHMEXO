@@ -274,11 +274,11 @@ int RadiationBand::AssignWavelengthToBin(Real wave) {
   return -1;
 }
 
-void RadiationBand::ReadTableOntoBand(int ntable, float_triplet *table, AthenaArray<Real> &output) {
-  spline(ntable, table, 0., 0.);
-
-  int ii = -1;
-  Real spline_dx;
+void RadiationBand::ReadFileOntoBand(std::string file, AthenaArray<Real> &output, int ext) {
+  std::vector<Real> file_x, file_y;
+  int n_file;
+  ReadDataTableForInterp(file, file_x, file_y, n_file, true);
+  
   Real half_bin_width = spec_bin_width/2.0;
   Real bin_start;
 
@@ -297,28 +297,34 @@ void RadiationBand::ReadTableOntoBand(int ntable, float_triplet *table, AthenaAr
       if (i == 0 || i == integration_subbins) {
         weight = 1.0;
       }
+      int_y = interp1(int_x, file_y.data(), file_x.data(), n_file);
 
-      ii = find_place_in_table(ntable, table, int_x, &spline_dx, ii);
-      int_y = splint(int_x, table+ii, spline_dx);
+      // Extrapolation conditions
+      if (int_x < file_x[0] || int_x > file_x[n_file-1]) {
+        if (ext == 0)
+          ;
+        else if (ext == 1)
+          int_y = 0;
+        else if (ext == 2) {
+          std::stringstream msg;
+          msg << "##### FATAL ERROR in RadiationBand::ReadFileOntoBand"
+              << "Need to extrapolate when reading file " << file << std::endl
+              << "with extrapolate condition set to 2 (error message)" << std::endl
+              << "x value " << int_x << " outside file domain ["
+              << file_x[0] << ", " << file_x[n_file-1] << "]." << std::endl;
+          ATHENA_ERROR(msg);
+        }
+        else if (ext == 3) {
+          if (int_x < file_x[0])
+            int_y = file_y[0];
+          else if (int_x > file_x[n_file-1])
+            int_y = file_y[n_file-1];
+        }
+      }
+
       integrated_value += weight * int_y;
     }
     integrated_value = integrated_value * subbin_dx / 2.0;
     output(n) = integrated_value / spec_bin_width;
   }
-}
-
-void RadiationBand::ReadFileOntoBand(std::string file, AthenaArray<Real> &output) {
-  AthenaArray<Real> file_data;
-  ReadDataTable(file_data, file);
-
-  int n_file = file_data.GetDim2();
-  float_triplet *file_spec = new float_triplet[n_file];
-  for (int i = 0; i < n_file; ++i)
-  {
-    file_spec[i].x = file_data(i,0);
-    file_spec[i].y = file_data(i,1);
-  }
-
-  file_data.DeleteAthenaArray();
-  ReadTableOntoBand(n_file, file_spec, output);
 }
