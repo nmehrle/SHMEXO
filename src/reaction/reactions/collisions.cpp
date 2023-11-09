@@ -23,37 +23,9 @@ Real ChargeExchangeHydToHelium::alpha(Real T, int k, int j, int i) {
   return t1 * t2;
 }
 
-// Real ChargeExchangeHeliumToHyd::beta(Real T, int k, int j, int i) {
-//   PassiveScalars *ps = pmy_network->pscalars;
-
-//   Real E_reactant = ps->energy(r1_num_) + ps->energy(r2_num_);
-//   Real E_product = ps->energy(p1_num_) + ps->energy(p2_num_);
-
-//   return this->alpha(T, k, j, i) * (E_reactant - E_product);
-// }
-
-// Real ChargeExchangeHydToHelium::beta(Real T, int k, int j, int i) {
-//   PassiveScalars *ps = pmy_network->pscalars;
-
-//   Real E_reactant = ps->energy(r1_num_) + ps->energy(r2_num_);
-//   Real E_product = ps->energy(p1_num_) + ps->energy(p2_num_);
-
-//   return this->alpha(T, k, j, i) * (E_reactant - E_product);
-// }
-
 Real TripletHydrogenCollision::alpha(Real T, int k, int j, int i) {
   return 5.0E-10;
 }
-
-// todo
-// Real TripletHydrogenCollision::beta(Real T, int k, int j, int i) {
-//   PassiveScalars *ps = pmy_network->pscalars;
-
-//   Real E_reactant = ps->energy(r1_num_) + ps->energy(r2_num_);
-//   Real E_product = ps->energy(p1_num_) + ps->energy(p2_num_) + ps->energy(p3_num_);
-
-//   return this->alpha(T, k, j, i) * (E_reactant - E_product);
-// }
 
 He_e_collisions::He_e_collisions(std::string data_file, std::string name, int singlet_num, int triplet_num, int elec_num):
     Reaction(name)
