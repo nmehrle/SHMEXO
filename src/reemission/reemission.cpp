@@ -10,6 +10,9 @@
 Reemission::Reemission(ParameterInput *pin, Radiation *prad_)
 {
   prad = prad_;
+  eV_conversion = pin->GetReal("problem", "eV_conversion");
+  planck_constant = pin->GetReal("problem","planck_constant");
+  speed_of_light = pin->GetReal("problem", "speed_of_light");
 }
 
 Reemission::~Reemission() {
@@ -27,15 +30,14 @@ Real Reemission::FixedWaveReemission(int b, int n, Real wave) {
   return 1.;
 }
 
-HydrogenReemission::HydrogenReemission(ParameterInput *pin, Radiation *prad_, Real ionization_energy_):
+GroundStateReemission::GroundStateReemission(ParameterInput *pin, Radiation *prad_, Real ionization_energy_):
   Reemission(pin, prad_)
 {
   ionization_energy = ionization_energy_;
-  planck_constant = pin->GetReal("problem","planck_constant");
-  speed_of_light = pin->GetReal("problem", "speed_of_light");
+  
 }
 
-Real HydrogenReemission::ReemissionFunction(int b, int n, Real T, int k, int j, int i)
+Real GroundStateReemission::ReemissionFunction(int b, int n, Real T, int k, int j, int i)
 {
   Real critical_wave = (planck_constant * speed_of_light)/ionization_energy;
 

@@ -234,8 +234,8 @@ Reaction* ReactionNetwork::GetReactionByName(std::string name, ParameterInput *p
 
   } else if (name == "H_RECOMBINATION_CASE_1S") {
     ReactionTemplate *r = new HydrogenicRecombination(name, {H, HII, ELEC}, {+1, -1, -1}, 1, "1S");
-    HydrogenReemission *hreemission = new HydrogenReemission(pin, prad, pmy_block->pscalars->energy(HII));
-    r->AssignReemission(hreemission);
+    GroundStateReemission *h_reemission = new GroundStateReemission(pin, prad, pmy_block->pscalars->energy(HII));
+    r->AssignReemission(h_reemission);
     return r;
 
   } else if (name == "LYA_COOLING") {
@@ -243,6 +243,8 @@ Reaction* ReactionNetwork::GetReactionByName(std::string name, ParameterInput *p
 
   } else if (name == "HE_1S_RECOMBINATION") {
     ReactionTemplate *r = new HeliumRecombination(name, {He, HeII, ELEC}, {+1, -1, -1}, helium_alpha_file, helium_beta_file, 1);
+    GroundStateReemission *he_reemission = new GroundStateReemission(pin, prad, pmy_block->pscalars->energy(HeII));
+    r->AssignReemission(he_reemission);
     return r;
 
   } else if (name == "HE_SINGLET_RECOMBINATION") {

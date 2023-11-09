@@ -19,11 +19,12 @@ public:
 protected:
   Radiation *prad;
   Real planck_constant, speed_of_light;
+  Real eV_conversion;
 };
 
-class HydrogenReemission: public Reemission {
+class GroundStateReemission: public Reemission {
 public:
-  HydrogenReemission(ParameterInput *pin, Radiation *prad_, Real ionization_energy_);
+  GroundStateReemission(ParameterInput *pin, Radiation *prad_, Real ionization_energy_);
   Real ReemissionFunction(int b, int n, Real T, int k, int j, int i);
 
 protected:
