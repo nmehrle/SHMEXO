@@ -13,11 +13,12 @@ public:
   Reemission(ParameterInput *pin, Radiation *prad_);
   virtual ~Reemission();
 
-  // should take in scalars as well
   virtual Real ReemissionFunction(int b, int n, Real T, int k, int j, int i){};
+  Real FixedWaveReemission(int b, int n, Real wave);
 
 protected:
   Radiation *prad;
+  Real planck_constant, speed_of_light;
 };
 
 class HydrogenReemission: public Reemission {
@@ -27,7 +28,7 @@ public:
 
 protected:
   Real ionization_energy;
-  Real planck_constant, speed_of_light;
+};
 };
 
 #endif
