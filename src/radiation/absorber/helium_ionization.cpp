@@ -5,6 +5,7 @@
 #include <cstring>
 #include <sstream>    // stringstream
 #include <cmath>
+#include <vector>
 #include <cassert>  // assert
 
 // Athena++ headers
@@ -39,24 +40,9 @@ HeliumIonization::HeliumIonization(RadiationBand *pband, std::string name, int m
 }
 
 void HeliumIonization::CalculateCrossSections(Spectrum const *spec, int nspec) {
-  AthenaArray<Real> file_data;
-  ReadDataTable(file_data, xc_file);
-
-  int n_file = file_data.GetDim2();
-  Real *file_x = new Real[n_file];
-  Real *file_y = new Real[n_file];
-  for (int i = 0; i < n_file; ++i)
-  {
-    file_x[i] = file_data(i,0);
-    file_y[i] = file_data(i,1);
-
-    if (i > 0 && file_x[i] < file_x[i-1]) {
-      std::stringstream msg;
-      msg << "###### FATAL ERROR in HeliumIonization::CalculateCrossSections" << std::endl
-          << "Cross Sections file " << xc_file << " must be in ascending order." << std::endl;
-      ATHENA_ERROR(msg);
-    }
-  }
+  std::vector<Real> file_x, file_y;
+  int n_file;
+  ReadDataTableForInterp(xc_file, file_x, file_y, n_file, true);
 
   Real wave, freq, energy, ry, xc_mb;
 
@@ -80,11 +66,8 @@ void HeliumIonization::CalculateCrossSections(Spectrum const *spec, int nspec) {
       ATHENA_ERROR(msg);
     }
     else {
-      xc_mb = interp1(ry, file_y, file_x, n_file);
+      xc_mb = interp1(ry, file_y.data(), file_x.data(), n_file);
       crossSection(n) = xc_mb * mb_conversion;
     }
   }
-
-  delete[] file_x;
-  delete[] file_y;
 }

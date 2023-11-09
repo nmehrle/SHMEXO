@@ -153,5 +153,6 @@ char* StripLine(char *line);
 char* NextLine(char *line, int num, FILE* stream);
 void read_data_table(char const *fname, double** data, int *rows, int *cols);
 void ReadDataTable(AthenaArray<Real> &data, std::string fname, char c = ' ');
+void ReadDataTableForInterp(std::string fname, std::vector<Real>& file_x, std::vector<Real>& file_y, int& n_file, bool enforce_ascending = false);
 
 #endif // UTILS_UTILS_HPP_
