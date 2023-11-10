@@ -53,6 +53,7 @@ namespace {
   Real global_rad_scaling;
 
   std::string helium_alpha_file, helium_beta_file, helium_decay_file;
+  bool enable_reemission;
 
   // initial conditions
   Real rho_0, Teq;
@@ -147,6 +148,7 @@ void Mesh::InitUserMeshData(ParameterInput *pin)
   H_He_mass_ratio = pin->GetOrAddReal("problem", "H_He_mass_ratio", 0);
   epsilon_concentration = pin->GetOrAddReal("reaction", "epsilon_concentration", 0);
 
+  enable_reemission = pin->GetOrAddBoolean("reaction", "enable_reemission", false);
 
   helium_alpha_file = pin->GetOrAddString("reaction", "helium_recombination_alpha_file", "");
   helium_beta_file = pin->GetOrAddString("reaction", "helium_recombination_beta_file", "");
@@ -234,8 +236,10 @@ Reaction* ReactionNetwork::GetReactionByName(std::string name, ParameterInput *p
 
   } else if (name == "H_RECOMBINATION_CASE_1S") {
     ReactionTemplate *r = new HydrogenicRecombination(name, {H, HII, ELEC}, {+1, -1, -1}, 1, "1S");
-    GroundStateReemission *h_reemission = new GroundStateReemission(pin, prad, pmy_block->pscalars->energy(HII));
-    r->AssignReemission(h_reemission);
+    if (enable_reemission) {
+      GroundStateReemission *h_reemission = new GroundStateReemission(pin, prad, pmy_block->pscalars->energy(HII));
+      r->AssignReemission(h_reemission);
+    }
     return r;
 
   } else if (name == "LYA_COOLING") {
@@ -243,14 +247,18 @@ Reaction* ReactionNetwork::GetReactionByName(std::string name, ParameterInput *p
 
   } else if (name == "HE_1S_RECOMBINATION") {
     ReactionTemplate *r = new HeliumRecombination(name, {He, HeII, ELEC}, {+1, -1, -1}, helium_alpha_file, helium_beta_file, 1);
-    GroundStateReemission *he_reemission = new GroundStateReemission(pin, prad, pmy_block->pscalars->energy(HeII));
-    r->AssignReemission(he_reemission);
+    if (enable_reemission) {
+      GroundStateReemission *he_reemission = new GroundStateReemission(pin, prad, pmy_block->pscalars->energy(HeII));
+      r->AssignReemission(he_reemission);
+    }
     return r;
 
   } else if (name == "HE_SINGLET_RECOMBINATION") {
     ReactionTemplate *r = new HeliumRecombination(name, {He, HeII, ELEC}, {+1, -1, -1}, helium_alpha_file, helium_beta_file, 2);
-    HeliumReemisison *he_reemission = new HeliumReemisison(pin, prad, helium_decay_file, 1.,0.,0.);
-    r->AssignReemission(he_reemission);
+    if (enable_reemission) {
+      HeliumReemisison *he_reemission = new HeliumReemisison(pin, prad, helium_decay_file, 1.,0.,0.);
+      r->AssignReemission(he_reemission);
+    }
     return r;
 
   } else if (name == "HE_TRIPLET_RECOMBINATION") {
@@ -264,8 +272,10 @@ Reaction* ReactionNetwork::GetReactionByName(std::string name, ParameterInput *p
 
   } else if (name == "HE23S_RADIO_DECAY") {
     ReactionTemplate *r = new HeliumTripletDecay(name, {He23S, He}, {-1, +1});
-    GroundStateReemission *he_reemission = new GroundStateReemission(pin, prad, pmy_block->pscalars->energy(He23S));
-    r->AssignReemission(he_reemission);
+    if (enable_reemission) {
+      GroundStateReemission *he_reemission = new GroundStateReemission(pin, prad, pmy_block->pscalars->energy(He23S));
+      r->AssignReemission(he_reemission);
+    }
     return r;
 
   } else if (name == "CHARGE_EXCHANGE_HE_H") {
@@ -279,9 +289,11 @@ Reaction* ReactionNetwork::GetReactionByName(std::string name, ParameterInput *p
 
   } else if (name == "HEIII_RECOMBINATION") {
     ReactionTemplate *r = new HydrogenicRecombination(name, {HeII, HeIII, ELEC}, {+1, -1, -1}, 2, "A");
-    Real energy_difference = pmy_block->pscalars->energy(HeIII) - pmy_block->pscalars->energy(HeII);
-    GroundStateReemission *he_reemission = new GroundStateReemission(pin, prad, energy_difference);
-    r->AssignReemission(he_reemission);
+    if (enable_reemission) {
+      Real energy_difference = pmy_block->pscalars->energy(HeIII) - pmy_block->pscalars->energy(HeII);
+      GroundStateReemission *he_reemission = new GroundStateReemission(pin, prad, energy_difference);
+      r->AssignReemission(he_reemission);
+    }
     return r;
 
   } else {
