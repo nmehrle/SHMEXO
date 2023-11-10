@@ -3,6 +3,10 @@
 
 // Athena++ headers
 #include "../athena.hpp"
+#include "../utils/utils.hpp"
+#include "../math/core.h"
+#include "../math/interpolation.h"
+
 #include "../parameter_input.hpp"
 #include "../radiation/radiation.hpp"
 #include "reemission.hpp"
@@ -10,9 +14,15 @@
 HeliumReemisison::HeliumReemisison(ParameterInput *pin, Radiation *prad_, std::string decay_21S_file, Real branch_continuum_, Real branch_21S_, Real branch_21P_):
   Reemission(pin, prad_)
 {
-  continuum_to_21S = 1./3;
-  state21P_to_21S  = 1.098E-3;
+  energy_21S = pin->GetReal("reaction", "HE_21S_ENERGY") * eV_conversion;
+  energy_21P = pin->GetReal("reaction", "HE_21P_ENERGY") * eV_conversion;
 
+  SetBranchingRatios(branch_continuum_, branch_21S_, branch_21P_);
+  AssignDecayFile(decay_21S_file);
+}
+
+void HeliumReemisison::SetBranchingRatios(Real branch_continuum_, Real branch_21S_, Real branch_21P_)
+{
   // Fraction to ground directly from 2(1)S
   branch_21S = branch_21S_;
 
@@ -27,15 +37,18 @@ HeliumReemisison::HeliumReemisison(ParameterInput *pin, Radiation *prad_, std::s
   // Can go to 2(1)P then either ground or 2(1)S
   branch_21S += (branch_continuum_) * (1-continuum_to_21S) * (state21P_to_21S);
   branch_21P += (branch_continuum_) * (1-continuum_to_21S) * (1-state21P_to_21S);
-
-  energy_21S = pin->GetReal("reaction", "HE_21S_ENERGY") * eV_conversion;
-  energy_21P = pin->GetReal("reaction", "HE_21P_ENERGY") * eV_conversion;
-
-  AssignDecayFile(decay_21S_file);
 }
 
 Real HeliumReemisison::ReemissionFunction(int b, int n, Real T, int k, int j, int i)
 {
+  // T dependent branching
+  if (using_branching_file) {
+    Real branch_21S_ = interp1(T, branch_21S_array.data(), branching_T.data(), n_branching_file);
+    Real branch_21P_ = interp1(T, branch_21P_array.data(), branching_T.data(), n_branching_file);
+    Real branch_continuum_ = 1 - branch_21S_ - branch_21P_;
+    SetBranchingRatios(branch_continuum_, branch_21S_, branch_21P_);
+  }
+
   Real from_21S = branch_21S * Reemission21S(b, n); 
   Real from_21P = branch_21P * Reemission21P(b, n);
 
@@ -79,4 +92,10 @@ void HeliumReemisison::AssignDecayFile(std::string decay_21S_file) {
 
     tmp_flx.DeleteAthenaArray();
   }
+}
+
+void HeliumReemisison::AssignBranchingFile(std::string branching_file, int column_21S, int column_21P) {
+  ReadDataTableForInterp(branching_file, branching_T, branch_21S_array, n_branching_file, 0, column_21S, true);
+  ReadDataTableForInterp(branching_file, branching_T, branch_21P_array, n_branching_file, 0, column_21P, true);
+  using_branching_file = true;
 }
