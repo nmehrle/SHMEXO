@@ -42,7 +42,7 @@ HeliumIonization::HeliumIonization(RadiationBand *pband, std::string name, int m
 void HeliumIonization::CalculateCrossSections(Spectrum const *spec, int nspec) {
   std::vector<Real> file_x, file_y;
   int n_file;
-  ReadDataTableForInterp(xc_file, file_x, file_y, n_file, true);
+  ReadDataTableForInterp(xc_file, file_x, file_y, n_file);
 
   Real wave, freq, energy, ry, xc_mb;
 

@@ -28,8 +28,8 @@ HeliumRecombination::~HeliumRecombination() {
 void HeliumRecombination::ReadAlphaBetaFiles(std::string alpha_file, std::string beta_file, int column_index)
 {
   // Read alpha/beta files
-  ReadDataTableForInterp(alpha_file, alpha_T, alpha_data, n_alpha_file, true);
-  ReadDataTableForInterp(beta_file, beta_T, beta_data, n_beta_file, true);
+  ReadDataTableForInterp(alpha_file, alpha_T, alpha_data, n_alpha_file, 0, column_index, true);
+  ReadDataTableForInterp(beta_file, beta_T, beta_data, n_beta_file, 0, column_index, true);
 
   // Adjust values for units
   // file written as log10(T), (T^(1/2) * [alpha,beta])

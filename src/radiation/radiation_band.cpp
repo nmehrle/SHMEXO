@@ -277,7 +277,7 @@ int RadiationBand::AssignWavelengthToBin(Real wave) {
 void RadiationBand::ReadFileOntoBand(std::string file, AthenaArray<Real> &output, int ext) {
   std::vector<Real> file_x, file_y;
   int n_file;
-  ReadDataTableForInterp(file, file_x, file_y, n_file, true);
+  ReadDataTableForInterp(file, file_x, file_y, n_file);
   
   Real half_bin_width = spec_bin_width/2.0;
   Real bin_start;

@@ -62,7 +62,7 @@ void ReadDataTable(AthenaArray<Real>& data, std::string fname, char c) {
       inp2 >> data(i,j);
 }
 
-void ReadDataTableForInterp(std::string fname, std::vector<Real>& file_x, std::vector<Real>& file_y, int& n_file, bool enforce_ascending) {
+void ReadDataTableForInterp(std::string fname, std::vector<Real>& file_x, std::vector<Real>& file_y, int& n_file, int xcolumn, int ycolumn, bool enforce_ascending) {
   AthenaArray<Real> file_data;
   ReadDataTable(file_data, fname);
 
@@ -72,8 +72,8 @@ void ReadDataTableForInterp(std::string fname, std::vector<Real>& file_x, std::v
 
   for (int i = 0; i < n_file; ++i)
   {
-    file_x[i] = file_data(i,0);
-    file_y[i] = file_data(i,1);
+    file_x[i] = file_data(i,xcolumn);
+    file_y[i] = file_data(i,ycolumn);
 
     if (enforce_ascending && i > 0 && file_x[i] < file_x[i-1]) {
       std::stringstream msg;
