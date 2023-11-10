@@ -16,7 +16,6 @@ public:
 
   Real alpha(Real T, int k, int j, int i);
   Real beta(Real T, int k, int j, int i);
-  Real reemission(Radiation *prad, int b, int n, Real T, int k, int j, int i);
 
 protected:
   int n_alpha_file, n_beta_file;
