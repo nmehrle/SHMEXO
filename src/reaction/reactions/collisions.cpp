@@ -27,6 +27,47 @@ Real TripletHydrogenCollision::alpha(Real T, int k, int j, int i) {
   return 5.0E-10;
 }
 
+HeElectronCollisions::HeElectronCollisions(std::string name, std::vector<int> species, std::vector<Real> stoichiometry, std::string data_file_, int alpha_column_, int beta_column_):
+  ReactionTemplate(name, species, stoichiometry)
+{
+  // Read alpha/beta files
+  ReadDataTableForInterp(data_file_, file_T, alpha_data, n_file, 0, alpha_column_, true);
+  ReadDataTableForInterp(data_file_, file_T, beta_data, n_file, 0, beta_column_, true);
+}
+
+Real HeElectronCollisions::TempScalingFactor(Real T) {
+  Real k_T_ev = (pmy_network->boltzmann * T) / pmy_network->eV_conversion;
+  Real T_dependance = std::sqrt((pmy_network->ry_conversion / k_T_ev));
+  T_dependance = T_dependance * exp(-1.0/k_T_ev);
+  return T_dependance;
+}
+
+Real HeElectronCollisions::alpha(Real T, int k, int j, int i) {
+  if (T < file_T[0]) {
+    ;
+  }
+  else if (T > file_T[n_file -1])
+  {
+    ;
+  }
+
+  Real alpha_val = interp1(T, alpha_data.data(), file_T.data(), n_file);
+  return alpha_val * TempScalingFactor(T);
+}
+
+Real HeElectronCollisions::beta(Real T, int k, int j, int i) {
+  if (T < file_T[0]) {
+    ;
+  }
+  else if (T > file_T[n_file -1])
+  {
+    ;
+  }
+
+  Real beta_val = interp1(T, beta_data.data(), file_T.data(), n_file);
+  return -beta_val * TempScalingFactor(T);
+}
+
 He_e_collisions::He_e_collisions(std::string data_file, std::string name, int singlet_num, int triplet_num, int elec_num):
     Reaction(name)
 {

@@ -53,6 +53,8 @@ namespace {
   Real global_rad_scaling;
 
   std::string helium_alpha_file, helium_beta_file, helium_decay_file;
+  std::string helium_collisions_file, helium_collision_reemission_branching_file;
+
   bool enable_reemission;
 
   // initial conditions
@@ -150,9 +152,11 @@ void Mesh::InitUserMeshData(ParameterInput *pin)
 
   enable_reemission = pin->GetOrAddBoolean("reaction", "enable_reemission", false);
 
-  helium_alpha_file = pin->GetOrAddString("reaction", "helium_recombination_alpha_file", "");
-  helium_beta_file = pin->GetOrAddString("reaction", "helium_recombination_beta_file", "");
-  helium_decay_file = pin->GetOrAddString("reaction", "helium_recombination_decay_file", "");
+  helium_alpha_file = pin->GetOrAddString("reaction", "He_recombination_alpha_file", "");
+  helium_beta_file = pin->GetOrAddString("reaction", "He_recombination_beta_file", "");
+  helium_decay_file = pin->GetOrAddString("reaction", "He_recombination_decay_file", "");
+  helium_collisions_file = pin->GetOrAddString("reaction", "He_e_collisions_file", "");
+  helium_collision_reemission_branching_file = pin->GetOrAddString("reaction", "He_e_coll_reemission_branching_file", "");
 
   // Domain logic
   if (mesh_size.x1rat == -1.0) {
@@ -264,6 +268,32 @@ Reaction* ReactionNetwork::GetReactionByName(std::string name, ParameterInput *p
   } else if (name == "HE_TRIPLET_RECOMBINATION") {
     ReactionTemplate *r = new HeliumRecombination(name, {He, HeII, ELEC}, {+1, -1, -1}, helium_alpha_file, helium_beta_file, 3);
     return r;
+
+  } else if (name == "HeElecCollision11") {
+    ReactionTemplate *r = new HeElectronCollisions(name, {He, ELEC, He, ELEC}, {-1, -1, +1, +1}, helium_collisions_file, 1, 5);
+    if (enable_reemission) {
+      HeliumReemisison *he_reemission = new HeliumReemisison(pin, prad, helium_decay_file, 0,0,0);
+      he_reemission->AssignBranchingFile(helium_collision_reemission_branching_file, 1, 2);
+      r->AssignReemission(he_reemission);
+    }
+
+    return r;
+
+  } else if (name == "HeElecCollision13") {
+    return new HeElectronCollisions(name, {He, ELEC, He23S, ELEC}, {-1, -1, +1, +1}, helium_collisions_file, 2, 6);
+
+  } else if (name == "HeElecCollision31") {
+    ReactionTemplate *r = new HeElectronCollisions(name, {He23S, ELEC, He, ELEC}, {-1, -1, +1, +1}, helium_collisions_file, 3, 7);
+    if (enable_reemission) {
+      HeliumReemisison *he_reemission = new HeliumReemisison(pin, prad, helium_decay_file, 0,0,0);
+      he_reemission->AssignBranchingFile(helium_collision_reemission_branching_file, 3, 4);
+      r->AssignReemission(he_reemission);
+    }
+
+    return r;
+
+  } else if (name == "HeElecCollision33") {
+    return new HeElectronCollisions(name, {He23S, ELEC, He23S, ELEC}, {-1, -1, +1, +1}, helium_collisions_file, 4, 8);
 
   } else if (name == "HE_E_COLLISIONS") {
     std::string collisions_file_name = pin->GetString("reaction", "HE_COLLISIONS_FILE");
