@@ -586,6 +586,30 @@ void ATHDF5Output::WriteOutputFile(Mesh *pm, ParameterInput *pin, bool flag) {
     delete[] reaction_names;
   }
 
+  if (RADIATION_ENABLED && ContainVariable(variable, "rxn")) {
+    ReactionNetwork *prad_network = pm->pblock->prad_network;
+    int num_reactions = prad_network->num_reactions;
+
+    char (*reaction_names)[max_name_length+1];
+    reaction_names = new char[num_reactions][max_name_length+1];
+
+    for (int r = 0; r < num_reactions; ++r)
+    {
+      std::strncpy(reaction_names[r], prad_network->my_reactions(r)->my_name.c_str(), max_name_length+1);
+      reaction_names[r][max_name_length] = '\0';
+    }
+  
+    dims_count[0] = num_reactions;
+    hid_t dataspace_reaction_list = H5Screate_simple(1, dims_count, NULL);
+
+    attribute = H5Acreate2(file, "RadiationReactionNames", string_type, dataspace_reaction_list, H5P_DEFAULT, H5P_DEFAULT);
+    H5Awrite(attribute, string_type, reaction_names);
+    H5Aclose(attribute);
+
+    H5Sclose(dataspace_reaction_list);
+    delete[] reaction_names;
+  }
+
   // Close attribute dataspaces
   H5Sclose(dataspace_scalar);
   H5Sclose(dataspace_triple);
