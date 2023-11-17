@@ -31,7 +31,22 @@ ReactionNetwork::ReactionNetwork(MeshBlock *pmb, ParameterInput *pin){
   consumption_tolerance = pin->GetOrAddReal("reaction", "consumption_tolerance", 0.0);
   sfloor = pin->GetOrAddReal("hydro", "sfloor", 1.e-12);
   temperature_.NewAthenaArray(pmb->ncells3, pmb->ncells2, pmb->ncells1);
+  
+  speed_of_light = pin->GetReal("problem", "speed_of_light");
+  planck_constant = pin->GetReal("problem", "planck_constant");
+}
 
+ReactionNetwork::~ReactionNetwork() {
+  Reaction *prxn = pfirst;
+  Reaction *pnext;
+  while (prxn != nullptr) {
+    pnext = prxn->next;
+    delete prxn;
+    prxn = pnext;
+  }
+}
+
+void ReactionNetwork::ReadReactionsFromInput(ParameterInput *pin) {
   std::string rxn_name = "";
   std::string null_name = "NO_MORE_REACTIONS";
   int rxn_num = 1;
@@ -49,19 +64,6 @@ ReactionNetwork::ReactionNetwork(MeshBlock *pmb, ParameterInput *pin){
     rxn_num +=1;
     sprintf(key, "rxn%d", rxn_num);
     rxn_name = pin->GetOrAddString("reaction", key, null_name);
-  }
-  
-  speed_of_light = pin->GetReal("problem", "speed_of_light");
-  planck_constant = pin->GetReal("problem", "planck_constant");
-}
-
-ReactionNetwork::~ReactionNetwork() {
-  Reaction *prxn = pfirst;
-  Reaction *pnext;
-  while (prxn != nullptr) {
-    pnext = prxn->next;
-    delete prxn;
-    prxn = pnext;
   }
 }
 

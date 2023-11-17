@@ -43,6 +43,10 @@ public:
   Real eV_conversion, ry_conversion;
   AthenaArray<Real> temperature_;
 
+  // Reads reactions in from pin
+  // used in non-radiation network
+  void ReadReactionsFromInput(ParameterInput *pin);
+
   // To be included/overwritten in problem generator
   Reaction* GetReactionByName(std::string name, ParameterInput *pin);
   bool DoRunReactions(int k, int j, int i);
