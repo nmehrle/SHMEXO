@@ -129,6 +129,7 @@ class MeshBlock {
   Thermodynamics *pthermo;
   Chemistry *pchem;
   Radiation *prad;
+  ReactionNetwork *prad_network;
   ReactionNetwork *pnetwork;
   Diagnostics *pdiag;
 

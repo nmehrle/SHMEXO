@@ -336,28 +336,28 @@ Reaction* ReactionNetwork::GetReactionByName(std::string name, ParameterInput *p
 
 Absorber* RadiationBand::GetAbsorberByName(std::string name, std::string band_name, ParameterInput *pin)
 {
-  ReactionNetwork *pnetwork = pmy_rad->pmy_block->pnetwork;
+  ReactionNetwork *prad_network = pmy_rad->pmy_block->prad_network;
 
   std::string rxn_name = band_name + "_" + name;
 
   if (name == "HYDROGEN_IONIZATION") {
     HydrogenIonization *a = new HydrogenIonization(this, name, H, HII, pin);
 
-    pnetwork->AddReaction(new Photoionization(rxn_name, a, ELEC));
+    prad_network->AddReaction(new Photoionization(rxn_name, a, ELEC));
     return a;
   }
   else if (name == "HELIUM_IONIZATION") {
     std::string xc_file = pin->GetString("radiation", "Helium_1(1)S_file");
     HeliumIonization *a = new HeliumIonization(this, name, He, HeII, pin, xc_file);
 
-    pnetwork->AddReaction(new Photoionization(rxn_name, a, ELEC));
+    prad_network->AddReaction(new Photoionization(rxn_name, a, ELEC));
     return a;
   }
   else if (name == "HELIUM_TRIPLET_IONIZATION") {
     std::string xc_file = pin->GetString("radiation", "Helium_2(3)S_file");
     HeliumIonization *a = new HeliumIonization(this, name, He23S, HeII, pin, xc_file);
 
-    pnetwork->AddReaction(new Photoionization(rxn_name, a, ELEC));
+    prad_network->AddReaction(new Photoionization(rxn_name, a, ELEC));
     return a; 
   }
   else if (name == "HELIUM_DOUBLE_IONIZATION") {
@@ -365,7 +365,7 @@ Absorber* RadiationBand::GetAbsorberByName(std::string name, std::string band_na
     VernerIonizationParams *vi_params = new VernerIonizationParams(54.42, 50000, 1.72, 13690, 32.88, 2.963, 0., 0., 0.);
     VernerIonization *a = new VernerIonization(this, name, HeII, HeIII, pin, vi_params);
 
-    pnetwork->AddReaction(new Photoionization(rxn_name, a, ELEC));
+    prad_network->AddReaction(new Photoionization(rxn_name, a, ELEC));
     return a;
   }
   else {
@@ -600,6 +600,7 @@ void MeshBlock::ProblemGenerator(ParameterInput *pin)
     prad->my_bands(b)->InitAbsorbers(pin);
   }
 
+  prad_network->Initialize();
   pnetwork->Initialize();
 
   // set spectral properties
@@ -709,7 +710,7 @@ void MeshBlock::UserWorkInLoop() {
       } // i
     } // j
   } // k
-  
+
   if (converged) {
     pmy_mesh->EndTimeIntegration();
   }

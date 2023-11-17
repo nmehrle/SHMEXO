@@ -299,7 +299,8 @@ TimeIntegratorTaskList::TimeIntegratorTaskList(ParameterInput *pin, Mesh *pm) {
     // Chemical Reactions (Requires NSCALARS > 0)
     if (REACTION_ENABLED) {
       if (RADIATION_ENABLED){
-        AddTask(INT_RXN, UPDATE_SCLR|UPDATE_HYD|CALC_RADFLX);
+        AddTask(INT_RAD, UPDATE_SCLR|UPDATE_HYD|CALC_RADFLX);
+        AddTask(INT_RXN, INT_RAD);
       }
       else {
         AddTask(INT_RXN, UPDATE_SCLR|UPDATE_HYD);
@@ -491,6 +492,11 @@ void TimeIntegratorTaskList::AddTask(const TaskID& id, const TaskID& dep) {
     task_list_[ntasks].TaskFunc=
         static_cast<TaskStatus (TaskList::*)(MeshBlock*,int)>
         (&TimeIntegratorTaskList::IntegrateChemistry);
+    task_list_[ntasks].lb_time = true;
+  } else if (id == INT_RAD) {
+    task_list_[ntasks].TaskFunc=
+        static_cast<TaskStatus (TaskList::*)(MeshBlock*,int)>
+        (&TimeIntegratorTaskList::IntegrateRadiation);
     task_list_[ntasks].lb_time = true;
   } else if (id == INT_RXN) {
     task_list_[ntasks].TaskFunc=

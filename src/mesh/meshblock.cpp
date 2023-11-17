@@ -178,10 +178,14 @@ MeshBlock::MeshBlock(int igid, int ilid, LogicalLocation iloc, RegionSize input_
   peos = new EquationOfState(this, pin);
   pthermo = new Thermodynamics(this, pin);
   pchem = new CHEMISTRY(this, pin);
-  if (RADIATION_ENABLED)
+  if (RADIATION_ENABLED) {
     prad = new Radiation(this, pin);
-  if (REACTION_ENABLED)
+    prad_network = new ReactionNetwork(this, pin);
+  }
+  if (REACTION_ENABLED) {
     pnetwork = new ReactionNetwork(this, pin);
+    pnetwork->ReadReactionsFromInput(pin);
+  }
   pdiag = new Diagnostics(this, pin);
 
   // Create user mesh data
@@ -300,10 +304,14 @@ MeshBlock::MeshBlock(int igid, int ilid, Mesh *pm, ParameterInput *pin,
   peos = new EquationOfState(this, pin);
   // pthermo = new Thermodynamics(this, pin);
   // pchem = new CHEMISTRY(this, pin);
-  if (RADIATION_ENABLED)
+  if (RADIATION_ENABLED) {
     prad = new Radiation(this, pin);
-  if (REACTION_ENABLED)
+    prad_network = new ReactionNetwork(this, pin);
+  }
+  if (REACTION_ENABLED) {
     pnetwork = new ReactionNetwork(this, pin);
+    pnetwork->ReadReactionsFromInput(pin);
+  }
   pdiag = new Diagnostics(this, pin);
 
   InitUserMeshBlockData(pin);
@@ -397,8 +405,10 @@ MeshBlock::~MeshBlock() {
 
   delete pthermo;
   delete pchem;
-  if (RADIATION_ENABLED)
+  if (RADIATION_ENABLED) {
     delete prad;
+    delete prad_network;
+  }
   if (REACTION_ENABLED)
     delete pnetwork;
   delete pdiag;
