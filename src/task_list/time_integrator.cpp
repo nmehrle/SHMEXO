@@ -246,9 +246,9 @@ TimeIntegratorTaskList::TimeIntegratorTaskList(ParameterInput *pin, Mesh *pm) {
       } else { // Hydro
         AddTask(CALC_HYDFLX,DIFFUSE_HYD);
       }
-      if (RADIATION_ENABLED) {
-        AddTask(CALC_RADFLX,NONE);
-      }
+      // if (RADIATION_ENABLED) {
+      //   AddTask(CALC_RADFLX,NONE);
+      // }
       if (NSCALARS > 0) {
         AddTask(DIFFUSE_SCLR,NONE);
         AddTask(CALC_SCLRFLX,(CALC_HYDFLX|DIFFUSE_SCLR));
@@ -299,7 +299,8 @@ TimeIntegratorTaskList::TimeIntegratorTaskList(ParameterInput *pin, Mesh *pm) {
     // Chemical Reactions (Requires NSCALARS > 0)
     if (REACTION_ENABLED) {
       if (RADIATION_ENABLED){
-        AddTask(INT_RAD, UPDATE_SCLR|UPDATE_HYD|CALC_RADFLX);
+        AddTask(CALC_RADFLX,UPDATE_SCLR|UPDATE_HYD);
+        AddTask(INT_RAD, CALC_RADFLX);
         AddTask(INT_RXN, INT_RAD);
       }
       else {
