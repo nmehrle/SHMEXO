@@ -181,6 +181,7 @@ MeshBlock::MeshBlock(int igid, int ilid, LogicalLocation iloc, RegionSize input_
   if (RADIATION_ENABLED) {
     prad = new Radiation(this, pin);
     prad_network = new ReactionNetwork(this, pin);
+    prad_network->SetImplicitReactions(false);
   }
   if (REACTION_ENABLED) {
     pnetwork = new ReactionNetwork(this, pin);
@@ -307,6 +308,7 @@ MeshBlock::MeshBlock(int igid, int ilid, Mesh *pm, ParameterInput *pin,
   if (RADIATION_ENABLED) {
     prad = new Radiation(this, pin);
     prad_network = new ReactionNetwork(this, pin);
+    prad_network->SetImplicitReactions(false);
   }
   if (REACTION_ENABLED) {
     pnetwork = new ReactionNetwork(this, pin);

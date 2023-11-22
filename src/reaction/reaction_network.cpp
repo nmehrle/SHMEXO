@@ -67,6 +67,10 @@ void ReactionNetwork::ReadReactionsFromInput(ParameterInput *pin) {
   }
 }
 
+void ReactionNetwork::SetImplicitReactions(bool implicit_reactions_) {
+  implicit_reactions = implicit_reactions_;
+}
+
 void ReactionNetwork::AddReaction(Reaction *prxn) {
   prxn->pmy_network = this;
   Reaction *p = plast;

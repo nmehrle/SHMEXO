@@ -46,6 +46,7 @@ public:
   // Reads reactions in from pin
   // used in non-radiation network
   void ReadReactionsFromInput(ParameterInput *pin);
+  void SetImplicitReactions(bool implicit_reactions_);
 
   // To be included/overwritten in problem generator
   Reaction* GetReactionByName(std::string name, ParameterInput *pin);
