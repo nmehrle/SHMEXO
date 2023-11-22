@@ -43,28 +43,34 @@ Real HeElectronCollisions::TempScalingFactor(Real T) {
 }
 
 Real HeElectronCollisions::alpha(Real T, int k, int j, int i) {
+  Real alpha_val;
   if (T < file_T[0]) {
-    ;
+    return 0;
   }
   else if (T > file_T[n_file -1])
   {
-    ;
+    alpha_val = alpha_data[n_file-1];
+  }
+  else {
+    alpha_val = interp1(T, alpha_data.data(), file_T.data(), n_file);
   }
 
-  Real alpha_val = interp1(T, alpha_data.data(), file_T.data(), n_file);
   return alpha_val * TempScalingFactor(T);
 }
 
 Real HeElectronCollisions::beta(Real T, int k, int j, int i) {
+  Real beta_val;
   if (T < file_T[0]) {
-    ;
+    return 0;
   }
   else if (T > file_T[n_file -1])
   {
-    ;
+    beta_val = beta_data[n_file-1];
+  }
+  else {
+    beta_val = interp1(T, beta_data.data(), file_T.data(), n_file);
   }
 
-  Real beta_val = interp1(T, beta_data.data(), file_T.data(), n_file);
   return -beta_val * TempScalingFactor(T);
 }
 
