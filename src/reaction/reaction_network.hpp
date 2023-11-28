@@ -57,7 +57,8 @@ public:
   void Initialize();
   void AddReaction(Reaction *prxn);
 
-  void ComputeReactionForcing(const Real dt, const AthenaArray<Real> prim, const AthenaArray<Real> cons, const AthenaArray<Real> cons_scalar, AthenaArray<Real> &du, AthenaArray<Real> &ds);
+  void ComputeReactionForcing(const AthenaArray<Real> prim, const AthenaArray<Real> cons, const AthenaArray<Real> cons_scalar);
+  void IntegrateReactions(const Real dt, const AthenaArray<Real> cons_scalar, AthenaArray<Real> &du, AthenaArray<Real> &ds);
 
   int num_reactions;
 
@@ -72,7 +73,8 @@ protected:
   void ResetRates();
 
   // calculates dn inside ComputeReactionForcing
-  void ComputeScalarDensityChange(const Real dt, Real drho[NSCALARS], int k, int j, int i);
+  void IntegrateScalarsImplicit(const Real dt, Real drho[NSCALARS], int k, int j, int i);
+  void IntegrateScalarsExplicit(const Real dt, Real drho[NSCALARS], int k, int j, int i);
 
   void CheckScalarConflict(int n, int k, int j, int i, Real drho[NSCALARS], const AthenaArray<Real> cons_scalar);
 };

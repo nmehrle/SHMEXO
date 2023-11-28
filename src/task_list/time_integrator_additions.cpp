@@ -105,7 +105,8 @@ TaskStatus TimeIntegratorTaskList::IntegrateRadiation(MeshBlock *pmb, int stage)
     Hydro *phydro = pmb->phydro;
 
     Real dt = pmb->pmy_mesh->dt;
-    prad_network->ComputeReactionForcing(dt, phydro->w, phydro->u, pscalars->s, phydro->u, pscalars->s);
+    prad_network->ComputeReactionForcing(phydro->w, phydro->u, pscalars->s);
+    prad_network->IntegrateReactions(dt, pscalars->s, phydro->u, pscalars->s);
   #endif
   return TaskStatus::next;
 }
@@ -120,7 +121,8 @@ TaskStatus TimeIntegratorTaskList::IntegrateReactions(MeshBlock *pmb, int stage)
     Hydro *phydro = pmb->phydro;
 
     Real dt = pmb->pmy_mesh->dt;
-    pnetwork->ComputeReactionForcing(dt, phydro->w, phydro->u, pscalars->s, phydro->u, pscalars->s);
+    pnetwork->ComputeReactionForcing(phydro->w, phydro->u, pscalars->s);
+    pnetwork->IntegrateReactions(dt, pscalars->s, phydro->u, pscalars->s);
   #endif
   return TaskStatus::next;
 }

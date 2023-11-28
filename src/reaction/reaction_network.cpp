@@ -123,10 +123,10 @@ void ReactionNetwork::ResetRates() {
   }
 }
 
-void ReactionNetwork::ComputeReactionForcing(const Real dt, const AthenaArray<Real> prim, const AthenaArray<Real> cons, const AthenaArray<Real> cons_scalar, AthenaArray<Real> &du, AthenaArray<Real> &ds) {
+// computes dn, de
+void ReactionNetwork::ComputeReactionForcing(const AthenaArray<Real> prim, const AthenaArray<Real> cons, const AthenaArray<Real> cons_scalar) {
   MeshBlock *pmb = pmy_block;
   PassiveScalars *pscalars = pmb->pscalars;
-  Hydro *phydro = pmb->phydro;
   ResetRates();
 
   int is = pmb->is; int js = pmb->js; int ks = pmb->ks;
@@ -136,7 +136,6 @@ void ReactionNetwork::ComputeReactionForcing(const Real dt, const AthenaArray<Re
   // compute rate values at each point,
   // add to total value
   Real temp;
-  Real drho[NSCALARS];
   for (int k=ks; k<=ke; ++k) {
     for (int j=js; j<=je; ++j) {
       for (int i=is; i<=ie; ++i) {
@@ -151,11 +150,36 @@ void ReactionNetwork::ComputeReactionForcing(const Real dt, const AthenaArray<Re
           {
             Reaction *p = my_reactions(r);
             p->react(k, j, i);
+          }
+        }
+      } // i
+    } // j
+  } // k
+}
 
+// Applies dn, de
+void ReactionNetwork::IntegrateReactions(const Real dt, const AthenaArray<Real> cons_scalar, AthenaArray<Real> &du, AthenaArray<Real> &ds)
+{
+  MeshBlock *pmb = pmy_block;
+
+  int is = pmb->is; int js = pmb->js; int ks = pmb->ks;
+  int ie = pmb->ie; int je = pmb->je; int ke = pmb->ke;
+
+  Real drho[NSCALARS];
+  for (int k=ks; k<=ke; ++k) {
+    for (int j=js; j<=je; ++j) {
+      for (int i=is; i<=ie; ++i) {
+
+        if (DoRunReactions(k,j,i)) {
+          for (int r = 0; r < num_reactions; ++r) {
             du(IEN, k, j, i) += de_rate(r, k,j,i) * dt;
           }
 
-          ComputeScalarDensityChange(dt, drho, k, j, i);
+          if (implicit_flag)
+            IntegrateScalarsImplicit(dt, drho, k, j, i);
+          else
+            IntegrateScalarsExplicit(dt, drho, k, j, i);
+
           for (int n = 0; n < NSCALARS; ++n)
           {
             CheckScalarConflict(n,k,j,i, drho, cons_scalar);
@@ -169,6 +193,49 @@ void ReactionNetwork::ComputeReactionForcing(const Real dt, const AthenaArray<Re
   } // k
 }
 
+void ReactionNetwork::IntegrateScalarsImplicit(const Real dt, Real drho[NSCALARS], int k, int j, int i) {
+  Real dn_rate_total;
+
+  // populate jacobian matrix
+  // and RHS vector
+  MatrixNSR jacobi_matrix;
+  VectorNSR dn_RHS;
+  for (int l = 0; l < NSCALARS; ++l)
+  {
+    for (int m = 0; m < NSCALARS; ++m)
+    {
+      jacobi_matrix(l,m) = jacobian(l,m,k,j,i);
+    }
+
+    dn_rate_total = 0;
+    for (int r = 0; r < num_reactions; ++r) {
+      dn_rate_total += dn_rate(r,l,k,j,i);
+    }
+    dn_RHS(l) = dn_rate_total * dt;
+  }
+
+  MatrixNSR LHS = MatrixNSR::Identity() - dt * jacobi_matrix;
+  VectorNSR dn_sol = LHS.inverse() * dn_RHS;
+
+  for (int n = 0; n < NSCALARS; ++n)
+  {
+    // convert density rate to density
+    drho[n] = dn_sol(n) * pscalars->mass(n);
+  }
+}
+
+void ReactionNetwork::IntegrateScalarsExplicit(const Real dt, Real drho[NSCALARS], int k, int j, int i) {
+  Real dn_rate_total;
+  for (int n = 0; n < NSCALARS; ++n)
+  {
+    dn_rate_total = 0;
+    for (int r = 0; r < num_reactions; ++r) {
+      dn_rate_total += dn_rate(r,n,k,j,i);
+    }
+    // convert density rate to density
+    drho[n] = dn_rate_total * dt * pscalars->mass(n);
+  }
+}
 
 void ReactionNetwork::CheckScalarConflict(int n, int k, int j, int i, Real drho[NSCALARS], const AthenaArray<Real> cons_scalar)
 {
@@ -197,49 +264,4 @@ void ReactionNetwork::CheckScalarConflict(int n, int k, int j, int i, Real drho[
       ATHENA_ERROR(msg);
     }
   }
-}
-
-//check for implicit bug here
-void ReactionNetwork::ComputeScalarDensityChange(const Real dt, Real drho[NSCALARS], int k, int j, int i) {
-  Real dn_rate_total;
-
-  if (implicit_flag) {
-    // populate jacobian matrix
-    // and RHS vector
-    MatrixNSR jacobi_matrix;
-    VectorNSR dn_RHS;
-    for (int l = 0; l < NSCALARS; ++l)
-    {
-      for (int m = 0; m < NSCALARS; ++m)
-      {
-        jacobi_matrix(l,m) = jacobian(l,m,k,j,i);
-      }
-
-      dn_rate_total = 0;
-      for (int r = 0; r < num_reactions; ++r) {
-        dn_rate_total += dn_rate(r,l,k,j,i);
-      }
-      dn_RHS(l) = dn_rate_total * dt;
-    }
-
-    MatrixNSR LHS = MatrixNSR::Identity() - dt * jacobi_matrix;
-    VectorNSR dn_sol = LHS.inverse() * dn_RHS;
-
-    for (int n = 0; n < NSCALARS; ++n)
-    {
-      // convert density rate to density
-      drho[n] = dn_sol(n) * pscalars->mass(n);
-    }
-  } // if (implicit reactions)
-  else {
-    for (int n = 0; n < NSCALARS; ++n)
-    {
-      dn_rate_total = 0;
-      for (int r = 0; r < num_reactions; ++r) {
-        dn_rate_total += dn_rate(r,n,k,j,i);
-      }
-      // convert density rate to density
-      drho[n] = dn_rate_total * dt * pscalars->mass(n);
-    }
-  } // else (non-implicit reaction)
 }
