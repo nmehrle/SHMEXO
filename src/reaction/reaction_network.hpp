@@ -46,7 +46,7 @@ public:
   // Reads reactions in from pin
   // used in non-radiation network
   void ReadReactionsFromInput(ParameterInput *pin);
-  void SetImplicitReactions(bool implicit_reactions_);
+  void SetImplicitReactions(bool implicit_flag_);
 
   // To be included/overwritten in problem generator
   Reaction* GetReactionByName(std::string name, ParameterInput *pin);
@@ -64,7 +64,7 @@ public:
 protected:
   Real consumption_tolerance;
 
-  bool implicit_reactions;
+  bool implicit_flag;
   typedef Eigen::Matrix<Real,NSCALARS,NSCALARS> MatrixNSR;
   typedef Eigen::Matrix<Real,NSCALARS,1> VectorNSR;
 

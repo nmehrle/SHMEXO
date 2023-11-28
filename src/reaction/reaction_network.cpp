@@ -27,7 +27,7 @@ ReactionNetwork::ReactionNetwork(MeshBlock *pmb, ParameterInput *pin){
   eV_conversion = pin->GetReal("problem", "eV_conversion");
   ry_conversion = pin->GetReal("problem", "ry_conversion");
 
-  implicit_reactions = pin->GetOrAddBoolean("reaction", "implicit_reactions", "False");
+  implicit_flag = pin->GetOrAddBoolean("reaction", "implicit_reactions", "False");
   consumption_tolerance = pin->GetOrAddReal("reaction", "consumption_tolerance", 0.0);
   temperature_.NewAthenaArray(pmb->ncells3, pmb->ncells2, pmb->ncells1);
   
@@ -66,8 +66,8 @@ void ReactionNetwork::ReadReactionsFromInput(ParameterInput *pin) {
   }
 }
 
-void ReactionNetwork::SetImplicitReactions(bool implicit_reactions_) {
-  implicit_reactions = implicit_reactions_;
+void ReactionNetwork::SetImplicitReactions(bool implicit_flag_) {
+  implicit_flag = implicit_flag_;
 }
 
 void ReactionNetwork::AddReaction(Reaction *prxn) {
@@ -198,11 +198,12 @@ void ReactionNetwork::CheckScalarConflict(int n, int k, int j, int i, Real drho[
     }
   }
 }
+
 //check for implicit bug here
 void ReactionNetwork::ComputeScalarDensityChange(const Real dt, Real drho[NSCALARS], int k, int j, int i) {
   Real dn_rate_total;
 
-  if (implicit_reactions) {
+  if (implicit_flag) {
     // populate jacobian matrix
     // and RHS vector
     MatrixNSR jacobi_matrix;
