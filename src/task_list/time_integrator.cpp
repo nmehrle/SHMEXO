@@ -237,24 +237,28 @@ TimeIntegratorTaskList::TimeIntegratorTaskList(ParameterInput *pin, Mesh *pm) {
   // Now assemble list of tasks for each stage of time integrator
   {using namespace HydroIntegratorTaskNames; // NOLINT (build/namespace)
     // calculate hydro/field diffusive fluxes
+
+    TaskID PREREQ = NONE;
+    if (RADIATION_ENABLED) {
+      AddTask(INT_RAD, NONE);
+      PREREQ = INT_RAD;
+    }
+
     if (!STS_ENABLED) {
-      AddTask(DIFFUSE_HYD,NONE);
+      AddTask(DIFFUSE_HYD,PREREQ);
       if (MAGNETIC_FIELDS_ENABLED) {
-        AddTask(DIFFUSE_FLD,NONE);
+        AddTask(DIFFUSE_FLD,PREREQ);
         // compute hydro fluxes, integrate hydro variables
         AddTask(CALC_HYDFLX,(DIFFUSE_HYD|DIFFUSE_FLD));
       } else { // Hydro
         AddTask(CALC_HYDFLX,DIFFUSE_HYD);
       }
-      // if (RADIATION_ENABLED) {
-      //   AddTask(CALC_RADFLX,NONE);
-      // }
       if (NSCALARS > 0) {
-        AddTask(DIFFUSE_SCLR,NONE);
+        AddTask(DIFFUSE_SCLR,PREREQ);
         AddTask(CALC_SCLRFLX,(CALC_HYDFLX|DIFFUSE_SCLR));
       }
     } else { // STS enabled:
-      AddTask(CALC_HYDFLX,NONE);
+      AddTask(CALC_HYDFLX,PREREQ);
       if (NSCALARS > 0)
         AddTask(CALC_SCLRFLX,CALC_HYDFLX);
     }
@@ -298,14 +302,7 @@ TimeIntegratorTaskList::TimeIntegratorTaskList(ParameterInput *pin, Mesh *pm) {
 
     // Chemical Reactions (Requires NSCALARS > 0)
     if (REACTION_ENABLED) {
-      if (RADIATION_ENABLED){
-        AddTask(CALC_RADFLX,UPDATE_SCLR|UPDATE_HYD);
-        AddTask(INT_RAD, CALC_RADFLX);
-        AddTask(INT_RXN, INT_RAD);
-      }
-      else {
-        AddTask(INT_RXN, UPDATE_SCLR|UPDATE_HYD);
-      }
+      AddTask(INT_RXN, UPDATE_SCLR|UPDATE_HYD);
 
       AddTask(SEND_HYD, INT_RXN);
       AddTask(RECV_HYD,NONE);
@@ -410,7 +407,16 @@ TimeIntegratorTaskList::TimeIntegratorTaskList(ParameterInput *pin, Mesh *pm) {
     // everything else
     AddTask(PHY_BVAL,CONS2PRIM);
     AddTask(USERWORK,PHY_BVAL);
-    AddTask(NEW_DT,USERWORK);
+    if (RADIATION_ENABLED) {
+        AddTask(CALC_RADFLX, USERWORK);
+        // AddTask(INT_RAD, CALC_RADFLX);
+        AddTask(NEW_DT, CALC_RADFLX);
+    }
+    else {
+      AddTask(NEW_DT,USERWORK);  
+    }
+    // AddTask(NEW_DT,USERWORK);
+
     if (pm->adaptive) {
       AddTask(FLAG_AMR,USERWORK);
       AddTask(CLEAR_ALLBND,FLAG_AMR);

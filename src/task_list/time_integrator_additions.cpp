@@ -79,6 +79,7 @@ TaskStatus TimeIntegratorTaskList::CalculateRadiationFlux(MeshBlock *pmb, int st
     if (stage != nstages) return TaskStatus::next;
 
     Radiation *prad = pmb->prad;
+    ReactionNetwork *prad_network = pmb->prad_network;
     PassiveScalars *pscalars = pmb->pscalars;
     Hydro *phydro=pmb->phydro;
 
@@ -91,6 +92,8 @@ TaskStatus TimeIntegratorTaskList::CalculateRadiationFlux(MeshBlock *pmb, int st
         prad->CalculateRadiativeTransfer(phydro->w, pscalars->s, t_start_stage, k, j);
       }
     }
+
+    prad_network->ComputeReactionForcing(phydro->w, phydro->u, pscalars->s);
   #endif
   return TaskStatus::next;
 }
@@ -98,14 +101,13 @@ TaskStatus TimeIntegratorTaskList::CalculateRadiationFlux(MeshBlock *pmb, int st
 TaskStatus TimeIntegratorTaskList::IntegrateRadiation(MeshBlock *pmb, int stage)
 {
   #if RADIATION_ENABLED
-    if (stage != nstages) return TaskStatus::next;
+    if (stage != 1) return TaskStatus::next;
 
     ReactionNetwork *prad_network = pmb->prad_network;
     PassiveScalars *pscalars = pmb->pscalars;
     Hydro *phydro = pmb->phydro;
 
     Real dt = pmb->pmy_mesh->dt;
-    prad_network->ComputeReactionForcing(phydro->w, phydro->u, pscalars->s);
     prad_network->IntegrateReactions(dt, pscalars->s, phydro->u, pscalars->s);
   #endif
   return TaskStatus::next;

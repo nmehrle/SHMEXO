@@ -608,6 +608,7 @@ void MeshBlock::ProblemGenerator(ParameterInput *pin)
     for (int j = jl; j <= ju; ++j)
       prad->CalculateRadiativeTransfer(phydro->w, pscalars->s, pmy_mesh->time, k, j);
 
+  prad_network->ComputeReactionForcing(phydro->w, phydro->u, pscalars->s);
   peos->PrimitiveToConserved(phydro->w, pfield->bcc, phydro->u, pcoord, is, ie, js, je, ks, ke);
 }
 
