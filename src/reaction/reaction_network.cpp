@@ -29,7 +29,6 @@ ReactionNetwork::ReactionNetwork(MeshBlock *pmb, ParameterInput *pin){
 
   implicit_reactions = pin->GetOrAddBoolean("reaction", "implicit_reactions", "False");
   consumption_tolerance = pin->GetOrAddReal("reaction", "consumption_tolerance", 0.0);
-  sfloor = pin->GetOrAddReal("hydro", "sfloor", 1.e-12);
   temperature_.NewAthenaArray(pmb->ncells3, pmb->ncells2, pmb->ncells1);
   
   speed_of_light = pin->GetReal("problem", "speed_of_light");
@@ -159,25 +158,7 @@ void ReactionNetwork::ComputeReactionForcing(const Real dt, const AthenaArray<Re
           ComputeScalarDensityChange(dt, drho, k, j, i);
           for (int n = 0; n < NSCALARS; ++n)
           {
-            // check this drho isnt in error
-            if (drho[n] < 0 && -drho[n] > cons_scalar(n,k,j,i)) {
-              Real s_rho = cons_scalar(n,k,j,i);
-              Real deviation = (-drho[n] - s_rho)/s_rho;
-
-              // unnecessary abs
-              if (std::abs(deviation) < consumption_tolerance) {
-                drho[n] = s_rho * (1.0 - sfloor);
-              } else {
-                std::stringstream msg;
-                msg << "##### FATAL ERROR in ReactionNetwork::ComputeReactionForcing" << std::endl
-                    << "Error at position (k,j,i) = " << k << ", " << j << ", " << i << "." << std::endl
-                    << "drho ("<<drho[n]<<") for scalar (" << n << ") exceeds scalar concentration"
-                    << "(" << cons_scalar(n,k,j,i)<< ") causing negative density." << std::endl
-                    << "fraction deviation " << deviation << " exceeds consumption tolerance "<<consumption_tolerance
-                    << std::endl;
-                ATHENA_ERROR(msg);
-              }
-            }
+            CheckScalarConflict(n,k,j,i, drho, cons_scalar);
 
             // add to scalar change array
             ds(n,k,j,i) += drho[n];
@@ -188,6 +169,35 @@ void ReactionNetwork::ComputeReactionForcing(const Real dt, const AthenaArray<Re
   } // k
 }
 
+
+void ReactionNetwork::CheckScalarConflict(int n, int k, int j, int i, Real drho[NSCALARS], const AthenaArray<Real> cons_scalar)
+{
+  Real s_n = cons_scalar(n,k,j,i);
+  Real drho_n = drho[n];
+  if(drho_n < 0 && -drho_n > s_n) {
+    Real deviation = (-drho_n - s_n)/s_n;
+
+    if (std::abs(deviation) < consumption_tolerance) {
+      std::stringstream msg;
+      msg << " consumption_tolerance activating " << std::endl
+          <<"Error at position (k,j,i) = " << k << ", " << j << ", " << i << "." << std::endl
+          << "drho ("<<drho_n<<") for scalar (" << n << ") exceeds scalar concentration"
+          << "(" << cons_scalar(n,k,j,i)<< ") causing negative density." << std::endl
+          << std::endl;
+      std::cout << msg.str();
+      drho[n] = -s_n;
+    } else {
+      std::stringstream msg;
+      msg << "##### FATAL ERROR in ReactionNetwork::ComputeReactionForcing" << std::endl
+          << "Error at position (k,j,i) = " << k << ", " << j << ", " << i << "." << std::endl
+          << "drho ("<<drho_n<<") for scalar (" << n << ") exceeds scalar concentration"
+          << "(" << cons_scalar(n,k,j,i)<< ") causing negative density." << std::endl
+          << "fraction deviation " << deviation << " exceeds consumption tolerance "<<consumption_tolerance
+          << std::endl;
+      ATHENA_ERROR(msg);
+    }
+  }
+}
 //check for implicit bug here
 void ReactionNetwork::ComputeScalarDensityChange(const Real dt, Real drho[NSCALARS], int k, int j, int i) {
   Real dn_rate_total;

@@ -63,7 +63,6 @@ public:
 
 protected:
   Real consumption_tolerance;
-  Real sfloor;
 
   bool implicit_reactions;
   typedef Eigen::Matrix<Real,NSCALARS,NSCALARS> MatrixNSR;
@@ -74,6 +73,8 @@ protected:
 
   // calculates dn inside ComputeReactionForcing
   void ComputeScalarDensityChange(const Real dt, Real drho[NSCALARS], int k, int j, int i);
+
+  void CheckScalarConflict(int n, int k, int j, int i, Real drho[NSCALARS], const AthenaArray<Real> cons_scalar);
 };
 
 #endif
