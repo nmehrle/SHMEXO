@@ -48,7 +48,6 @@ void Hydro::NewBlockTimeStep() {
   Real wi[NWAVE];
 
   Real real_max = std::numeric_limits<Real>::max();
-  Real min_dt = real_max;
   // Note, "dt_hyperbolic" currently refers to the dt limit imposed by evoluiton of the
   // ideal hydro or MHD fluid by the main integrator (even if not strictly hyperbolic)
   Real min_dt_hyperbolic  = real_max;
@@ -56,7 +55,6 @@ void Hydro::NewBlockTimeStep() {
   // implemented and flexibility from #247 (zero fluid configurations) is
   // addressed. dt_hydro, dt_main (inaccurate since "dt" is actually main), dt_MHD?
   Real min_dt_parabolic  = real_max;
-  Real min_dt_user  = real_max;
 
   // TODO(felker): skip this next loop if pm->fluid_setup == FluidFormulation::disabled
   FluidFormulation fluid_status = pmb->pmy_mesh->fluid_setup;
@@ -158,24 +156,8 @@ void Hydro::NewBlockTimeStep() {
   // in the future (with default = cfl_number).
   min_dt_parabolic *= pmb->pmy_mesh->cfl_number;
 
-  // set main integrator timestep as the minimum of the appropriate timestep constraints:
-  // hyperbolic: (skip if fluid is nonexistent or frozen)
-  min_dt = std::min(min_dt, min_dt_hyperbolic);
-  // user:
-  if (UserTimeStep_ != nullptr) {
-    min_dt_user = UserTimeStep_(pmb);
-    min_dt = std::min(min_dt, min_dt_user);
-  }
-  // parabolic:
-  // STS handles parabolic terms -> then take the smaller of hyperbolic or user timestep
-  if (!STS_ENABLED) {
-    // otherwise, take the smallest of the hyperbolic, parabolic, user timesteps
-    min_dt = std::min(min_dt, min_dt_parabolic);
-  }
-  pmb->new_block_dt_ = min_dt;
   pmb->new_block_dt_hyperbolic_ = min_dt_hyperbolic;
   pmb->new_block_dt_parabolic_ = min_dt_parabolic;
-  pmb->new_block_dt_user_ = min_dt_user;
 
   return;
 }

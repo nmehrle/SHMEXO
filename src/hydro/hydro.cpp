@@ -140,8 +140,6 @@ Hydro::Hydro(MeshBlock *pmb, ParameterInput *pin) :
     laplacian_r_fc_.NewAthenaArray(nc1);
   }
 
-  UserTimeStep_ = pmb->pmy_mesh->UserTimeStep_;
-
   // allocate hydrostatic and nonhydrostatic pressure
   psf_.NewAthenaArray(nc3, nc2, nc1 + 1);
   psv_.NewAthenaArray(nc3, nc2, nc1);

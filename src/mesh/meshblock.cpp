@@ -574,6 +574,40 @@ void MeshBlock::RegisterMeshBlockData(FaceField &pvar_fc) {
   return;
 }
 
+void MeshBlock::NewBlockTimeStep() {
+  Real real_max = std::numeric_limits<Real>::max();
+  Real min_dt = real_max;
+
+  new_block_dt_hyperbolic_ = real_max;
+  new_block_dt_parabolic_  = real_max;
+  new_block_dt_user_       = real_max;
+  new_block_dt_radiation_  = real_max;
+
+  // Hydro New TimeStep Calculation
+  // sets new_block_dt_parabolic_, new_block_dt_hyperbolic_
+  phydro->NewBlockTimeStep();
+
+  // set main integrator timestep as the minimum of the appropriate timestep constraints:
+
+  // hyperbolic: (skip if fluid is nonexistent or frozen)
+  min_dt = std::min(min_dt, new_block_dt_hyperbolic_);
+
+  // parabolic:
+  // STS handles parabolic terms -> then take the smaller of the other timesteps
+  if (!STS_ENABLED) {
+    // otherwise, take the smallest of the timesteps including parabolic
+    min_dt = std::min(min_dt, new_block_dt_parabolic_);
+  }
+
+  // user:
+  if (pmy_mesh->UserTimeStep_ != nullptr) {
+    new_block_dt_user_ = pmy_mesh->UserTimeStep_(this);
+    min_dt = std::min(min_dt, new_block_dt_user_);
+  }
+
+  new_block_dt_ = min_dt;
+}
+
 
 // TODO(felker): consider merging the MeshRefinement::pvars_cc/fc_ into the
 // MeshBlock::pvars_cc/fc_. Would need to weaken the MeshBlock std::vector to use tuples

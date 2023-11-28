@@ -150,8 +150,6 @@ protected:
   // 1D scratch arrays
   AthenaArray<Real> laplacian_l_fc_, laplacian_r_fc_;
 
-  TimeStepFunc UserTimeStep_;
-
   void AddDiffusionFluxes();
   Real GetWeightForCT(Real dflx, Real rhol, Real rhor, Real dx, Real dt);
 

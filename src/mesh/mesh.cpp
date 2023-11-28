@@ -1579,7 +1579,7 @@ void Mesh::Initialize(int res_flag, ParameterInput *pin) {
   // calculate the first time step
 #pragma omp parallel for num_threads(nthreads)
   for (int i=0; i<nmb; ++i) {
-    pmb_array[i]->phydro->NewBlockTimeStep();
+    pmb_array[i]->NewBlockTimeStep();
   }
 
   NewTimeStep();
