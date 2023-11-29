@@ -159,7 +159,7 @@ class MeshBlock {
  private:
   // data
   Real new_block_dt_, new_block_dt_hyperbolic_, new_block_dt_parabolic_,
-    new_block_dt_user_;
+    new_block_dt_user_, new_block_dt_radiation_;
   // TODO(felker): make global TaskList a member of MeshBlock, store TaskStates in list
   // shared by main integrator + FFT gravity task lists. Multigrid has separate TaskStates
   TaskStates tasks;
@@ -236,7 +236,8 @@ class Mesh {
   const bool adaptive, multilevel;
   const FluidFormulation fluid_setup;
   bool continue_running;
-  Real start_time, time, tlim, dt, dt_hyperbolic, dt_parabolic, dt_user, cfl_number;
+  Real start_time, time, tlim, dt, dt_hyperbolic, dt_parabolic, dt_user, dt_rad;
+  Real cfl_number, radiation_time_number;
   int nlim, ncycle, ncycle_out, dt_diagnostics;
   Real muj, nuj, muj_tilde;
   int nbtotal, nbnew, nbdel;

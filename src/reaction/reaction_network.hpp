@@ -60,6 +60,8 @@ public:
   void ComputeReactionForcing(const AthenaArray<Real> prim, const AthenaArray<Real> cons, const AthenaArray<Real> cons_scalar);
   void IntegrateReactions(const Real dt, const AthenaArray<Real> cons_scalar, AthenaArray<Real> &du, AthenaArray<Real> &ds);
 
+  Real NewBlockTimeStep(Real dt_ratio);
+
   int num_reactions;
 
 protected:

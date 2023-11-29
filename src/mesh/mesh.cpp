@@ -88,6 +88,7 @@ Mesh::Mesh(ParameterInput *pin, int mesh_test) :
     tlim(pin->GetReal("time", "tlim")), dt(std::numeric_limits<Real>::max()),
     dt_hyperbolic(dt), dt_parabolic(dt), dt_user(dt),
     cfl_number(pin->GetReal("time", "cfl_number")),
+    radiation_time_number(pin->GetOrAddReal("time", "radiation_number", 1.0)),
     nlim(pin->GetOrAddInteger("time", "nlim", -1)), ncycle(),
     ncycle_out(pin->GetOrAddInteger("time", "ncycle_out", 1)),
     dt_diagnostics(pin->GetOrAddInteger("time", "dt_diagnostics", -1)),
@@ -557,6 +558,7 @@ Mesh::Mesh(ParameterInput *pin, IOWrapper& resfile, int mesh_test) :
     tlim(pin->GetReal("time", "tlim")), dt(std::numeric_limits<Real>::max()),
     dt_hyperbolic(dt), dt_parabolic(dt), dt_user(dt),
     cfl_number(pin->GetReal("time", "cfl_number")),
+    radiation_time_number(pin->GetOrAddReal("time", "radiation_number", 1.0)),
     nlim(pin->GetOrAddInteger("time", "nlim", -1)), ncycle(),
     ncycle_out(pin->GetOrAddInteger("time", "ncycle_out", 1)),
     dt_diagnostics(pin->GetOrAddInteger("time", "dt_diagnostics", -1)),
@@ -1075,6 +1077,7 @@ void Mesh::NewTimeStep() {
   dt_hyperbolic = pmb->new_block_dt_hyperbolic_;
   dt_parabolic = pmb->new_block_dt_parabolic_;
   dt_user = pmb->new_block_dt_user_;
+  dt_rad  = pmb->new_block_dt_radiation_;
   pmb = pmb->next;
 
   while (pmb != nullptr)  {
@@ -1082,17 +1085,19 @@ void Mesh::NewTimeStep() {
     dt_hyperbolic  = std::min(dt_hyperbolic, pmb->new_block_dt_hyperbolic_);
     dt_parabolic  = std::min(dt_parabolic, pmb->new_block_dt_parabolic_);
     dt_user  = std::min(dt_user, pmb->new_block_dt_user_);
+    dt_rad  = std::min(dt_rad, pmb->new_block_dt_radiation_);
     pmb = pmb->next;
   }
 
 #ifdef MPI_PARALLEL
   // pack array, MPI allreduce over array, then unpack into Mesh variables
-  Real dt_array[4] = {dt, dt_hyperbolic, dt_parabolic, dt_user};
+  Real dt_array[5] = {dt, dt_hyperbolic, dt_parabolic, dt_user, dt_rad};
   MPI_Allreduce(MPI_IN_PLACE, dt_array, 4, MPI_ATHENA_REAL, MPI_MIN, MPI_COMM_WORLD);
   dt            = dt_array[0];
   dt_hyperbolic = dt_array[1];
   dt_parabolic  = dt_array[2];
   dt_user       = dt_array[3];
+  dt_rad        = dt_array[4];
 #endif
 
   if (time < tlim && (tlim - time) < dt) // timestep would take us past desired endpoint
@@ -1894,6 +1899,12 @@ void Mesh::OutputCycleDiagnostics() {
         if (UserTimeStep_ != nullptr) {
           Real ratio = dt / dt_user;
           std::cout << "\ndt_user=" << dt_user << " ratio="
+                    << std::setprecision(ratio_precision) << ratio
+                    << std::setprecision(dt_precision);
+        }
+        if (RADIATION_ENABLED) {
+          Real ratio = dt / dt_rad;
+          std::cout << "\ndt_radiation=" << dt_rad << " ratio="
                     << std::setprecision(ratio_precision) << ratio
                     << std::setprecision(dt_precision);
         }

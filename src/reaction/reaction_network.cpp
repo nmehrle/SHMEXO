@@ -265,3 +265,39 @@ void ReactionNetwork::CheckScalarConflict(int n, int k, int j, int i, Real drho[
     }
   }
 }
+
+Real ReactionNetwork::NewBlockTimeStep(Real dt_ratio) {
+  Real real_max = std::numeric_limits<Real>::max();
+  Real min_dt_rxn = real_max;
+  Real dn_dt, min_dt_n, s_n;
+
+  MeshBlock *pmb = pmy_block;
+
+  int is = pmb->is; int js = pmb->js; int ks = pmb->ks;
+  int ie = pmb->ie; int je = pmb->je; int ke = pmb->ke;
+
+  for (int n = 0; n < NSCALARS; ++n) {
+    min_dt_n = real_max;
+
+    for (int k=ks; k<=ke; ++k) {
+      for (int j=js; j<=je; ++j) {
+        for (int i=is; i<=ie; ++i) {
+          s_n = pscalars->s(n,k,j,i);
+          dn_dt = 0;
+          for (int r = 0; r < num_reactions; ++r) {
+            dn_dt += dn_rate(r,n,k,j,i);
+          }
+
+          if (dn_dt < 0) {
+            min_dt_n = std::min(min_dt_n, s_n / (-dn_dt));
+          }
+        } // i
+      } // j
+    } // k
+    min_dt_n = min_dt_n / pscalars->mass(n);
+    min_dt_rxn = std::min(min_dt_rxn, min_dt_n);
+  } // n
+
+  min_dt_rxn *= dt_ratio;
+  return min_dt_rxn;
+}
