@@ -409,7 +409,6 @@ TimeIntegratorTaskList::TimeIntegratorTaskList(ParameterInput *pin, Mesh *pm) {
     AddTask(USERWORK,PHY_BVAL);
     if (RADIATION_ENABLED) {
         AddTask(CALC_RADFLX, USERWORK);
-        // AddTask(INT_RAD, CALC_RADFLX);
         AddTask(NEW_DT, CALC_RADFLX);
     }
     else {
