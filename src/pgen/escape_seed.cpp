@@ -47,10 +47,10 @@ namespace {
   Real planck, speed_of_light;
   Real dfloor, pfloor, sfloor;
   Real gas_gamma, boltzmann;
+  Real wave_to_meters_conversion;
 
   // radiation variables
   Real global_rad_scaling;
-  bool radiation_time_ramp;
 
   std::string helium_alpha_file, helium_beta_file, helium_decay_file;
   std::string helium_collisions_file, helium_collision_reemission_branching_file;
@@ -58,46 +58,45 @@ namespace {
   bool enable_reemission;
 
   // initial conditions
-  std::string initial_condition_file;
   Real rho_0, Teq;
-  Real r_replenish;
-  AthenaArray<Real> initial_conditions;
+  Real r_e, r_replenish, r_inner;
+  AthenaArray<Real> initial_abundances;
 
   // species variables
-  Real H_He_ratio, H_He_mass_ratio;
+  Real H_He_ratio, H_He_mass_ratio, mu;
   enum speciesList {ELEC = 0,
                 H = 1, HII = 2,
                 He = 3, He23S = 4,
                 HeII = 5, HeIII = 6};
+  Real epsilon_concentration;
 
   //convergence checking
   bool check_convergence;
-  Real convergence_rel_tol;
-  AthenaArray<Real> convergence_abs_tol;
-  AthenaArray<Real> convergence_check_buffer;
+  Real convergence_level;
+  AthenaArray<Real> last_step_cons;
+  AthenaArray<Real> last_step_cons_scalar;
 
 } //namespace
 
   // Function declarations
   Real getRad(Coordinates *pcoord, int i, int j, int k);
+  Real rho_func(Real r);
+  Real press_func(Real rho);
   void getMBBounds(MeshBlock *pmb, int &il, int &iu, int &jl, int &ju, int &kl, int &ku);
   void gravity_func(MeshBlock *pmb, AthenaArray<Real> &g1, AthenaArray<Real> &g2, AthenaArray<Real> &g3);
-  
-  void NaNCheck(MeshBlock *pmb, const AthenaArray<Real> prim, int k, int j, int i);
-  bool ConvergenceCheck(const AthenaArray<Real> prim, const AthenaArray<Real> prim_scalar, const AthenaArray<Real> scalar_mass, int k, int j, int i);
-  void QualifyHHeRatio(PassiveScalars *ps);
 
   // void SourceTerms(MeshBlock *pmb, const Real time, const Real dt,
   //   const AthenaArray<Real> &w, const AthenaArray<Real> &r,
   //   const AthenaArray<Real> &bcc,
   //   AthenaArray<Real> &du, AthenaArray<Real> &ds);
-  Real RadiationScaling(RadiationBand *band, AthenaArray<Real> const &prim, Real time, int k, int j);
+  Real RadiationTime(RadiationBand *band, AthenaArray<Real> const &prim, Real time, int k, int j);
 
   // mesh generators
   MeshGenerator meshgen_x1, meshgen_x2, meshgen_x3;
   Real MeshSpacingX1(Real x, RegionSize rs);
   Real MeshSpacingX2(Real x, RegionSize rs);
   Real MeshSpacingX3(Real x, RegionSize rs);
+  void SetInitialAbundances(MeshBlock *pmb, PassiveScalars *ps);
 
 //----------------------------------------------------------------------------------------
 // User Setup
@@ -107,56 +106,49 @@ void Mesh::InitUserMeshData(ParameterInput *pin)
   EnrollUserExplicitGravityFunction(gravity_func);
   // EnrollUserExplicitSourceFunction(SourceTerms);
 
-  dfloor = pin->GetOrAddReal("hydro", "dfloor", 0);
-  pfloor = pin->GetOrAddReal("hydro", "pfloor", 0);
-  sfloor = pin->GetOrAddReal("hydro", "sfloor", 0);
-
   check_convergence = pin->GetOrAddBoolean("problem", "check_convergence", false);
-  convergence_rel_tol = pin->GetOrAddReal("problem", "convergence_rel_tol", 1.e-6);
-  convergence_abs_tol.NewAthenaArray(NHYDRO+NSCALARS);
+  convergence_level = pin->GetOrAddReal("problem", "convergence_level", 1.e-5);
 
-  convergence_abs_tol(IDN) = pin->GetOrAddReal("problem", "density_abs_tol", -1.);
-  convergence_abs_tol(IVX) = pin->GetOrAddReal("problem", "velocity_abs_tol", -1.);
-  convergence_abs_tol(IVY) = convergence_abs_tol(IVX);
-  convergence_abs_tol(IVZ) = convergence_abs_tol(IVX);
-  convergence_abs_tol(IPR) = pin->GetOrAddReal("problem", "pressure_abs_tol", -1.);
+  // Radiation parameters
+  global_rad_scaling = pin->GetOrAddReal("radiation", "global_radiation_scaling", 1.);
 
-  char key[100];
-  for (int n = 0; n < NSCALARS; ++n)
-  {
-    sprintf(key, "s%d.mass_concentration_abs_tol", n);
-    convergence_abs_tol(NHYDRO+n) = pin->GetOrAddReal("scalar", key, -1.);
-  }
+  wave_to_meters_conversion = pin->GetOrAddReal("radiation","wave_to_meters",1.e-7);
+  EnrollUserRadiationScalingFunction(RadiationTime);
 
-  // Physical Constants
+  // Gravity/System Parameters
   G = pin->GetReal("problem","G");
-  planck = pin->GetReal("problem","planck_constant");
-  speed_of_light = pin->GetReal("problem", "speed_of_light");
-  boltzmann = pin->GetReal("hydro", "boltzmann");
-
-  // System Parameters
   Mp = pin->GetReal("problem","Mp");
   Ms = pin->GetReal("problem","Ms");
   Rp = pin->GetReal("problem","Rp");
   period = pin->GetReal("problem","period");
-  // Convert period to semi-major-axis
+
+  planck = pin->GetReal("problem","planck_constant");
+  speed_of_light = pin->GetReal("problem", "speed_of_light");
+
   Real x = 4. * pow(M_PI,2.) / (G * Ms);
   semi_major_axis = pow( pow(period*86400.,2.)/x ,(1./3));
 
-  // Initial Conditions
   gas_gamma = pin->GetReal("hydro","gamma");
+  boltzmann = pin->GetReal("hydro", "boltzmann");
+
+  dfloor = pin->GetOrAddReal("hydro", "dfloor", 0);
+  pfloor = pin->GetOrAddReal("hydro", "pfloor", 0);
+  sfloor = pin->GetOrAddReal("hydro", "sfloor", 0);
+
+  // rho_p = pin->GetOrAddReal("problem","rho_p",1.0e-15);
+  // cs = pin->GetOrAddReal("problem","cs",3.0e5);
+  // space_density_factor = pin->GetOrAddReal("problem", "space_density_factor", 1.e-4);
+  r_replenish = pin->GetOrAddReal("problem", "r_replenish_Rp", 1.0)*Rp;
+  r_e = pin->GetOrAddReal("problem", "r_exterior_Rp", 2.0)*Rp;
+  r_inner = pin->GetOrAddReal("problem", "r_inner_Rp", 1.0)*Rp;
+  
   Teq = pin->GetReal("problem", "Teq");
   rho_0 = pin->GetReal("problem","rho_0");
-  initial_condition_file = pin->GetString("problem","initial_conditions_file");
 
+  // 92.3% H by number == 75% H by mass
   H_He_ratio      = pin->GetOrAddReal("problem", "H_He_ratio", 0);
   H_He_mass_ratio = pin->GetOrAddReal("problem", "H_He_mass_ratio", 0);
-
-  // Radiation parameters
-  global_rad_scaling = pin->GetOrAddReal("radiation", "global_radiation_scaling", 1.);
-  radiation_time_ramp = pin->GetOrAddBoolean("radiation", "time_ramp", true);
-
-  EnrollUserRadiationScalingFunction(RadiationScaling);
+  epsilon_concentration = pin->GetOrAddReal("reaction", "epsilon_concentration", 0);
 
   enable_reemission = pin->GetOrAddBoolean("reaction", "enable_reemission", false);
 
@@ -167,8 +159,6 @@ void Mesh::InitUserMeshData(ParameterInput *pin)
   helium_collision_reemission_branching_file = pin->GetOrAddString("reaction", "He_e_coll_reemission_branching_file", "");
 
   // Domain logic
-  r_replenish = pin->GetOrAddReal("problem", "r_replenish_Rp", 1.0)*Rp;
-
   if (mesh_size.x1rat == -1.0) {
     meshgen_x1 = MeshGenerator(mesh_size.x1min, mesh_size.x1max, mesh_size.nx1, pin);
     EnrollUserMeshGenerator(X1DIR, MeshSpacingX1);
@@ -231,6 +221,11 @@ void MeshBlock::UserWorkBeforeOutput(ParameterInput *pin)
     }
   }
 }
+
+// Real HeliumRecombinationReemission(Radiation *prad, int b, int n, Real T, int k, int j, int i)
+// {
+//   return 0;
+// }
 
 Reaction* ReactionNetwork::GetReactionByName(std::string name, ParameterInput *pin)
 {
@@ -451,20 +446,32 @@ void gravity_func(MeshBlock *pmb, AthenaArray<Real> &g1, AthenaArray<Real> &g2, 
   }
 }
 
-Real RadiationScaling(RadiationBand *band, AthenaArray<Real> const &prim, Real time, int k, int j) {
-  Real time_factor = 1;
-  if (radiation_time_ramp)
-    time_factor = (std::tanh((time-8.e4)/5e4)+1.)/2.;
-
+Real RadiationTime(RadiationBand *band, AthenaArray<Real> const &prim, Real time, int k, int j) {
+  Real time_factor = (std::tanh((time-8.e4)/5e4)+1.)/2.;
   Real scaling = global_rad_scaling * band->band_scaling_factor;
+
   return scaling*time_factor;
 }
 
 //----------------------------------------------------------------------------------------
 // Initial Conditions
 //----------------------------------------------------------------------------------------
+void SetInitialConditions(Real rad, Real &dens, Real &press, Real &v1, Real &v2, Real &v3) {
+  v1 = v2 = v3 = 0;
 
-void QualifyHHeRatio(PassiveScalars *ps) {
+    if (rad <= r_inner) {
+      dens = rho_func(r_inner);
+      press = press_func(dens);
+    }
+    else {
+      dens  = rho_func(rad);
+      press = press_func(dens);  
+    }
+}
+
+void SetInitialAbundances(MeshBlock *pmb, PassiveScalars *ps) {
+  int il, iu, jl, ju, kl, ku;
+  Real rad;
   Real me  = ps->mass(ELEC);
   Real mh  = ps->mass(H);
   Real mhe = ps->mass(He);
@@ -493,89 +500,100 @@ void QualifyHHeRatio(PassiveScalars *ps) {
     Real q = H_He_mass_ratio;
     H_He_ratio = (q/mh) / (q / mh + (1-q)/mhe);
   }
+
+  Real q = H_He_mass_ratio;
+  Real norm;
+
+  getMBBounds(pmb, il, iu, jl, ju, kl, ku);
+
+  // set number densities, fill in mass later
+  for (int k = kl; k <= ku; ++k) {
+    for (int j = jl; j <= ju; ++j) {
+      for (int i = il; i <= iu; ++i) { 
+        rad = getRad(pmb->pcoord, i, j, k);
+
+        if (rad <= r_e) {
+          initial_abundances(H,k,j,i)   = q;
+          initial_abundances(ELEC,k,j,i)  = 4*epsilon_concentration;
+          initial_abundances(HII,k,j,i) = epsilon_concentration;
+          initial_abundances(He,k,j,i) = (1.-q);
+          initial_abundances(He23S,k,j,i) = epsilon_concentration;
+          initial_abundances(HeII,k,j,i) = epsilon_concentration;
+          initial_abundances(HeIII,k,j,i) = epsilon_concentration;
+        }
+        else {
+          initial_abundances(H,k,j,i)   = epsilon_concentration;
+          initial_abundances(ELEC,k,j,i)  = 1. + 2*epsilon_concentration;
+          initial_abundances(HII,k,j,i) = q;
+          initial_abundances(He,k,j,i) = epsilon_concentration;
+          initial_abundances(He23S,k,j,i) = epsilon_concentration;
+          initial_abundances(HeII,k,j,i) = 1.-q;
+          initial_abundances(HeIII,k,j,i) = epsilon_concentration; 
+        }
+
+        // add up accross n
+        norm = 0;
+        for (int n = 0; n < NSCALARS; ++n)
+        {
+          // initial_abundances(n,k,j,i) *= ps->m(n);
+          norm += initial_abundances(n,k,j,i);
+        }
+
+        for (int n = 0; n < NSCALARS; ++n)
+        {
+          initial_abundances(n,k,j,i) /= norm;
+        }
+      } // i
+    } // j
+  } // k
+
+  mu = 0;
+  for (int n = 0; n < NSCALARS; ++n)
+  {
+    mu += initial_abundances(n,0,0,0)/pmb->pscalars->mass(n);
+  }
+  mu = 1.0/mu;
 }
 
 void MeshBlock::ProblemGenerator(ParameterInput *pin)
 {
-  initial_conditions.NewAthenaArray(NHYDRO+NSCALARS, ncells3, ncells2, ncells1);
-  convergence_check_buffer.NewAthenaArray(NHYDRO+NSCALARS, ncells3, ncells2, ncells1);
+  initial_abundances.NewAthenaArray(NSCALARS, ncells3, ncells2, ncells1);
+  SetInitialAbundances(this, pscalars);
+
+  last_step_cons.NewAthenaArray(NHYDRO, ncells3, ncells2, ncells1);
+  last_step_cons_scalar.NewAthenaArray(NSCALARS, ncells3, ncells2, ncells1);
 
   // setup initial condition
   int il, iu, jl, ju, kl, ku;
   getMBBounds(this, il, iu, jl, ju, kl, ku);
 
-  // Read in data from file
-  AthenaArray<Real> tmp_file_data;
-  ReadDataTable(tmp_file_data, initial_condition_file);
+  Real rad;
+  Real dens, press, v1, v2, v3;
 
-  const int n_file = tmp_file_data.GetDim2();
-  const int n_var = tmp_file_data.GetDim1();
-  Real **file_data = new Real*[n_var];
-  for(int i = 0; i < n_var; i++)
-    file_data[i] = new Real[n_file];
-
-  for (int i = 0; i < n_var; ++i)
-  {
-    for (int j = 0; j < n_file; ++j)
-    {
-      file_data[i][j] = tmp_file_data(j,i);
-    }
-  }
-  tmp_file_data.DeleteAthenaArray();
-
-  QualifyHHeRatio(pscalars);
-  Real rad, rad_rp, var, number_density;
+  v1 = v2 = v3 = 0;
 
   for (int i = il; i <= iu; ++i) {
     for (int j = jl; j <= ju; ++j) {
       for (int k = kl; k <= ku; ++k) {
         rad = getRad(pcoord, i, j, k);
-        rad_rp = rad/Rp;
-        // interp file_data onto domain, scale appropriately
-        // save to initial conditions
 
-        number_density = 0;
-        for (int n = 0; n < NHYDRO+NSCALARS; ++n)
-        {
-          //interp file_data onto domain
-          var = interp1(rad_rp, file_data[n+1], file_data[0], n_file);
+        SetInitialConditions(rad, dens, press, v1, v2, v3);
 
-          //scale appropriately
-          if (n == IDN) // density
-            var *= rho_0;
-          else if (n == IPR) // pressure
-            var *= Teq;
-          else if (n == NHYDRO + 1 || n == NHYDRO + 2)// Hydrogen Species
-            var *= H_He_mass_ratio;
-          else if (n > NHYDRO + 2) // Helium Species
-            var *= (1-H_He_mass_ratio);
+        phydro->w(IPR,k,j,i) = press;
+        phydro->w(IDN,k,j,i) = dens;
+        phydro->w(IV1,k,j,i) = v1;
+        phydro->w(IV2,k,j,i) = v2;
+        phydro->w(IV3,k,j,i) = v3;
 
-          // track number density of scalars for T->P conversion
-          if (n >= NHYDRO)
-            number_density += var / pscalars->mass(n-NHYDRO);
-
-          //save to initial conditions
-          initial_conditions(n,k,j,i) = var;
-        } // n
-
-        // convert temp to press and resave
-        number_density = number_density * initial_conditions(IDN,k,j,i);
-        initial_conditions(IPR,k,j,i) = initial_conditions(IPR,k,j,i) * number_density * boltzmann;
-
-        // write to hydro variables
-        for (int n = 0; n < NHYDRO; ++n)
-          phydro->w(n,k,j,i) = initial_conditions(n,k,j,i);
-
-        // write to scalar variables
+        // s0 -- neutral hydrogen
         for (int n = 0; n < NSCALARS; ++n)
-          pscalars->s(n,k,j,i) = initial_conditions(n+NHYDRO,k,j,i) * initial_conditions(IDN,k,j,i);
-      } //k
-    } //j
-  } //i
+        {
+          pscalars->s(n,k,j,i) = initial_abundances(n,k,j,i) * dens;
+        }
+      }
+    }
+  }
   //-- end file loading
-  for(int i = 0; i < n_var; i++)
-      delete[] file_data[i];
-  delete[] file_data;
 
   for (int b = 0; b < prad->nbands; ++b)
   {
@@ -594,74 +612,17 @@ void MeshBlock::ProblemGenerator(ParameterInput *pin)
   peos->PrimitiveToConserved(phydro->w, pfield->bcc, phydro->u, pcoord, is, ie, js, je, ks, ke);
 }
 
-void NaNCheck(MeshBlock *pmb, const AthenaArray<Real> prim, int k, int j, int i) {
-  bool tripped = false;
-  std::string trip_var;
-
-  // nan checking
-  if (std::isnan(prim(IDN,k,j,i))) {
-    tripped = true;
-    trip_var = "dens";
-  } else if (std::isnan(prim(IPR,k,j,i))) {
-    tripped = true;
-    trip_var = "press";
-  } else if (std::isnan(prim(IV1,k,j,i))) {
-    tripped = true;
-    trip_var = "vel1";
-  } else if (std::isnan(prim(IV2,k,j,i))) {
-    tripped = true;
-    trip_var = "vel2";
-  } else if (std::isnan(prim(IV3,k,j,i))) {
-    tripped = true;
-    trip_var = "vel3";
-  }
-
-  if (tripped) {
-    std::stringstream nan_msg;
-    nan_msg << "### FATAL ERROR" << std::endl;
-    nan_msg << "    nan value detected in (" << trip_var;
-    nan_msg << ") at (k=" << k << ", j=" << j << ", i=" << i << ")." << std::endl;
-    nan_msg << " at time: " << pmb->pmy_mesh->time << " cycle: " << pmb->pmy_mesh->ncycle << std::endl;
-    std::cout << nan_msg.str() << std::endl;
-    ATHENA_ERROR(nan_msg);
-  }
-}
-
-bool ConvergenceCheck(const AthenaArray<Real> prim, const AthenaArray<Real> prim_scalar, const AthenaArray<Real> scalar_mass, int k, int j, int i) {
-  bool converged_here = true;
-  Real past_value, current_value;
-  Real deviation, abs_tol, tol;
-
-  for (int n = 0; n < NHYDRO+NSCALARS; ++n)
-  {
-    past_value = convergence_check_buffer(n, k, j, i);
-    abs_tol = convergence_abs_tol(n);
-
-    if (n < NHYDRO) { // Hydro Variables
-      current_value = prim(n, k, j, i);
-    }
-    else { // Scalar Variables
-      current_value = prim_scalar(n-NHYDRO, k, j, i);
-    }
-
-    deviation = abs(current_value - past_value);
-    tol = std::max(convergence_rel_tol * abs(past_value), abs_tol);
-
-    if (deviation > tol)
-      converged_here = false;
-
-    convergence_check_buffer(n,k,j,i) = current_value;
-  }
-
-  return converged_here;
-}
-
 // resets things inside r_replenish
 void MeshBlock::UserWorkInLoop() {
   // happens at last stage, at end
 
   Real gm1 = gas_gamma - 1.0;
-  Real rad, dens;
+  Real rad, dens, press, v1, v2, v3;
+
+  bool nancheck = false;
+  std::stringstream nan_msg;
+  nan_msg << "### FATAL ERROR" << std::endl;
+  nan_msg << "    nan value detected in (";
 
   bool converged = true;
 
@@ -673,41 +634,85 @@ void MeshBlock::UserWorkInLoop() {
       for (int i = il; i <= iu; ++i) {
         rad = getRad(pcoord, i, j, k);
 
-        NaNCheck(this, phydro->w, k, j, i);
+        // nan checking
+        if (std::isnan(phydro->w(IDN,k,j,i))) {
+          nancheck = true;
+          nan_msg << "dens";
+        } else if (std::isnan(phydro->w(IPR,k,j,i))) {
+          nancheck = true;
+          nan_msg << "press";
+        } else if (std::isnan(phydro->w(IV1,k,j,i))) {
+          nancheck = true;
+          nan_msg << "vel1";
+        } else if (std::isnan(phydro->w(IV2,k,j,i))) {
+          nancheck = true;
+          nan_msg << "vel2";
+        } else if (std::isnan(phydro->w(IV3,k,j,i))) {
+          nancheck = true;
+          nan_msg << "vel3";
+        }
+
+        if (nancheck) {
+          nan_msg << ") at (k=" << k << ", j=" << j << ", i=" << i << ")." << std::endl;
+          nan_msg << " at time: " << pmy_mesh->time << " cycle: " << pmy_mesh->ncycle << std::endl;
+          std::cout << nan_msg.str() << std::endl;
+          ATHENA_ERROR(nan_msg);
+        }
 
         // convergence check
         if (check_convergence && rad > r_replenish) {
-          if (not ConvergenceCheck(phydro->w, pscalars->r, pscalars->mass, k, j, i))
-            converged = false;
+          for (int nh = 0; nh < NHYDRO; ++nh)
+          {
+            Real current_value = phydro->u(nh, k, j, i);
+            Real perc_difference = abs(current_value - last_step_cons(nh, k, j, i))/(current_value);
+            if (perc_difference > convergence_level) {
+              converged = false;
+            }
+            last_step_cons(nh, k, j, i) = current_value;
+          }
+
+          for (int ns = 0; ns < NSCALARS; ++ns)
+          {
+            Real current_value = pscalars->s(ns, k, j, i);
+            Real perc_difference = abs(current_value - last_step_cons_scalar(ns, k, j, i))/(current_value);
+            if (perc_difference > convergence_level) {
+              converged = false;
+            }
+            last_step_cons_scalar(ns, k, j, i) = current_value;
+          }
         }
 
         // reset conditions interior to r_replenish
         // probably best to do both cons and prim
         if (rad <= r_replenish) {
-          // write to hydro variables
-          for (int n = 0; n < NHYDRO; ++n) {
-            phydro->w(n,k,j,i) = initial_conditions(n,k,j,i);
-          }
+          SetInitialConditions(rad, dens, press, v1, v2, v3);
 
-          // write to scalar variables
-          for (int n = 0; n < NSCALARS; ++n) {
-            pscalars->r(n,k,j,i) = initial_conditions(n+NHYDRO,k,j,i);
-            pscalars->s(n,k,j,i) = initial_conditions(n+NHYDRO,k,j,i) * initial_conditions(IDN,k,j,i);
-          }
+          // prim
+          phydro->w(IPR,k,j,i) = press;
+          phydro->w(IDN,k,j,i) = dens;
+          phydro->w(IV1,k,j,i) = v1;
+          phydro->w(IV2,k,j,i) = v2;
+          phydro->w(IV3,k,j,i) = v3;
 
           //cons
-          dens = phydro->w(IDN,k,j,i);
-          phydro->u(IEN,k,j,i) = phydro->w(IPR,k,j,i)/gm1;
+          phydro->u(IEN,k,j,i) = press/gm1;
           phydro->u(IDN,k,j,i) = dens;
-          phydro->u(IM1,k,j,i) = phydro->w(IV1,k,j,i)*dens;
-          phydro->u(IM2,k,j,i) = phydro->w(IV2,k,j,i)*dens;
-          phydro->u(IM3,k,j,i) = phydro->w(IV3,k,j,i)*dens;
+          phydro->u(IM1,k,j,i) = v1*dens;
+          phydro->u(IM2,k,j,i) = v2*dens;
+          phydro->u(IM3,k,j,i) = v3*dens;
+
+          // scalars
+          for (int n = 0; n < NSCALARS; ++n)
+          {
+            pscalars->r(n,k,j,i) = initial_abundances(n,k,j,i);
+            pscalars->s(n,k,j,i) = initial_abundances(n,k,j,i) * dens;
+          }
         }
       } // i
     } // j
   } // k
 
-  if (check_convergence && converged) {
+  if (converged) {
     pmy_mesh->EndTimeIntegration();
   }
   return;
@@ -723,6 +728,16 @@ bool ReactionNetwork::DoRunReactions(int k, int j, int i) {
     return false;
   }
   return true;
+}
+
+Real rho_func(Real r) {
+  Real Hinv = (G * Mp * mu) / (boltzmann * Teq * Rp * Rp);
+  Real exp_r = (Rp - r);
+  return rho_0 * std::exp(Hinv * exp_r);
+}
+
+Real press_func(Real rho) {
+  return rho * Teq * boltzmann/mu;
 }
 
 Real getRad(Coordinates *pcoord, int i, int j, int k) {
