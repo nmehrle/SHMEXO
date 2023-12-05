@@ -235,7 +235,7 @@ class Mesh {
   const int ndim;     // number of dimensions
   const bool adaptive, multilevel;
   const FluidFormulation fluid_setup;
-  bool continue_running;
+  bool interrupt_integration;
   Real start_time, time, tlim, dt, dt_hyperbolic, dt_parabolic, dt_user, dt_rad;
   Real cfl_number, radiation_time_number;
   int nlim, ncycle, ncycle_out, dt_diagnostics;

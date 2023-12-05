@@ -432,7 +432,7 @@ int main(int argc, char *argv[]) {
 
   while ((pmesh->time < pmesh->tlim) &&
          (pmesh->nlim < 0 || pmesh->ncycle < pmesh->nlim) &&
-         (pmesh->continue_running))
+         (!pmesh->interrupt_integration))
   {
     if (Globals::my_rank == 0)
       pmesh->OutputCycleDiagnostics();
@@ -472,7 +472,7 @@ int main(int argc, char *argv[]) {
 #ifdef ENABLE_EXCEPTIONS
     try {
 #endif
-      if (pmesh->time < pmesh->tlim) // skip the final output as it happens later
+      if (pmesh->time < pmesh->tlim && !pmesh->interrupt_integration) // skip the final output as it happens later
         pouts->MakeOutputs(pmesh,pinput);
 #ifdef ENABLE_EXCEPTIONS
     }
@@ -542,7 +542,7 @@ int main(int argc, char *argv[]) {
       std::cout << std::endl << "Terminating on wall-time limit" << std::endl;
     } else if (pmesh->ncycle == pmesh->nlim) {
       std::cout << std::endl << "Terminating on cycle limit" << std::endl;
-    } else if (!pmesh->continue_running) {
+    } else if (pmesh->interrupt_integration) {
       std::cout << std::endl << "Terminating on convergence criteria" << std::endl;
     } else {
       std::cout << std::endl << "Terminating on time limit" << std::endl;

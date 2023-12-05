@@ -943,6 +943,7 @@ void Outputs::MakeOutputs(Mesh *pm, ParameterInput *pin, bool wtflag) {
       || (ptype->output_params.dt > 0.0 && pm->time >= ptype->output_params.next_time)
       || (ptype->output_params.dcycle > 0 && pm->ncycle%ptype->output_params.dcycle == 0)
       || (pm->time >= pm->tlim)
+      || (pm->interrupt_integration)
       || (wtflag && ptype->output_params.file_type == "rst")) {
       if (first && ptype->output_params.file_type != "hst") {
         pm->ApplyUserWorkBeforeOutput(pin);
