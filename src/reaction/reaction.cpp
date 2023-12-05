@@ -103,7 +103,7 @@ void ReactionTemplate::ProducePhotons(Real n_rxn, Real T, int k, int j, int i) {
       // energy converted to photons
       energy = energy * n_rxn * frac;
 
-      pband->source_energy_density(n, k, j, i) += energy;
+      pband->emission_coefficient(n, k, j, i) += energy;
     }
   }
 }

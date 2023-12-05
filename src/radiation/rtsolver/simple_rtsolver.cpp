@@ -33,7 +33,7 @@ void SimpleRTSolver::RadiativeTransfer(MeshBlock *pmb, int n, int k, int j)
     attenuation = exp(-tau_cell);
 
     dx = pmy_band->pmy_rad->pmy_block->pcoord->dx1f(i);
-    Fsource = pmy_band->source_energy_density(n,k,j,i)*dx;
+    Fsource = pmy_band->emission_coefficient(n,k,j,i)*dx;
 
     Fbot = (Ftop) * attenuation;
 

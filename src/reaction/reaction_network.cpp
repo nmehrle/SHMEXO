@@ -119,7 +119,7 @@ void ReactionNetwork::ResetRates() {
   
   for (int i = 0; i < prad->nbands; ++i)
   {
-    prad->my_bands(i)->source_energy_density.ZeroClear();
+    prad->my_bands(i)->emission_coefficient.ZeroClear();
   }
 }
 

@@ -78,7 +78,7 @@ public:
   // Additional flux generated in cells (due to reactions emitting phtons)
   // units -- [energy / volume / time]
   // length -- nspec, ncells3, ncells2, ncells1
-  AthenaArray<Real> source_energy_density;
+  AthenaArray<Real> emission_coefficient;
 
   // tau_cell -- optical depth inside one cell
   // tau -- optical depth of all cells above this cell including this cell
