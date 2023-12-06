@@ -65,6 +65,8 @@ public:
   Real band_scaling_factor;
   int integration_subbins;
 
+  std::string ix1_bc, ox1_bc;
+
   int nspec;
   Spectrum *spec, *spec_up;
   Real spec_bin_width;
@@ -94,12 +96,8 @@ public:
   //        F(iu) = F_input * exp[-tau(iu)]
   AthenaArray<Real> tau, tau_cell;
 
-
   RadiationBand(Radiation *prad, std::string name, ParameterInput *pin);
   ~RadiationBand();
-
-  void LoadInputSpectrum(std::string file, Spectrum *dest);
-  void ConstructRTSolver(std::string name, ParameterInput *pin);
 
   void InitAbsorbers(ParameterInput *pin);
   Absorber* GetAbsorberByName(std::string name, std::string band_name, ParameterInput *pin);
@@ -111,6 +109,10 @@ public:
   void ReadFileOntoBand(std::string file, AthenaArray<Real> &output, int ext=2);
 protected:
   std::string my_id;
+
+  void ConstructRTSolver(std::string name, ParameterInput *pin);
+  void LoadInputSpectrum(std::string file, Spectrum *dest);
+  void LoadBandBoundaryConditions(ParameterInput *pin);
 };
 
 #endif
