@@ -21,40 +21,70 @@ SimpleRTSolver::SimpleRTSolver(RadiationBand *pband, ParameterInput *pin):
 // computes F = e^-tau
 void SimpleRTSolver::RadiativeTransfer(MeshBlock *pmb, int n, int k, int j)
 {
+  RadiationBand *pband = pmy_band;
   int is = pmb->is; int ie = pmb->ie;
 
-  int nabs = pmy_band->nabs;
-  Real Ftop = pmy_band->flux_density(n,k,j,ie+1);
+  Real tau_cell, dx, emission_coefficient;
+  Real Fin, Fout;
+  // downwards transfer
+  if (pband->pmy_rad->downwards_flag) {
+    for (int i = ie; i>=is; --i) {
+      tau_cell = pband->tau_cell(n,k,j,i);
+      dx = pmb->pcoord->dx1f(i);
+      emission_coefficient = pband->emission_coefficient(n,k,j,i);
 
-  Real Fsource, Fbot, attenuation, tau_cell, dx;
-  Real delta_F, fraction_absorbed, J_i;
-  for (int i = ie; i>=is; --i) {
-    tau_cell = pmy_band->tau_cell(n,k,j,i);
-    attenuation = exp(-tau_cell);
-
-    dx = pmy_band->pmy_rad->pmy_block->pcoord->dx1f(i);
-    Fsource = pmy_band->emission_coefficient(n,k,j,i)*dx;
-
-    Fbot = (Ftop) * attenuation;
-
-    // Fsource * (1 - e^(-tau above)) or something
-    // half local
-    // half with upstream approx
-    delta_F = (Ftop - Fbot) + (Fsource * attenuation);
-
-    for (int a = 0; a < nabs; ++a) {
-      Absorber *pabs = pmy_band->absorbers(a);
-      //energy absorbed by this absorber
-      // Ji = (F1-F0)/dx * (a1 * dx / tau)
-
-      fraction_absorbed = pabs->absorptionCoefficient(n,k,j,i)/tau_cell;
-
-      J_i = delta_F * fraction_absorbed;
-
-      pabs->energyAbsorbed(n,k,j,i) = J_i;
+      Fin = pband->flux_density_down(n,k,j,i+1);
+      OneCellRadiativeTransfer(Fin, Fout, tau_cell, emission_coefficient, tau_cell/dx);
+      pband->flux_density_down(n,k,j,i) = Fout;
     }
-
-    pmy_band->flux_density(n,k,j,i) = Fbot;
-    Ftop = Fbot;
   }
+  // upwards transfer
+  if (pband->pmy_rad->upwards_flag) {
+    for (int i = is; i<=ie; ++i) {
+      tau_cell = pband->tau_cell(n,k,j,i);
+      dx = pmb->pcoord->dx1f(i);
+      emission_coefficient = pband->emission_coefficient(n,k,j,i);
+
+      Fin = pband->flux_density_up(n,k,j,i);
+      OneCellRadiativeTransfer(Fin, Fout, tau_cell, emission_coefficient, tau_cell/dx);
+      pband->flux_density_up(n,k,j,i+1) = Fout;
+    }
+  }
+
+  // Assign Energy to Absorbers
+  Absorber *pabs;
+  Real delta_F, fraction_absorbed, J_i;
+  for (int a = 0; a < pband->nabs; ++a) {
+    pabs = pband->absorbers(a);
+
+    for (int i = is; i <= ie; ++i)
+    {
+      dx = pmb->pcoord->dx1f(i);
+      Fin  = pband->flux_density_up(n,k,j,i) + pband->flux_density_down(n,k,j,i+1);
+      Fout = pband->flux_density_up(n,k,j,i+1) + pband->flux_density_down(n,k,j,i);
+
+      //energy absorbed by this absorber
+      // J_i = (Fin-Fout)/dx * (a_i * dx / tau)
+      // J_i = (Fin-Fout) * a_i/tau
+      tau_cell = pband->tau_cell(n,k,j,i);
+      fraction_absorbed = pabs->absorptionCoefficient(n,k,j,i)/tau_cell;
+      pabs->energyAbsorbed(n,k,j,i) = (Fin - Fout) * fraction_absorbed;
+    }
+  }
+}
+
+void SimpleRTSolver::OneCellRadiativeTransfer(Real Fin, Real &Fout, Real tau, Real j, Real alpha) 
+{
+  Real attenuation = exp(-tau);
+
+  // Source Function
+  // emission coefficient / absorption coefficient
+  Real s = j / alpha;
+
+  // No Emission Case
+  Fout = Fin * attenuation;
+
+  // Emission
+  // s/2 for isotropic 1D emission
+  Fout += s/2. * (1. - attenuation);
 }

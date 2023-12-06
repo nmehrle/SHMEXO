@@ -15,7 +15,11 @@ Radiation::Radiation(MeshBlock *pmb, ParameterInput *pin):
 {
   UserRadiationScalingFunc = pmy_block->pmy_mesh->UserRadiationScalingFunc_;
   default_spec_file = pin->GetOrAddString("radiation", "spec_file","");
+  default_upwards_spec_file = pin->GetOrAddString("radiation", "upwards_spec_file","");
   default_rt_solver = pin->GetOrAddString("radiation", "rtsolver", "SIMPLE");
+
+  downwards_flag = pin->GetOrAddBoolean("radiation","downwards_flag",true);
+  upwards_flag = pin->GetOrAddBoolean("radiation","upwards_flag",true);
 
   // Count number of Radiation Bands
   int band_num = 0;

@@ -27,6 +27,8 @@ public:
   MeshBlock *pmy_block;
   AthenaArray<RadiationBand*> my_bands;
 
+  bool downwards_flag, upwards_flag;
+
   int nbands;
 
   // change in energy in a substep due to radiation absorption
@@ -43,7 +45,8 @@ public:
 
 protected:
   // reserved incoming and outgoing rays
-  std::string default_spec_file, default_rt_solver;
+  std::string default_spec_file, default_upwards_spec_file;
+  std::string default_rt_solver;
 
   RadiationScalingFunc UserRadiationScalingFunc;
 };
@@ -63,17 +66,20 @@ public:
   int integration_subbins;
 
   int nspec;
-  Spectrum *spec;
+  Spectrum *spec, *spec_up;
   Real spec_bin_width;
 
   // band-integrated quantities
   AthenaArray<Real> band_flux;
   AthenaArray<Real> band_tau, band_tau_cell;
 
-  // spectral flux density at bottom of cells
-  // units -- [energy / area / time]
+  // spectral flux density at cell bottoms
+  // units -- [energy / area / time / wavelength]
   // length -- nspec, ncells3, ncells2, ncells1+1
-  AthenaArray<Real> flux_density;
+  // flux_density_down[i] -- Downward facing flux at bottom of cell [i]
+  // flux_density_up[i]   -- Upwards facing flux at bottom of cell [i]
+  AthenaArray<Real> flux_density_down;
+  AthenaArray<Real> flux_density_up;
 
   // Additional flux generated in cells (due to reactions emitting phtons)
   // units -- [energy / volume / time]
@@ -92,7 +98,7 @@ public:
   RadiationBand(Radiation *prad, std::string name, ParameterInput *pin);
   ~RadiationBand();
 
-  void LoadInputSpectrum(std::string file);
+  void LoadInputSpectrum(std::string file, Spectrum *dest);
   void ConstructRTSolver(std::string name, ParameterInput *pin);
 
   void InitAbsorbers(ParameterInput *pin);

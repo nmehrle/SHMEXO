@@ -52,33 +52,63 @@ RadiationBand::RadiationBand(Radiation *prad, std::string band_id, ParameterInpu
 
   // wave is midpoint of bin
   spec = new Spectrum [nspec];
+  spec_up = new Spectrum [nspec];
   for (int i = 0; i < nspec; ++i) {
     spec[i].wave = v[0] + spec_bin_width*(i+1.0/2.0);
     spec[i].wgt = spec_bin_width;
+
+    spec_up[i].wave = spec[i].wave;
+    spec_up[i].wgt = spec[i].wgt;
   }
+
+  sprintf(key, "%s.integration_subbins", my_id.c_str());
+  integration_subbins = pin->GetOrAddInteger("radiation", key, 100);
+
+  // Gather band scaling
+  sprintf(key, "%s.scaling", my_id.c_str());
+  band_scaling_factor = pin->GetOrAddReal("radiation", key, 1.0);
 
   // Gather wavelength unit
   sprintf(key, "%s.wavelength_coefficient", my_id.c_str());
   wavelength_coefficient = pin->GetReal("radiation", key);
 
   // Gather input spectrum details
-  sprintf(key, "%s.spec_file", my_id.c_str());
-  value = pin->GetOrAddString("radiation", key, "");
-  if (value.empty()) {
-    if (pmy_rad->default_spec_file.empty()) {
-      msg << "### FATAL ERROR in RadiationBand::RadiationBand" << std::endl
-          << "No input spectrum found for band " << my_id << "." << std::endl
-          << "Must specify either <radiation> spec_file "
-          << "or <radiation> " << my_id << ".spec_file.";
-      ATHENA_ERROR(msg);
+  if (pmy_rad->downwards_flag) {
+    sprintf(key, "%s.spec_file", my_id.c_str());
+    value = pin->GetOrAddString("radiation", key, "");
+    if (value.empty()) {
+      if (pmy_rad->default_spec_file.empty()) {
+        msg << "### WARNING in RadiationBand::RadiationBand" << std::endl
+            << "No input spectrum found for band " << my_id << ". Defaulting to zeros." << std::endl
+            << "Can specify either <radiation> spec_file "
+            << "or <radiation> " << my_id << ".spec_file."
+            << std::endl << std::endl;
+        std::cout << msg.str();
+      }
+      else
+        value = pmy_rad->default_spec_file;
     }
-    value = pmy_rad->default_spec_file;
+    LoadInputSpectrum(value,spec);
   }
 
-  sprintf(key, "%s.integration_subbins", my_id.c_str());
-  integration_subbins = pin->GetOrAddInteger("radiation", key, 100);
-
-  LoadInputSpectrum(value);
+  if (pmy_rad->upwards_flag) {
+    // Gather upwards facing input spectrum details
+    sprintf(key, "%s.upwards_spec_file", my_id.c_str());
+    value = pin->GetOrAddString("radiation", key, "");
+    if (value.empty()) {
+      if (pmy_rad->default_upwards_spec_file.empty()) {
+        msg << "### WARNING in RadiationBand::RadiationBand" << std::endl
+            << "No upwards facing input spectrum found for band " << my_id << ". Defaulting to zeros." << std::endl
+            << "Can specify either <radiation> upwards_spec_file "
+            << "or <radiation> " << my_id << ".upwards_spec_file."
+            << std::endl << std::endl;
+        std::cout << msg.str();
+      }
+      else
+        value = pmy_rad->default_upwards_spec_file;
+    }
+    LoadInputSpectrum(value,spec_up);
+  }
 
   // Gather RT Solver Info
   sprintf(key, "%s.rtsolver", my_id.c_str());
@@ -93,11 +123,6 @@ RadiationBand::RadiationBand(Radiation *prad, std::string band_id, ParameterInpu
     }
     value = pmy_rad->default_rt_solver;
   }
-
-  // Gather band scaling
-  sprintf(key, "%s.scaling", my_id.c_str());
-  band_scaling_factor = pin->GetOrAddReal("radiation", key, 1.0);
-
   my_rtsolver = new RTSolver(this, pin);
   ConstructRTSolver(value, pin);
 
@@ -121,7 +146,8 @@ RadiationBand::RadiationBand(Radiation *prad, std::string band_id, ParameterInpu
   band_tau.NewAthenaArray(pmb->ncells3, pmb->ncells2, pmb->ncells1);
   band_tau_cell.NewAthenaArray(pmb->ncells3, pmb->ncells2, pmb->ncells1);
 
-  flux_density.NewAthenaArray(nspec, pmb->ncells3, pmb->ncells2, pmb->ncells1+1);
+  flux_density_down.NewAthenaArray(nspec, pmb->ncells3, pmb->ncells2, pmb->ncells1+1);
+  flux_density_up.NewAthenaArray(nspec, pmb->ncells3, pmb->ncells2, pmb->ncells1+1);
   emission_coefficient.NewAthenaArray(nspec, pmb->ncells3, pmb->ncells2, pmb->ncells1);
   tau.NewAthenaArray(nspec, pmb->ncells3, pmb->ncells2, pmb->ncells1);
   tau_cell.NewAthenaArray(nspec, pmb->ncells3, pmb->ncells2, pmb->ncells1);
@@ -134,16 +160,21 @@ RadiationBand::~RadiationBand() {
   }
   delete my_rtsolver;
   delete[] spec;
+  delete[] spec_up;
 }
 
-void RadiationBand::LoadInputSpectrum(std::string file) {
+void RadiationBand::LoadInputSpectrum(std::string file, Spectrum *dest) {
   AthenaArray<Real> tmp_flx;
   tmp_flx.NewAthenaArray(nspec);
-  ReadFileOntoBand(file, tmp_flx);
+  tmp_flx.ZeroClear();
+
+  if (!file.empty()) {
+    ReadFileOntoBand(file, tmp_flx);
+  }
 
   for (int n = 0; n < nspec; ++n)
   {
-    spec[n].flux = tmp_flx(n);
+    dest[n].flux = tmp_flx(n);
   }
 
   tmp_flx.DeleteAthenaArray();
@@ -242,9 +273,12 @@ void RadiationBand::SetSpectralProperties(MeshBlock *pmb, AthenaArray<Real> cons
 // calls my_rtsolver to compute it through the collumn
 void RadiationBand::RadiativeTransfer(MeshBlock *pmb, Real radiation_scaling, int k, int j) {
   int ie = pmb->ie;
+  int is = pmb->is;
   for (int n = 0; n < nspec; ++n) {
-    flux_density(n,k,j,ie+1) = spec[n].flux * spec[n].wgt * radiation_scaling;
-    // flux_density(n,k,j,ie+1) = spec[n].flux * radiation_scaling;
+    if (pmy_rad->downwards_flag)
+      flux_density_down(n,k,j,ie+1) = spec[n].flux * spec[n].wgt * radiation_scaling;
+    if (pmy_rad->upwards_flag)
+      flux_density_up(n,k,j,is) = spec_up[n].flux * spec_up[n].wgt * radiation_scaling;
 
     // fills in flux_density
     // computes which absorber absorbs the radiation
