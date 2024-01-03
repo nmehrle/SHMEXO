@@ -16,7 +16,7 @@ public:
 
   void RadiativeTransfer(MeshBlock *pmb, int n, int k, int j);
 protected:
-  void OneCellRadiativeTransfer(Real Fin, Real &Fout, Real tau, Real j, Real alpha);
+  void OneCellRadiativeTransfer(Real Fin, Real &Fout, Real tau, Real emission, Real dx);
 };
 
 #endif

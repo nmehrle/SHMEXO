@@ -24,67 +24,84 @@ void SimpleRTSolver::RadiativeTransfer(MeshBlock *pmb, int n, int k, int j)
   RadiationBand *pband = pmy_band;
   int is = pmb->is; int ie = pmb->ie;
 
-  Real tau_cell, dx, emission_coefficient;
-  Real Fin, Fout;
+  Real tau, dx, emission;
+  // Fin,Fout -- flux in/out due to input flux
+  // Sin,Sout -- flux in/out due to source term
+  Real Fin, Fout, Sin, Sout;
   // downwards transfer
   if (pband->pmy_rad->downwards_flag) {
     for (int i = ie; i>=is; --i) {
-      tau_cell = pband->tau_cell(n,k,j,i);
       dx = pmb->pcoord->dx1f(i);
-      emission_coefficient = pband->emission_coefficient(n,k,j,i);
+      tau = pband->tau_cell(n,k,j,i);
+      emission = pband->emission_coefficient(n,k,j,i);
 
-      Fin = pband->flux_density_down(n,k,j,i+1);
-      OneCellRadiativeTransfer(Fin, Fout, tau_cell, emission_coefficient, tau_cell/dx);
-      pband->flux_density_down(n,k,j,i) = Fout;
-    }
-  }
-  // upwards transfer
-  if (pband->pmy_rad->upwards_flag) {
-    for (int i = is; i<=ie; ++i) {
-      tau_cell = pband->tau_cell(n,k,j,i);
-      dx = pmb->pcoord->dx1f(i);
-      emission_coefficient = pband->emission_coefficient(n,k,j,i);
+      Fin = pband->flux_down(n,k,j,i+1);
+      OneCellRadiativeTransfer(Fin, Fout, tau, 0, dx);
+      pband->flux_down(n,k,j,i) = Fout;
 
-      Fin = pband->flux_density_up(n,k,j,i);
-      OneCellRadiativeTransfer(Fin, Fout, tau_cell, emission_coefficient, tau_cell/dx);
-      pband->flux_density_up(n,k,j,i+1) = Fout;
+      Sin = pband->source_flux_down(n,k,j,i+1);
+      OneCellRadiativeTransfer(Sin, Sout, tau, emission, dx);
+      pband->source_flux_down(n,k,j,i) = Sout;
     }
   }
 
   // Assign Energy to Absorbers
   Absorber *pabs;
-  Real delta_F, fraction_absorbed, J_i;
-  for (int a = 0; a < pband->nabs; ++a) {
-    pabs = pband->absorbers(a);
+  Real netFup   = 0;
+  Real netFdown = 0;
+  Real netSup   = 0;
+  Real netSdown = 0;
+  Real netE_F, netE_S, Eabs;
+  Real absorber_fraction;
 
-    for (int i = is; i <= ie; ++i)
-    {
-      dx = pmb->pcoord->dx1f(i);
-      Fin  = pband->flux_density_up(n,k,j,i) + pband->flux_density_down(n,k,j,i+1);
-      Fout = pband->flux_density_up(n,k,j,i+1) + pband->flux_density_down(n,k,j,i);
+  for (int i = is; i <= ie; ++i) {
+    dx = pmb->pcoord->dx1f(i);
+    tau = pband->tau_cell(n,k,j,i);
+    emission = pband->emission_coefficient(n,k,j,i);
 
-      //energy absorbed by this absorber
-      // J_i = (Fin-Fout)/dx * (a_i * dx / tau)
-      // J_i = (Fin-Fout) * a_i/tau
-      tau_cell = pband->tau_cell(n,k,j,i);
-      fraction_absorbed = pabs->absorptionCoefficient(n,k,j,i)/tau_cell;
-      pabs->energyAbsorbed(n,k,j,i) = (Fin - Fout) * fraction_absorbed;
+    // Upwards Transfer
+    if (pband->pmy_rad->upwards_flag) {
+      Fin = pband->flux_up(n,k,j,i);
+      OneCellRadiativeTransfer(Fin, Fout, tau, 0, dx);
+      pband->flux_up(n,k,j,i+1) = Fout;
+
+      Sin = pband->source_flux_up(n,k,j,i);
+      OneCellRadiativeTransfer(Sin, Sout, tau, emission, dx);
+      pband->source_flux_up(n,k,j,i+1) = Sout;
+
+      netFup = Fin-Fout;
+      netSup = Sin-Sout;
+    }
+
+    if (pband->pmy_rad->downwards_flag) {
+      netFdown = pband->flux_down(n,k,j,i+1) - pband->flux_down(n,k,j,i);
+      netSdown = pband->source_flux_down(n,k,j,i+1) - pband->source_flux_down(n,k,j,i);
+    }
+
+    // for debug
+    Real FinDown  = pband->flux_down(n,k,j,i+1);
+    Real FoutDown = pband->flux_down(n,k,j,i);
+    Real SinDown  = pband->source_flux_down(n,k,j,i+1);
+    Real SoutDown = pband->source_flux_down(n,k,j,i);
+
+    netE_F = (netFup + netFdown)/dx;
+    netE_S = (netSup + netSdown)/dx + emission;
+    Eabs = netE_F + netE_S;
+
+    for (int a = 0; a < pband->nabs; ++a) {
+      pabs = pband->absorbers(a);
+      absorber_fraction = (pabs->absorptionCoefficient(n,k,j,i) * dx)/tau;
+      pabs->energyAbsorbed(n,k,j,i) = Eabs * absorber_fraction;
     }
   }
 }
 
-void SimpleRTSolver::OneCellRadiativeTransfer(Real Fin, Real &Fout, Real tau, Real j, Real alpha) 
+void SimpleRTSolver::OneCellRadiativeTransfer(Real Fin, Real &Fout, Real tau, Real emission, Real dx) 
 {
-  Real attenuation = exp(-tau);
-
-  // Source Function
-  // emission coefficient / absorption coefficient
-  Real s = j / alpha;
-
   // No Emission Case
-  Fout = Fin * attenuation;
+  Fout = Fin * exp(-tau);
 
   // Emission
-  // s/2 for isotropic 1D emission
-  Fout += s/2. * (1. - attenuation);
+  // j/2 for isotropic 1D emission
+  Fout += emission/2. * dx * exp(-tau/2.);
 }

@@ -148,9 +148,13 @@ RadiationBand::RadiationBand(Radiation *prad, std::string band_id, ParameterInpu
   band_tau.NewAthenaArray(pmb->ncells3, pmb->ncells2, pmb->ncells1);
   band_tau_cell.NewAthenaArray(pmb->ncells3, pmb->ncells2, pmb->ncells1);
 
-  flux_density_down.NewAthenaArray(nspec, pmb->ncells3, pmb->ncells2, pmb->ncells1+1);
-  flux_density_up.NewAthenaArray(nspec, pmb->ncells3, pmb->ncells2, pmb->ncells1+1);
+  flux_down.NewAthenaArray(nspec, pmb->ncells3, pmb->ncells2, pmb->ncells1+1);
+  flux_up.NewAthenaArray(nspec, pmb->ncells3, pmb->ncells2, pmb->ncells1+1);
+
+  source_flux_down.NewAthenaArray(nspec, pmb->ncells3, pmb->ncells2, pmb->ncells1+1);
+  source_flux_up.NewAthenaArray(nspec, pmb->ncells3, pmb->ncells2, pmb->ncells1+1);
   emission_coefficient.NewAthenaArray(nspec, pmb->ncells3, pmb->ncells2, pmb->ncells1);
+
   tau.NewAthenaArray(nspec, pmb->ncells3, pmb->ncells2, pmb->ncells1);
   tau_cell.NewAthenaArray(nspec, pmb->ncells3, pmb->ncells2, pmb->ncells1);
 }
@@ -236,16 +240,20 @@ void RadiationBand::SetSpectralProperties(MeshBlock *pmb, AthenaArray<Real> cons
   }
 }
 
-// sets flux_density at the top
+// sets flux_up/down at the boundaries
 // calls my_rtsolver to compute it through the collumn
 void RadiationBand::RadiativeTransfer(MeshBlock *pmb, Real radiation_scaling, int k, int j) {
   int ie = pmb->ie;
   int is = pmb->is;
   for (int n = 0; n < nspec; ++n) {
-    if (pmy_rad->downwards_flag)
-      flux_density_down(n,k,j,ie+1) = spec[n].flux * spec[n].wgt * radiation_scaling;
-    if (pmy_rad->upwards_flag)
-      flux_density_up(n,k,j,is) = spec_up[n].flux * spec_up[n].wgt * radiation_scaling;
+    if (pmy_rad->downwards_flag) {
+      flux_down(n,k,j,ie+1) = spec[n].flux * spec[n].wgt * radiation_scaling;
+      source_flux_down(n,k,j,ie+1) = 0.;
+    }
+    if (pmy_rad->upwards_flag) {
+      flux_up(n,k,j,is) = spec_up[n].flux * spec_up[n].wgt * radiation_scaling;
+      source_flux_up(n,k,j,is) = 0.;
+    }
 
     // fills in flux_density
     // computes which absorber absorbs the radiation

@@ -78,15 +78,17 @@ public:
   // spectral flux density at cell bottoms
   // units -- [energy / area / time / wavelength]
   // length -- nspec, ncells3, ncells2, ncells1+1
-  // flux_density_down[i] -- Downward facing flux at bottom of cell [i]
-  // flux_density_up[i]   -- Upwards facing flux at bottom of cell [i]
-  AthenaArray<Real> flux_density_down;
-  AthenaArray<Real> flux_density_up;
+  // flux_down[i] -- Downward facing flux at bottom of cell [i]
+  // flux__up[i]   -- Upwards facing flux at bottom of cell [i]
+  AthenaArray<Real> flux_down;
+  AthenaArray<Real> flux_up;
 
   // Additional flux generated in cells (due to reactions emitting phtons)
   // units -- [energy / volume / time]
   // length -- nspec, ncells3, ncells2, ncells1
   AthenaArray<Real> emission_coefficient;
+  AthenaArray<Real> source_flux_down;
+  AthenaArray<Real> source_flux_up;
 
   // tau_cell -- optical depth inside one cell
   // tau -- optical depth of all cells above this cell including this cell
