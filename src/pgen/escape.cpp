@@ -31,6 +31,7 @@
 
 #include "../reaction/reactions/photoionization.hpp"
 #include "../reaction/reactions/additional_reactions.hpp"
+#include "../reaction/reactions/collisional_ionization.hpp"
 #include "../reaction/reactions/recombination.hpp"
 #include "../reaction/reactions/helium_recombination.hpp"
 #include "../reaction/reactions/collisions.hpp"
@@ -252,7 +253,7 @@ Reaction* ReactionNetwork::GetReactionByName(std::string name, ParameterInput *p
     return r;
 
   } else if (name == "LYA_COOLING") {
-    return new LyaCooling(name, H, HII);
+    return new LyaCooling(name, H, ELEC);
 
   } else if (name == "HE_1S_RECOMBINATION") {
     ReactionTemplate *r = new HeliumRecombination(name, {He, HeII, ELEC}, {+1, -1, -1}, helium_alpha_file, helium_beta_file, 1);
@@ -300,11 +301,6 @@ Reaction* ReactionNetwork::GetReactionByName(std::string name, ParameterInput *p
   } else if (name == "HeElecCollision33") {
     return new HeElectronCollisions(name, {He23S, ELEC, He23S, ELEC}, {-1, -1, +1, +1}, helium_collisions_file, 4, 8);
 
-  } else if (name == "HE_E_COLLISIONS") {
-    std::string collisions_file_name = pin->GetString("reaction", "HE_COLLISIONS_FILE");
-
-    return new He_e_collisions(collisions_file_name, name, He, He23S, ELEC);
-
   } else if (name == "HE23S_RADIO_DECAY") {
     ReactionTemplate *r = new HeliumTripletDecay(name, {He23S, He}, {-1, +1});
     if (enable_reemission) {
@@ -323,13 +319,29 @@ Reaction* ReactionNetwork::GetReactionByName(std::string name, ParameterInput *p
     return new TripletHydrogenCollision(name, {He23S, H, He, HII, ELEC}, {-1, -1, +1, +1, +1});
 
   } else if (name == "HEIII_RECOMBINATION") {
-    ReactionTemplate *r = new HydrogenicRecombination(name, {HeII, HeIII, ELEC}, {+1, -1, -1}, 2, "A");
+    // ReactionTemplate *r = new HydrogenicRecombination(name, {HeII, HeIII, ELEC}, {+1, -1, -1}, 2, "A");
+    ReactionTemplate *r = new BadnellRecombination(name, {HeII, HeIII, ELEC}, {+1, -1, -1}, 1.8180e-10, 0.74920, 1.0170e+01, 2.7860e+06);
     if (enable_reemission) {
       Real energy_difference = pmy_block->pscalars->energy(HeIII) - pmy_block->pscalars->energy(HeII);
       GroundStateReemission *he_reemission = new GroundStateReemission(pin, prad, energy_difference);
       r->AssignReemission(he_reemission);
     }
     return r;
+
+  } else if (name == "BREMSSTRAHLUNG") {
+    return new Bremsstrahlung("Bremsstrahlung", ELEC, HII, HeII, HeIII);
+
+  } else if (name == "HCI") {
+    return new CollisionalIonization(name, {H, ELEC, HII, ELEC}, {-1, -1, +1, +2}, 0);
+
+  } else if (name == "HeCI") {
+    return new CollisionalIonization(name, {He, ELEC, HeII, ELEC}, {-1, -1, +1, +2}, 1);
+
+  } else if (name == "HeIICI") {
+    return new CollisionalIonization(name, {HeII, ELEC, HeIII, ELEC}, {-1, -1, +1, +2}, 2);
+
+  } else if (name == "He23SCI") {
+    return new CollisionalIonization(name, {He23S, ELEC, HeII, ELEC}, {-1, -1, +1, +2}, 3);
 
   } else {
     std::stringstream msg;
