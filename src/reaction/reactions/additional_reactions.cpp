@@ -3,6 +3,7 @@
 #include <string>
 
 // Athena++ header
+#include "../../scalars/scalars.hpp"
 #include "../reaction_network.hpp"
 #include "../reaction.hpp"
 #include "additional_reactions.hpp"
@@ -32,4 +33,33 @@ Real HeliumTripletDecay::beta(Real T, int k, int j, int i) {
 
   // return this->alpha(T, k, j, i) * (E_reactant - E_product);
   return 0;
+}
+
+Bremsstrahlung::Bremsstrahlung(std::string name, int elec_num,
+  int HII_num, int HeII_num, int HeIII_num):
+    Reaction(name)
+{
+  elec_num_ = elec_num;
+  HII_num_ = HII_num;
+  HeII_num_ = HeII_num;
+  HeIII_num_ = HeIII_num;
+}
+
+void Bremsstrahlung::react(int k, int j, int i) {
+  PassiveScalars *ps = pmy_network->pscalars;
+  Real T = pmy_network->temperature_(k,j,i);
+
+  Real n_e = ps->s(elec_num_, k, j, i)/ps->mass(elec_num_);
+  Real n_HII = ps->s(HII_num_, k, j, i)/ps->mass(HII_num_);
+  Real n_HeII = ps->s(HeII_num_, k, j, i)/ps->mass(HeII_num_);
+  Real n_HeIII = ps->s(HeIII_num_, k, j, i)/ps->mass(HeIII_num_);
+
+  // Black 1981
+  // https://articles.adsabs.harvard.edu/pdf/1981MNRAS.197..553B
+  Real e_rxn = -1.42E-27 * pow(T,1/2.) * (n_HII + n_HeII + 4*n_HeIII)*n_e;
+
+  pmy_network->de_rate(my_rxn_num, k, j, i) += e_rxn;
+
+  // if (this->my_reemission != nullptr)
+  //   this->ProducePhotons(n_rxn, T, k, j, i);
 }
