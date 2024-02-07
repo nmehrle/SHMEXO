@@ -73,9 +73,34 @@ Real VernerRecombination::alpha(Real T, int k, int j, int i) {
   return alpha;  
 }
 
-// Real VernerRecombination::beta(Real T, int k, int j, int i) {
-//   PassiveScalars *ps = pmy_network->pscalars;
+Real VernerRecombination::beta(Real T, int k, int j, int i) {
+  std::stringstream msg;
+  msg << "Verner Recombination BETA is incorrect. please update. See Draine chp 27 eq 27.14 and on" << std::endl;
+  ATHENA_ERROR(msg);
+}
 
-//   Real rxn_energy = ps->energy(ion_num_) - ps->energy(scalar_num_);
-//   return -1 * rxn_energy * this->alpha(T, k, j, i);
-// }
+BadnellRecombination::BadnellRecombination(std::string name, std::vector<int> species, std::vector<Real> stoichiometry, Real A_, Real B_, Real T0_, Real T1_):
+    ReactionTemplate(name, species, stoichiometry)
+{
+  A = A_;
+  B = B_;
+  T0 = T0_;
+  T1 = T1_;
+}
+
+Real BadnellRecombination::alpha(Real T, int k, int j, int i) {
+  Real alpha_1 = sqrt(T/T0);
+  Real alpha_2 = pow(1+sqrt(T/T0), 1-B);
+  Real alpha_3 = pow(1+sqrt(T/T1), 1+B);
+  Real alpha = A * pow(alpha_1 * alpha_2 * alpha_3, -1.0); // cm3 s-1
+  return alpha;  
+}
+
+Real BadnellRecombination::beta(Real T, int k, int j, int i) {
+  Real sqrtT = sqrt(T);
+  Real gamma1 = (-1+B) * sqrtT / (2 * (sqrtT + sqrt(T0)));
+  Real gamma2 = (-1-B) * sqrtT / (2 * (sqrtT + sqrt(T1)));
+  Real gamma = -1 + gamma + gamma2;
+  Real mean_energy = (pmy_network->boltzmann * T) * (gamma+2);
+  return -1 * this->alpha(T,k,j,i) * mean_energy;
+}

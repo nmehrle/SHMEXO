@@ -37,8 +37,20 @@ public:
   // params is [a,b,T0, T1]
   VernerRecombination(std::string name, std::vector<int> species, std::vector<Real> stoichiometry, VernerRecombinationParams *params);
   Real alpha(Real T, int k, int j, int i);
-  // Real beta(Real T, int k, int j, int i);
+  Real beta(Real T, int k, int j, int i);
 
 protected:
   Real a,b,T0,T1;
+};
+
+// Recombination following Badnell 2006
+// https://ui.adsabs.harvard.edu/abs/2006ApJS..167..334B/abstract
+class BadnellRecombination: public ReactionTemplate {
+public:
+  BadnellRecombination(std::string name, std::vector<int> species, std::vector<Real> stoichiometry, Real A_, Real B_, Real T0_, Real T1_);
+  Real alpha(Real T, int k, int j, int i);
+  Real beta(Real T, int k, int j, int i);
+
+protected:
+  Real A,B,T0,T1;
 };
