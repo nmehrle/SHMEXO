@@ -8,14 +8,15 @@
 #include "../reaction.hpp"
 #include "additional_reactions.hpp"
 
-LyaCooling::LyaCooling(std::string name, int scalar_num, int ion_num):
-    ReactionTemplate(name, {scalar_num, ion_num}, {-1, -1})
+LyaCooling::LyaCooling(std::string name, int scalar_num, int elec_num):
+    ReactionTemplate(name, {scalar_num, elec_num}, {-1, -1})
 {
   ;
 }
 
 Real LyaCooling::beta(Real T, int k, int j, int i) {
-  return -7.5E-19 * exp(-118348./T);
+  Real cen_factor = std::pow(1+std::sqrt(T/1E5),-1);
+  return -7.5E-19 * exp(-118348./T) * cen_factor;
 }
 
 Real HeliumTripletDecay::alpha(Real T, int k, int j, int i) {
