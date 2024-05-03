@@ -61,7 +61,7 @@ namespace {
   // initial conditions
   std::string initial_condition_file;
   Real rho_0, Teq;
-  Real r_replenish;
+  Real r_replenish, r_reaction;
   AthenaArray<Real> initial_conditions;
 
   // species variables
@@ -168,7 +168,8 @@ void Mesh::InitUserMeshData(ParameterInput *pin)
   helium_collision_reemission_branching_file = pin->GetOrAddString("reaction", "He_e_coll_reemission_branching_file", "");
 
   // Domain logic
-  r_replenish = pin->GetOrAddReal("problem", "r_replenish_Rp", 1.0)*Rp;
+  r_replenish = pin->GetOrAddReal("problem", "r_replenish_Rp", 0.0)*Rp;
+  r_reaction = pin->GetOrAddReal("problem", "r_reaction_Rp", r_replenish/Rp)*Rp;
 
   if (mesh_size.x1rat == -1.0) {
     meshgen_x1 = MeshGenerator(mesh_size.x1min, mesh_size.x1max, mesh_size.nx1, pin);
@@ -731,7 +732,7 @@ void MeshBlock::UserWorkInLoop() {
 
 bool ReactionNetwork::DoRunReactions(int k, int j, int i) {
   Real r = getRad(pmy_block->pcoord, i, j, k);
-  if (r < r_replenish){
+  if (r < r_reaction){
     return false;
   }
   return true;
