@@ -766,8 +766,17 @@ void getMBBounds(MeshBlock *pmb, int &il, int &iu, int &jl, int &ju, int &kl, in
   ku = pmb->block_size.nx3 == 1 ? pmb->ke : pmb->ke+NGHOST;
 }
 
-void FixedBoundary(MeshBlock *pmb, Coordinates *pcoord, AthenaArray<Real> &prim,
+
+void FixedBoundaryInnerX1(MeshBlock *pmb, Coordinates *pcoord, AthenaArray<Real> &prim,
                    FaceField &bb, Real time, Real dt,
                    int il, int iu, int jl, int ju, int kl, int ku, int ngh) {
-  return;
+  for (int k=kl; k<=ku; ++k) {
+    for (int j=jl; j<=ju; ++j) {
+      for (int i=1; i<=ngh; ++i) {
+        for (int n = 0; n < NHYDRO; ++n) {
+          prim(n,k,j,il-i) = initial_conditions(n,k,j,il-i);
+        }
+      }
+    }
+  }
 }
