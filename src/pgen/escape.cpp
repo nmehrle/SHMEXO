@@ -188,7 +188,7 @@ void Mesh::InitUserMeshData(ParameterInput *pin)
   }
 
   if (GetBoundaryFlag(pin->GetString("mesh", "ix1_bc")) == BoundaryFlag::user) {
-    EnrollUserBoundaryFunction(BoundaryFace::inner_x1, FixedBoundary);  
+    EnrollUserBoundaryFunction(BoundaryFace::inner_x1, FixedBoundaryInnerX1);  
   }
 }
 
