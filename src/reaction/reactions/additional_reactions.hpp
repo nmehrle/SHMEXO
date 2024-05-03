@@ -27,3 +27,17 @@ public:
   Real alpha(Real T, int k, int j, int i);
   Real beta(Real T, int k, int j, int i);
 };
+
+class HeIIElecCollisions: public ReactionTemplate {
+public:
+  HeIIElecCollisions(std::string name, int scalar_num, int elec_num);
+  Real alpha(Real T, int k, int j, int i) {return 0;};
+  Real beta(Real T, int k, int j, int i);
+};
+
+class HeIElecCollisions: public ReactionTemplate {
+public:
+  HeIElecCollisions(std::string name, int scalar_num, int elec_num);
+  Real alpha(Real T, int k, int j, int i);
+  Real beta(Real T, int k, int j, int i);
+};

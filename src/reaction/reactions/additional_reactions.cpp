@@ -64,3 +64,29 @@ void Bremsstrahlung::react(int k, int j, int i) {
   // if (this->my_reemission != nullptr)
   //   this->ProducePhotons(n_rxn, T, k, j, i);
 }
+
+HeIIElecCollisions::HeIIElecCollisions(std::string name, int scalar_num, int elec_num):
+    ReactionTemplate(name, {scalar_num, elec_num}, {-1, -1})
+{
+  ;
+}
+
+Real HeIIElecCollisions::beta(Real T, int k, int j, int i) {
+  Real cen_factor = std::pow(1+std::sqrt(T/1E5),-1);
+  return -5.54e-17 * pow(T,-0.397) * exp(-473638./T) * cen_factor;
+}
+
+HeIElecCollisions::HeIElecCollisions(std::string name, int scalar_num, int elec_num):
+    ReactionTemplate(name, {scalar_num, elec_num}, {-1, -2})
+{
+  ;
+}
+
+Real HeIElecCollisions::alpha(Real T, int k, int j, int i) {
+  return 0;
+}
+
+Real HeIElecCollisions::beta(Real T, int k, int j, int i) {
+  Real cen_factor = std::pow(1+std::sqrt(T/1E5),-1);
+  return -9.1e-27 * pow(T,-0.1687) * exp(-13179./T) * cen_factor;
+}

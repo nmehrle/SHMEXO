@@ -344,6 +344,12 @@ Reaction* ReactionNetwork::GetReactionByName(std::string name, ParameterInput *p
   } else if (name == "He23SCI") {
     return new CollisionalIonization(name, {He23S, ELEC, HeII, ELEC}, {-1, -1, +1, +2}, 3);
 
+  } else if (name == "HeII_elec_collisions") {
+    return new HeIIElecCollisions(name, HeII, ELEC);
+
+  } else if (name == "HeI_elec_collisions") {
+    return new HeIElecCollisions(name, He, ELEC);
+
   } else {
     std::stringstream msg;
     msg << "### FATAL ERROR in ReactionNetwork::GetReactionByName"
