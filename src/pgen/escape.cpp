@@ -586,8 +586,10 @@ void MeshBlock::ProblemGenerator(ParameterInput *pin)
           phydro->w(n,k,j,i) = initial_conditions(n,k,j,i);
 
         // write to scalar variables
-        for (int n = 0; n < NSCALARS; ++n)
+        for (int n = 0; n < NSCALARS; ++n) {
+          pscalars->r(n,k,j,i) = initial_conditions(n+NHYDRO,k,j,i);
           pscalars->s(n,k,j,i) = initial_conditions(n+NHYDRO,k,j,i) * initial_conditions(IDN,k,j,i);
+        }
       } //k
     } //j
   } //i
@@ -595,6 +597,8 @@ void MeshBlock::ProblemGenerator(ParameterInput *pin)
   for(int i = 0; i < n_var; i++)
       delete[] file_data[i];
   delete[] file_data;
+
+  peos->PrimitiveToConserved(phydro->w, pfield->bcc, phydro->u, pcoord, is, ie, js, je, ks, ke);
 
   for (int b = 0; b < prad->nbands; ++b)
   {
@@ -610,7 +614,6 @@ void MeshBlock::ProblemGenerator(ParameterInput *pin)
       prad->CalculateRadiativeTransfer(phydro->w, pscalars->s, pmy_mesh->time, k, j);
 
   prad_network->ComputeReactionForcing(phydro->w, phydro->u, pscalars->s);
-  peos->PrimitiveToConserved(phydro->w, pfield->bcc, phydro->u, pcoord, is, ie, js, je, ks, ke);
 }
 
 void NaNCheck(MeshBlock *pmb, const AthenaArray<Real> prim, int k, int j, int i) {
