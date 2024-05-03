@@ -38,7 +38,7 @@
 
 #include "../reemission/reemission.hpp"
 
-void FixedBoundary(MeshBlock *pmb, Coordinates *pcoord, AthenaArray<Real> &prim,
+void FixedBoundaryInnerX1(MeshBlock *pmb, Coordinates *pcoord, AthenaArray<Real> &prim,
                    FaceField &bb, Real time, Real dt,
                    int il, int iu, int jl, int ju, int kl, int ku, int ngh);
 
