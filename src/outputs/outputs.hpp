@@ -13,6 +13,7 @@
 // C++ headers
 #include <cstdio>  // std::size_t
 #include <string>
+#include <vector>
 
 // Athena++ headers
 #include "../athena.hpp"
@@ -225,5 +226,17 @@ public:
 };
 
 //----------------------------------------------------------------------------------------
+
+struct UserStringAttribute {
+  int length;
+  char *name;
+  std::vector<std::string> values;
+};
+
+struct UserNumericAttribute {
+  int length;
+  char *name;
+  std::vector<Real> values;
+};
 
 #endif // OUTPUTS_OUTPUTS_HPP_

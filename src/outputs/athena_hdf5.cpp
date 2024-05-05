@@ -610,6 +610,72 @@ void ATHDF5Output::WriteOutputFile(Mesh *pm, ParameterInput *pin, bool flag) {
     delete[] reaction_names;
   }
 
+  // Call User Defined Attribute Function
+  if (variable.compare(0,3,"uov") == 0 || variable.compare(0,12,"user_out_var") == 0) {
+
+    // String Attributes
+    if (pm->UserStringAttributeAssignmentFunc_ != nullptr) {
+      std::vector<UserStringAttribute> user_string_attributes;
+      UserStringAttribute this_user_attr;
+
+      // Populate UserStringAttributes Vector from Problem File
+      pm->UserStringAttributeAssignmentFunc_(user_string_attributes);
+
+      for (int i = 0; i < user_string_attributes.size(); ++i)
+      {
+         this_user_attr = user_string_attributes[i];
+
+        // Set Attribute Length
+        dims_count[0] = this_user_attr.length;
+        hid_t dataspace_user_attr = H5Screate_simple(1, dims_count, NULL);
+
+        // Format Attribute Values
+        char (*attribute_values)[max_name_length+1];
+        attribute_values = new char[this_user_attr.length][max_name_length+1];
+
+        for (int v = 0; v < this_user_attr.length; ++v)
+        {
+          std::strncpy(attribute_values[v], this_user_attr.values[v].c_str(), max_name_length+1);
+          attribute_values[v][max_name_length] = '\0';
+        }
+
+        attribute = H5Acreate2(file, this_user_attr.name, string_type, dataspace_user_attr, H5P_DEFAULT, H5P_DEFAULT);
+        H5Awrite(attribute, string_type, attribute_values);
+
+        H5Aclose(attribute);
+        H5Sclose(dataspace_user_attr);
+        delete[] attribute_values;
+      }
+    }
+
+    // Numeric Attributes
+    if (pm->UserNumericAttributeAssignmentFunc_ != nullptr) {
+      std::vector<UserNumericAttribute> user_numeric_attributes;
+      UserNumericAttribute this_user_attr;
+
+      // Populate UserStringAttributes Vector from Problem File
+      pm->UserNumericAttributeAssignmentFunc_(user_numeric_attributes);
+
+      for (int i = 0; i < user_numeric_attributes.size(); ++i)
+      {
+         this_user_attr = user_numeric_attributes[i];
+
+        // Set Attribute Length
+        dims_count[0] = this_user_attr.length;
+        hid_t dataspace_user_attr = H5Screate_simple(1, dims_count, NULL);
+
+        // Format Attribute Values
+        double* attribute_values = &this_user_attr.values[0];
+
+        attribute = H5Acreate2(file, this_user_attr.name, H5T_NATIVE_REAL, dataspace_user_attr, H5P_DEFAULT, H5P_DEFAULT);
+        H5Awrite(attribute, H5T_NATIVE_REAL, attribute_values);
+
+        H5Aclose(attribute);
+        H5Sclose(dataspace_user_attr);
+      }
+    }
+  }
+
   // Close attribute dataspaces
   H5Sclose(dataspace_scalar);
   H5Sclose(dataspace_triple);

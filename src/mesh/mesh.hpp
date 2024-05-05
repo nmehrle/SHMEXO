@@ -332,6 +332,8 @@ class Mesh {
   FieldDiffusionCoeffFunc FieldDiffusivity_;
   MGBoundaryFunc MGGravityBoundaryFunction_[6];
   RadiationScalingFunc UserRadiationScalingFunc_ = nullptr;
+  StringAttributeAssignmentFunc UserStringAttributeAssignmentFunc_ = nullptr;
+  NumericAttributeAssignmentFunc UserNumericAttributeAssignmentFunc_ = nullptr;
 
   void AllocateRealUserMeshDataField(int n);
   void AllocateIntUserMeshDataField(int n);
@@ -391,6 +393,8 @@ class Mesh {
   void SetMeanDensity(Real d0) { grav_mean_rho_=d0; }
 
   void EnrollUserRadiationScalingFunction(RadiationScalingFunc my_func);
+  void EnrollUserStringAttributeAssignemntFunction(StringAttributeAssignmentFunc my_func);
+  void EnrollUserNumericAttributeAssignemntFunction(NumericAttributeAssignmentFunc my_func);
 };
 
 

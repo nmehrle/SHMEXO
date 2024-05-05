@@ -1222,6 +1222,16 @@ void Mesh::EnrollUserRadiationScalingFunction(RadiationScalingFunc my_func) {
   return;
 }
 
+void Mesh::EnrollUserNumericAttributeAssignemntFunction(NumericAttributeAssignmentFunc my_func) {
+  UserNumericAttributeAssignmentFunc_ = my_func;
+  return;
+}
+
+void Mesh::EnrollUserStringAttributeAssignemntFunction(StringAttributeAssignmentFunc my_func) {
+  UserStringAttributeAssignmentFunc_ = my_func;
+  return;
+}
+
 //----------------------------------------------------------------------------------------
 //! \fn void Mesh::EnrollUserTimeStepFunction(TimeStepFunc my_func)
 //  \brief Enroll a user-defined time step function

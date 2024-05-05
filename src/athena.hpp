@@ -13,6 +13,7 @@
 // C++ headers
 #include <cmath>
 #include <cstdint>  // std::int64_t
+#include <vector>
 
 // Athena++ headers
 #include "athena_arrays.hpp"
@@ -52,6 +53,8 @@ class HydroDiffusion;
 class FieldDiffusion;
 class Radiation;
 class RadiationBand;
+struct UserStringAttribute;
+struct UserNumericAttribute;
 
 //--------------------------------------------------------------------------------------
 //! \struct LogicalLocation
@@ -205,5 +208,7 @@ using FieldDiffusionCoeffFunc = void (*)(
     const AthenaArray<Real> &bmag,
     int is, int ie, int js, int je, int ks, int ke);
 using RadiationScalingFunc = Real (*)(RadiationBand *band, AthenaArray<Real> const &prim, Real time, int k, int j);
+using NumericAttributeAssignmentFunc = void (*)(std::vector<UserNumericAttribute> &user_numeric_attributes);
+using StringAttributeAssignmentFunc  = void (*)(std::vector<UserStringAttribute> &user_string_attributes);
 
 #endif // ATHENA_HPP_

@@ -7,6 +7,7 @@
 #include "../athena.hpp"
 #include "../athena_arrays.hpp"
 #include "../parameter_input.hpp"
+#include "../outputs/outputs.hpp"
 #include "../coordinates/coordinates.hpp"
 #include "../eos/eos.hpp"
 #include "../field/field.hpp"
@@ -94,6 +95,9 @@ namespace {
   //   AthenaArray<Real> &du, AthenaArray<Real> &ds);
   Real RadiationScaling(RadiationBand *band, AthenaArray<Real> const &prim, Real time, int k, int j);
 
+  void NumericAttributeAssignment(std::vector<UserNumericAttribute> &user_numeric_attributes);
+  void StringAttributeAssignment(std::vector<UserStringAttribute> &user_string_attributes);
+
   // mesh generators
   MeshGenerator meshgen_x1, meshgen_x2, meshgen_x3;
   Real MeshSpacingX1(Real x, RegionSize rs);
@@ -159,6 +163,9 @@ void Mesh::InitUserMeshData(ParameterInput *pin)
 
   EnrollUserRadiationScalingFunction(RadiationScaling);
 
+  EnrollUserStringAttributeAssignemntFunction(StringAttributeAssignment);
+  EnrollUserNumericAttributeAssignemntFunction(NumericAttributeAssignment);
+
   enable_reemission = pin->GetOrAddBoolean("reaction", "enable_reemission", false);
 
   helium_alpha_file = pin->GetOrAddString("reaction", "He_recombination_alpha_file", "");
@@ -216,6 +223,14 @@ void MeshBlock::InitUserMeshBlockData(ParameterInput *pin)
 //----------------------------------------------------------------------------------------
 // Output Variables
 //----------------------------------------------------------------------------------------
+
+void NumericAttributeAssignment(std::vector<UserNumericAttribute> &user_numeric_attributes) {
+  return;
+}
+
+void StringAttributeAssignment(std::vector<UserStringAttribute> &user_string_attributes) {
+  return;
+}
 
 void MeshBlock::UserWorkBeforeOutput(ParameterInput *pin)
 {
