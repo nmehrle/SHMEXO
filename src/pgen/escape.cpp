@@ -71,7 +71,8 @@ namespace {
                 H = 1, HII = 2,
                 He = 3, He23S = 4,
                 HeII = 5, HeIII = 6};
-  std::vector<std::string> speciesNames = {"Electron", "H", "HII", "He", "HeII", "He23S", "HeII", "HeIII"};
+  std::vector<std::string> scalar_names;
+  std::vector<Real> scalar_masses;
 
   //convergence checking
   bool check_convergence;
@@ -87,7 +88,7 @@ namespace {
   void gravity_func(MeshBlock *pmb, AthenaArray<Real> &g1, AthenaArray<Real> &g2, AthenaArray<Real> &g3);
   
   void NaNCheck(MeshBlock *pmb, const AthenaArray<Real> prim, int k, int j, int i);
-  bool ConvergenceCheck(const AthenaArray<Real> prim, const AthenaArray<Real> prim_scalar, const AthenaArray<Real> scalar_mass, int k, int j, int i);
+  bool ConvergenceCheck(const AthenaArray<Real> prim, const AthenaArray<Real> prim_scalar, const AthenaArray<Real> scalar_m, int k, int j, int i);
   void QualifyHHeRatio(PassiveScalars *ps);
 
   // void SourceTerms(MeshBlock *pmb, const Real time, const Real dt,
@@ -228,17 +229,21 @@ void MeshBlock::InitUserMeshBlockData(ParameterInput *pin)
 void NumericAttributeAssignment(std::vector<UserNumericAttribute> &user_numeric_attributes) {
   UserNumericAttribute attr;
   attr.length = 1;
-  attr.name = "Rp";
+  attr.name = (char*)"Rp";
   attr.values = {Rp};
   user_numeric_attributes.push_back(attr);
-  return;
+  
+  attr.length = NSCALARS;
+  attr.name = (char*)"ScalarMass";
+  attr.values = scalar_masses;
+  user_numeric_attributes.push_back(attr);
 }
 
 void StringAttributeAssignment(std::vector<UserStringAttribute> &user_string_attributes) {
   UserStringAttribute attr;
   attr.length = NSCALARS;
-  attr.name = "SpeciesNames";
-  attr.values = speciesNames;
+  attr.name = (char*)"SpeciesNames";
+  attr.values = scalar_names;
   user_string_attributes.push_back(attr);
   return;
 }
@@ -640,6 +645,16 @@ void MeshBlock::ProblemGenerator(ParameterInput *pin)
       prad->CalculateRadiativeTransfer(phydro->w, pscalars->s, pmy_mesh->time, k, j);
 
   prad_network->ComputeReactionForcing(phydro->w, phydro->u, pscalars->s);
+
+  // setup for outputs
+
+  // Copying pscalars->name and pscalars->mass
+  // probably a more elegance solution
+  for (int i = 0; i < NSCALARS; ++i)
+  {
+    scalar_names.push_back(pscalars->name(i));
+    scalar_masses.push_back(pscalars->mass(i));
+  }
 }
 
 void NaNCheck(MeshBlock *pmb, const AthenaArray<Real> prim, int k, int j, int i) {
@@ -675,7 +690,7 @@ void NaNCheck(MeshBlock *pmb, const AthenaArray<Real> prim, int k, int j, int i)
   }
 }
 
-bool ConvergenceCheck(const AthenaArray<Real> prim, const AthenaArray<Real> prim_scalar, const AthenaArray<Real> scalar_mass, int k, int j, int i) {
+bool ConvergenceCheck(const AthenaArray<Real> prim, const AthenaArray<Real> prim_scalar, const AthenaArray<Real> scalar_m, int k, int j, int i) {
   bool converged_here = true;
   Real past_value, current_value;
   Real deviation, abs_tol, tol;
