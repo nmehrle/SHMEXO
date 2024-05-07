@@ -71,6 +71,7 @@ namespace {
                 H = 1, HII = 2,
                 He = 3, He23S = 4,
                 HeII = 5, HeIII = 6};
+  std::vector<std::string> speciesNames = {"Electron", "H", "HII", "He", "HeII", "He23S", "HeII", "HeIII"};
 
   //convergence checking
   bool check_convergence;
@@ -225,10 +226,20 @@ void MeshBlock::InitUserMeshBlockData(ParameterInput *pin)
 //----------------------------------------------------------------------------------------
 
 void NumericAttributeAssignment(std::vector<UserNumericAttribute> &user_numeric_attributes) {
+  UserNumericAttribute attr;
+  attr.length = 1;
+  attr.name = "Rp";
+  attr.values = {Rp};
+  user_numeric_attributes.push_back(attr);
   return;
 }
 
 void StringAttributeAssignment(std::vector<UserStringAttribute> &user_string_attributes) {
+  UserStringAttribute attr;
+  attr.length = NSCALARS;
+  attr.name = "SpeciesNames";
+  attr.values = speciesNames;
+  user_string_attributes.push_back(attr);
   return;
 }
 
