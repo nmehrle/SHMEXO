@@ -304,7 +304,7 @@ Reaction* ReactionNetwork::GetReactionByName(std::string name, ParameterInput *p
     return r;
 
   } else if (name == "HE_TRIPLET_RECOMBINATION") {
-    ReactionTemplate *r = new HeliumRecombination(name, {He, HeII, ELEC}, {+1, -1, -1}, helium_alpha_file, helium_beta_file, 3);
+    ReactionTemplate *r = new HeliumRecombination(name, {He23S, HeII, ELEC}, {+1, -1, -1}, helium_alpha_file, helium_beta_file, 3);
     return r;
 
   } else if (name == "HeElecCollision11") {
