@@ -18,9 +18,9 @@
 #include "../radiation.hpp"
 #include "absorber.hpp"
 #include "ionizing_absorber.hpp"
-#include "helium_ionization.hpp"
+#include "file_read_ionization.hpp"
 
-HeliumIonization::HeliumIonization(RadiationBand *pband, std::string name, int my_scalar_number, int my_ion_number, ParameterInput *pin, std::string my_xc_file):
+FileReadIonization::FileReadIonization(RadiationBand *pband, std::string name, int my_scalar_number, int my_ion_number, ParameterInput *pin, std::string my_xc_file):
   IonizingAbsorber(pband, name, my_scalar_number, my_ion_number, pin)
 {
   Spectrum *spec = pband->spec;
@@ -30,7 +30,7 @@ HeliumIonization::HeliumIonization(RadiationBand *pband, std::string name, int m
 
   if (!FileExists(xc_file)) {
     std::stringstream msg;
-    msg << "##### FATAL ERROR in HeliumIonization Constructor"
+    msg << "##### FATAL ERROR in FileReadIonization Constructor"
         << std::endl << "Cannot open cross sections file "
         << xc_file << std::endl;
     ATHENA_ERROR(msg);
@@ -39,7 +39,7 @@ HeliumIonization::HeliumIonization(RadiationBand *pband, std::string name, int m
   CalculateCrossSections(spec, nspec);
 }
 
-void HeliumIonization::CalculateCrossSections(Spectrum const *spec, int nspec) {
+void FileReadIonization::CalculateCrossSections(Spectrum const *spec, int nspec) {
   std::vector<Real> file_x, file_y;
   int n_file;
   ReadDataTableForInterp(xc_file, file_x, file_y, n_file);
@@ -58,7 +58,7 @@ void HeliumIonization::CalculateCrossSections(Spectrum const *spec, int nspec) {
     }
     else if (ry > file_x[n_file-1]) {
       std::stringstream msg;
-      msg << "##### FATAL ERROR in HeliumIonization::CalculateCrossSections"
+      msg << "##### FATAL ERROR in FileReadIonization::CalculateCrossSections"
           << std::endl << "Energy " << energy << "eV (" << ry << " Ry) " <<std::endl
           << "exceeds maximum energy in cross_section file."
           << " (" << file_x[n_file-1] << ")" << std::endl

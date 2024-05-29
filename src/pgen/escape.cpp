@@ -23,7 +23,7 @@
 #include "../radiation/radiation.hpp"
 
 #include "../radiation/absorber/hydrogen_ionization.hpp"
-#include "../radiation/absorber/helium_ionization.hpp"
+#include "../radiation/absorber/file_read_ionization.hpp"
 #include "../radiation/absorber/verner_ionization.hpp"
 
 
@@ -403,17 +403,17 @@ Absorber* RadiationBand::GetAbsorberByName(std::string name, std::string band_na
   }
   else if (name == "HELIUM_IONIZATION") {
     std::string xc_file = pin->GetString("radiation", "Helium_1(1)S_file");
-    HeliumIonization *a = new HeliumIonization(this, name, He, HeII, pin, xc_file);
+    FileReadIonization *a = new FileReadIonization(this, name, He, HeII, pin, xc_file);
 
     prad_network->AddReaction(new Photoionization(rxn_name, a, ELEC));
     return a;
   }
   else if (name == "HELIUM_TRIPLET_IONIZATION") {
     std::string xc_file = pin->GetString("radiation", "Helium_2(3)S_file");
-    HeliumIonization *a = new HeliumIonization(this, name, He23S, HeII, pin, xc_file);
+    FileReadIonization *a = new FileReadIonization(this, name, He23S, HeII, pin, xc_file);
 
     prad_network->AddReaction(new Photoionization(rxn_name, a, ELEC));
-    return a; 
+    return a;
   }
   else if (name == "HELIUM_DOUBLE_IONIZATION") {
     // Real Eth, Real Emax, Real E0, Real sigma0, Real ya, Real P, Real yw, Real y0, Real y1
