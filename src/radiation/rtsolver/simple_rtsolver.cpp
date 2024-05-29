@@ -90,7 +90,14 @@ void SimpleRTSolver::RadiativeTransfer(MeshBlock *pmb, int n, int k, int j)
 
     for (int a = 0; a < pband->nabs; ++a) {
       pabs = pband->absorbers(a);
-      absorber_fraction = (pabs->absorptionCoefficient(n,k,j,i) * dx)/tau;
+
+      if (tau == 0) {
+        absorber_fraction = 0;
+      }
+      else {
+        absorber_fraction = (pabs->absorptionCoefficient(n,k,j,i) * dx)/tau;
+      }
+
       pabs->energyAbsorbed(n,k,j,i) = Eabs * absorber_fraction;
     }
   }
