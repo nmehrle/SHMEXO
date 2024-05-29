@@ -38,7 +38,6 @@ HeElectronCollisions::HeElectronCollisions(std::string name, std::vector<int> sp
 Real HeElectronCollisions::TempScalingFactor(Real T) {
   Real k_T_ev = (pmy_network->boltzmann * T) / pmy_network->eV_conversion;
   Real T_dependance = std::sqrt((pmy_network->ry_conversion / k_T_ev));
-  T_dependance = T_dependance * exp(-1.0/k_T_ev);
   return T_dependance;
 }
 
