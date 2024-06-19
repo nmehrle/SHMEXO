@@ -70,7 +70,8 @@ namespace {
   enum speciesList {ELEC = 0,
                 H = 1, HII = 2,
                 He = 3, He23S = 4,
-                HeII = 5, HeIII = 6};
+                HeII = 5, HeIII = 6,
+                Hminus = 7};
   std::vector<std::string> scalar_names;
   std::vector<Real> scalar_masses;
 
@@ -380,6 +381,15 @@ Reaction* ReactionNetwork::GetReactionByName(std::string name, ParameterInput *p
 
   } else if (name == "HeI_elec_collisions") {
     return new HeIElecCollisions(name, He, ELEC);
+
+  } else if (name == "H_anion_formation") {
+    return new UMISTReaction(name, {H, ELEC, Hminus}, {-1, -1, +1}, 3.37e-16, 0.64, 9.20);
+
+  } else if (name == "H_anion_HII_collision") {
+    return new UMISTReaction(name, {HII, Hminus, H}, {-1, -1, +2}, 7.51e-8, -0.5, 0);
+
+  } else if (name == "H_anion_HeII_collision") {
+    return new UMISTReaction(name, {Hminus, HeII, He, H}, {-1, -1, +1, +1}, 7.51e-8, -0.5, 0);
 
   } else {
     std::stringstream msg;
