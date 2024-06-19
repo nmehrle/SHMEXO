@@ -90,3 +90,21 @@ Real HeIElecCollisions::beta(Real T, int k, int j, int i) {
   Real cen_factor = std::pow(1+std::sqrt(T/1E5),-1);
   return -9.1e-27 * pow(T,-0.1687) * exp(-13179./T) * cen_factor;
 }
+
+UMISTReaction::UMISTReaction(std::string name, std::vector<int> species, std::vector<Real> stoichiometry, Real alpha_, Real beta_, Real gamma_):
+  ReactionTemplate(name, species, stoichiometry)
+{
+  param_alpha = alpha_;
+  param_beta  = beta_;
+  param_gamma = gamma_;
+}
+
+Real UMISTReaction::alpha(Real T, int k, int j, int i) {
+  Real t2 = pow(T/300, param_beta);
+  Real t3 = exp(-param_gamma/T);
+  return param_alpha * t2 * t3;
+}
+
+Real UMISTReaction::beta(Real T, int k, int j, int i) {
+  return 0;
+}

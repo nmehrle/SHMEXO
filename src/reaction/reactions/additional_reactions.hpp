@@ -41,3 +41,12 @@ public:
   Real alpha(Real T, int k, int j, int i);
   Real beta(Real T, int k, int j, int i);
 };
+
+class UMISTReaction: public ReactionTemplate {
+public:
+  UMISTReaction(std::string name, std::vector<int> species, std::vector<Real> stoichiometry, Real alpha_, Real beta_, Real gamma_);
+  Real alpha(Real T, int k, int j, int i);
+  Real beta(Real T, int k, int j, int i);
+protected:
+  Real param_alpha, param_beta, param_gamma;
+};
