@@ -79,6 +79,31 @@ void __attribute__((weak)) MeshBlock::InitUserMeshBlockData(ParameterInput *pin)
 }
 
 //========================================================================================
+//! \fn void MeshBlock::ProblemGenerator(ParameterInput *pin, int res_flag)
+//  \brief Should be used to set initial conditions, with different options for restart. 
+//========================================================================================
+
+void __attribute__((weak)) MeshBlock::ProblemGenerator(ParameterInput *pin, int res_flag) {
+  // Problem File may overwrite this function to call Problem Generator with different logic for restarts. If not overwritten, this function returns to default behavior
+
+  // Default Behavior
+  // On Initialize (res_flag == 0)
+  // Call ProblemGenerator w/ no res_flag option
+  if (res_flag == 0) {
+    ProblemGenerator(pin);
+  }
+
+  // On Restart (res_flag == 1)
+  // Default Behavior for restarts is not to call Problem Generator. 
+  // Does Nothing
+  else if (res_flag == 1) {
+    ;
+  }
+
+  return;
+}
+
+//========================================================================================
 //! \fn void MeshBlock::ProblemGenerator(ParameterInput *pin)
 //  \brief Should be used to set initial conditions.
 //========================================================================================

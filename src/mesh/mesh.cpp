@@ -554,6 +554,7 @@ Mesh::Mesh(ParameterInput *pin, IOWrapper& resfile, int mesh_test) :
     multilevel((adaptive || pin->GetOrAddString("mesh", "refinement", "none") == "static")
                ? true : false),
     fluid_setup(GetFluidFormulation(pin->GetOrAddString("hydro", "active", "true"))),
+    interrupt_integration(false),
     start_time(pin->GetOrAddReal("time", "start_time", 0.0)), time(start_time),
     tlim(pin->GetReal("time", "tlim")), dt(std::numeric_limits<Real>::max()),
     dt_hyperbolic(dt), dt_parabolic(dt), dt_user(dt),
@@ -1373,14 +1374,13 @@ void Mesh::Initialize(int res_flag, ParameterInput *pin) {
       pmbl = pmbl->next;
     }
 
-    if (res_flag == 0) {
+
 #pragma omp parallel for num_threads(nthreads)
-      for (int i=0; i<nmb; ++i) {
-        MeshBlock *pmb = pmb_array[i];
-        pmb->ProblemGenerator(pin);
-        pmb->pbval->CheckUserBoundaries();
-        // pmb->phydro->CheckHydro();
-      }
+    for (int i=0; i<nmb; ++i) {
+      MeshBlock *pmb = pmb_array[i];
+      pmb->ProblemGenerator(pin, res_flag);
+      pmb->pbval->CheckUserBoundaries();
+      // pmb->phydro->CheckHydro();
     }
 
     // add initial perturbation for decaying or impulsive turbulence

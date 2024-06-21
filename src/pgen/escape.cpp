@@ -555,7 +555,7 @@ void QualifyHHeRatio(PassiveScalars *ps) {
   }
 }
 
-void MeshBlock::ProblemGenerator(ParameterInput *pin)
+void MeshBlock::ProblemGenerator(ParameterInput *pin, int res_flag)
 {
   initial_conditions.NewAthenaArray(NHYDRO+NSCALARS, ncells3, ncells2, ncells1);
   convergence_check_buffer.NewAthenaArray(NHYDRO+NSCALARS, ncells3, ncells2, ncells1);
@@ -622,14 +622,16 @@ void MeshBlock::ProblemGenerator(ParameterInput *pin)
         number_density = number_density * initial_conditions(IDN,k,j,i);
         initial_conditions(IPR,k,j,i) = initial_conditions(IPR,k,j,i) * number_density * boltzmann;
 
-        // write to hydro variables
-        for (int n = 0; n < NHYDRO; ++n)
-          phydro->w(n,k,j,i) = initial_conditions(n,k,j,i);
+        if (res_flag == 0) {
+          // write to hydro variables
+          for (int n = 0; n < NHYDRO; ++n)
+            phydro->w(n,k,j,i) = initial_conditions(n,k,j,i);
 
-        // write to scalar variables
-        for (int n = 0; n < NSCALARS; ++n) {
-          pscalars->r(n,k,j,i) = initial_conditions(n+NHYDRO,k,j,i);
-          pscalars->s(n,k,j,i) = initial_conditions(n+NHYDRO,k,j,i) * initial_conditions(IDN,k,j,i);
+          // write to scalar variables
+          for (int n = 0; n < NSCALARS; ++n) {
+            pscalars->r(n,k,j,i) = initial_conditions(n+NHYDRO,k,j,i);
+            pscalars->s(n,k,j,i) = initial_conditions(n+NHYDRO,k,j,i) * initial_conditions(IDN,k,j,i);
+          }
         }
       } //k
     } //j
