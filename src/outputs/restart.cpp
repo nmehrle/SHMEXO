@@ -129,7 +129,7 @@ void RestartOutput::WriteOutputFile(Mesh *pm, ParameterInput *pin, bool force_wr
 
   // allocate memory for the ID list and the data
   char *idlist = new char[listsize*mynb];
-  char *data = new char[mynb*datasize];
+  char *data = new char[datasize];
 
   // Loop over MeshBlocks and pack the meta data
   pmb = pm->pblock;
@@ -153,7 +153,7 @@ void RestartOutput::WriteOutputFile(Mesh *pm, ParameterInput *pin, bool force_wr
   pmb = pm->pblock;
   int b = 0;
   while (pmb != nullptr) {
-    char *pdata = &(data[pmb->lid*datasize]);
+    char *pdata = data;
 
     // NEW_OUTPUT_TYPES: add output of additional physics to restarts here also update
     // MeshBlock::GetBlockSizeInBytes accordingly and MeshBlock constructor for restarts.
@@ -207,14 +207,16 @@ void RestartOutput::WriteOutputFile(Mesh *pm, ParameterInput *pin, bool force_wr
                   pmb->ruser_meshblock_data[n].GetSizeInBytes());
       pdata += pmb->ruser_meshblock_data[n].GetSizeInBytes();
     }
-    pmb = pmb->next;
-    ++b;
+    
     // now write restart data in parallel
     myoffset = headeroffset + listsize*nbtotal + datasize*(myns+b);
     if (b < nbmin)
       resfile.Write_at_all(data, datasize, 1, myoffset);
     else
       resfile.Write_at(data, datasize, 1, myoffset);
+
+    pmb = pmb->next;
+    ++b;
   }
 
   resfile.Close();
